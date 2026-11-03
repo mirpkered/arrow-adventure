@@ -4,7 +4,7 @@ Adventure Mode levels are curated published content. Generators may help designe
 
 ## Catalog location and record
 
-The live catalog snapshots are `src/game/catalog/adventure-v1.json` and `src/game/catalog/adventure-v2.json`; runtime schema and validation live in `src/game/catalog.ts`. The first ten records are frozen snapshots of the original prototype puzzles. The second catalog file adds levels 11–20 without editing those snapshots.
+The live catalog snapshots are `src/game/catalog/adventure-v1.json`, `adventure-v2.json`, and `adventure-v3.json`; runtime schema and validation live in `src/game/catalog.ts`. These files preserve levels 1–10, 11–20, and 21–40 respectively. Published puzzle definitions are static snapshots; later releases append a versioned file instead of regenerating earlier content.
 
 | Display / sequence | Stable ID | Original seed | Arrows |
 | ---: | --- | ---: | ---: |
@@ -34,6 +34,15 @@ Levels 11–20 are also in `first-flight`, each at content version 1 and tagged 
 | 19 | `first-flight-019` | 1 | expert | 7 | 1 | Dense mixed-direction dependency puzzle |
 | 20 | `first-flight-020` | 1 | expert | 7 | 3 | Dense combined foundational patterns |
 
+Levels 21–40 add `diagonal-arrow` alongside `standard-arrow`, with content version 1 and authored provenance. The set was selected from deterministic candidate boards against progression constraints, then frozen as JSON snapshots. Level 21 carries `tutorialRef: diagonal-movement`; later levels do not repeat it. Difficulty labels are provisional and need playtesting.
+
+| Display / sequence | Stable ID range | Content version | Progression target |
+| ---: | --- | ---: | --- |
+| 21–25 | `first-flight-021`–`first-flight-025` | 1 | Introduce diagonal paths and exits; Level 21 teaches crossings |
+| 26–30 | `first-flight-026`–`first-flight-030` | 1 | Combine cardinal and diagonal route segments |
+| 31–35 | `first-flight-031`–`first-flight-035` | 1 | Add winding mixed-direction paths |
+| 36–40 | `first-flight-036`–`first-flight-040` | 1 | Increase dependencies and cover all eight exit headings as a set |
+
 Each entry contains:
 
 ```ts
@@ -44,7 +53,7 @@ type AdventureLevel = {
   chapterId: string;
   contentVersion: number;
   difficulty: 'gentle' | 'easy' | 'medium' | 'hard' | 'expert';
-  mechanicIds: ('standard-arrow' | 'black-hole' | 'switch' | 'directional-gate' | 'portal')[];
+  mechanicIds: ('standard-arrow' | 'diagonal-arrow' | 'black-hole' | 'switch' | 'directional-gate' | 'portal')[];
   tutorialRef?: string;
   authoringNotes?: string;
   provenance:
@@ -54,7 +63,7 @@ type AdventureLevel = {
 };
 ```
 
-This is the current runtime type. Mechanic tags are metadata only; only standard arrows have gameplay rules today. No tutorial content exists yet, so current entries omit `tutorialRef`. A future tutorial key must be registered in `TUTORIAL_REFERENCES` before it can validate.
+This is the current runtime type. `standard-arrow` and `diagonal-arrow` have gameplay rules. Other mechanic tags remain metadata only. Level 21 uses the registered `diagonal-movement` tutorial, which is shown until dismissed and stored outside save schema v2. Future tutorial keys must be registered in `TUTORIAL_REFERENCES` before validation.
 
 ## Adding a curated level
 
@@ -65,6 +74,16 @@ This is the current runtime type. Mechanic tags are metadata only; only standard
 5. **Tag difficulty and mechanics.** Choose difficulty based on observed solution demands, not arrow count alone. Add only mechanics that the puzzle actually contains or uses; use the stable IDs listed in the type. An introduced mechanic remains eligible for later levels but is not required in every level. Add a tutorial reference only after its target exists.
 6. **Add authoring notes if useful.** Keep rationale or review context in `authoringNotes`; do not put runtime behavior in this field.
 7. **Add regression coverage.** Keep all catalog entries covered by structural and solver validation. Add an explicit frozen fingerprint or snapshot check for published content. For generated records, assert the archived generator version and seed reproduce the snapshot. Review any fingerprint change as a content change. A changed puzzle needs a deliberate content-version increment and review note.
+
+## Eight-direction path and collision rules
+
+Paths are arrays of integer grid points stored tail-to-head. Consecutive points may differ by at most one cell in each axis, excluding a zero-length step. This permits cardinal and diagonal segments, including paths that mix both. The final segment is the exit heading; diagonal continuation advances one grid point on both axes each frame.
+
+Collision matches the rendered arrow geometry. The board renderer draws body paths through cell centers with a 0.46-cell stroke, so two body centerlines collide at distance `<= 0.46` board units. The geometry code adds `1e-8` tolerance for floating-point calculations. It checks segment-to-segment distance, so opposite diagonals crossing inside a cell collide even without a shared grid point. It also includes triangular arrowheads and treats shared endpoints or overlapping heads as collisions. Level validation applies the same visible-body geometry to all initial arrows and rejects nonadjacent self-crossing path segments. Do not author paths whose stroked lines touch or whose arrowheads overlap another arrow.
+
+The solver and gameplay both call the same `simulateMove` and `arrowsCollide` functions. Every movement frame compares the moving arrow's complete polyline and head with each stationary arrow. If an apparent exit is blocked at any frame, the solver cannot use that move. New geometry tests cover all eight exit vectors, diagonal/crossing intersections, endpoint contacts, collision tolerance, and an exit that crosses a blocker between grid points.
+
+The first diagonal level references `diagonal-movement`. Keep that tutorial concise: explain diagonal travel and exit direction, paths crossing between grid points, and checking the whole body. The UI records acknowledgement under a tutorial-specific local-storage key and does not alter save schema v2. Later levels are not tagged with this reference, so they do not interrupt play.
 
 ## Validation and publication
 

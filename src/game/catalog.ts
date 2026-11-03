@@ -1,10 +1,11 @@
 import catalogData from './catalog/adventure-v1.json';
 import catalogV2Data from './catalog/adventure-v2.json';
+import catalogV3Data from './catalog/adventure-v3.json';
 import { LEGACY_GENERATOR_ID, LEGACY_GENERATOR_VERSION, reproduceLegacyLevel } from './levels';
 import { solveLevel, validateLevel } from './rules';
 import type { Level } from './types';
 
-export const MECHANIC_IDS = ['standard-arrow', 'black-hole', 'switch', 'directional-gate', 'portal'] as const;
+export const MECHANIC_IDS = ['standard-arrow', 'diagonal-arrow', 'black-hole', 'switch', 'directional-gate', 'portal'] as const;
 export type MechanicId = typeof MECHANIC_IDS[number];
 export type Difficulty = 'gentle' | 'easy' | 'medium' | 'hard' | 'expert';
 
@@ -19,10 +20,11 @@ export const ADVENTURE_CHAPTERS = [
 /** Provisional Adventure introduction targets; these are metadata, not rule activation. */
 export const MECHANIC_INTRODUCTIONS: Record<MechanicId, { chapterId: string; targetSequence: number; provisional: boolean }> = {
   'standard-arrow': { chapterId: 'first-flight', targetSequence: 1, provisional: false },
-  'black-hole': { chapterId: 'into-the-void', targetSequence: 21, provisional: true },
-  switch: { chapterId: 'changing-paths', targetSequence: 41, provisional: true },
-  'directional-gate': { chapterId: 'changing-paths', targetSequence: 41, provisional: true },
-  portal: { chapterId: 'through-the-looking-glass', targetSequence: 66, provisional: true },
+  'diagonal-arrow': { chapterId: 'first-flight', targetSequence: 21, provisional: false },
+  'black-hole': { chapterId: 'into-the-void', targetSequence: 41, provisional: true },
+  switch: { chapterId: 'changing-paths', targetSequence: 61, provisional: true },
+  'directional-gate': { chapterId: 'changing-paths', targetSequence: 61, provisional: true },
+  portal: { chapterId: 'through-the-looking-glass', targetSequence: 86, provisional: true },
 };
 
 export type LevelProvenance =
@@ -47,9 +49,10 @@ export type AdventureLevel = {
 type CatalogFile = { catalogVersion: number; entries: AdventureLevel[] };
 const data = catalogData as unknown as CatalogFile;
 const dataV2 = catalogV2Data as unknown as CatalogFile;
-export const ADVENTURE_LEVELS: readonly AdventureLevel[] = [...data.entries, ...dataV2.entries];
-export const ADVENTURE_CATALOG_VERSION = dataV2.catalogVersion;
-export const TUTORIAL_REFERENCES: readonly string[] = [];
+const dataV3 = catalogV3Data as unknown as CatalogFile;
+export const ADVENTURE_LEVELS: readonly AdventureLevel[] = [...data.entries, ...dataV2.entries, ...dataV3.entries];
+export const ADVENTURE_CATALOG_VERSION = dataV3.catalogVersion;
+export const TUTORIAL_REFERENCES: readonly string[] = ['diagonal-movement'];
 
 const byId = new Map(ADVENTURE_LEVELS.map((entry) => [entry.id, entry]));
 const byNumber = new Map(ADVENTURE_LEVELS.map((entry) => [entry.displayNumber, entry]));

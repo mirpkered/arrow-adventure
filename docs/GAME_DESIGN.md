@@ -6,11 +6,11 @@ This document separates rules the prototype implements from design and architect
 
 ### Implemented prototype
 
-- One mode: ten numbered puzzles, with the next level unlocked by completion and unlocked levels replayable.
-- A puzzle contains standard winding arrows. A selected arrow advances along its connected body representation and continues in its terminal direction until its body leaves the board.
+- One mode: forty numbered puzzles, with the next level unlocked by completion and unlocked levels replayable.
+- A puzzle contains winding arrows with cardinal and diagonal paths. A selected arrow advances along its connected body representation and continues in its terminal direction until its body leaves the board.
 - A blocked move costs one of three hearts and leaves the arrow in place. Restart restores the level. There is no timer, undo, advertisement, reward currency, or power-up.
 - Progress is stored locally under `mirpworks.arrow-adventure.save.v2` using stable level IDs. Existing `mirpworks.arrow-adventure.save.v1` numeric saves migrate on load and remain in storage as a recovery source.
-- The original ten puzzles are literal catalog snapshots with stable IDs, progression sequences, chapter/difficulty/mechanic metadata, content version 1, and the original generator provenance.
+- The original ten puzzles are literal catalog snapshots with stable IDs, progression sequences, chapter/difficulty/mechanic metadata, content version 1, and the original generator provenance. Levels 11–40 are versioned authored snapshots.
 - Catalog lookup is by stable ID, display number, or progression sequence. The UI keeps its numbered picker, while unlock and completion state use catalog IDs.
 
 The original tile-serpentine generator remains available as a version-1 reproduction function and regression reference. Adventure Mode loads the catalog snapshots, not newly generated layouts. This catalog is not the future Free Play mode.
@@ -34,9 +34,15 @@ The original tile-serpentine generator remains available as a version-1 reproduc
 
 ### Standard arrows — implemented foundation
 
-An arrow is represented by ordered grid cells from tail to head. The game accepts connected, orthogonal, non-self-crossing paths; the final segment determines one of four cardinal exit directions, and any occupied-cell overlap is invalid. Movement is simulated frame by frame against other arrows before it is committed. The simulator advances the body along the stored winding path, then continues the head in its final facing direction while the rest follows. The complete body must leave the board. A failed attempt does not mutate the arrow.
+An arrow is represented by ordered grid points from tail to head. Each step can be one cell in any of eight directions; the final step determines the exit heading. Routes may combine cardinal and diagonal steps. The geometry validator rejects self-crossings, path gaps, and visually overlapping arrows.
 
-The current rule implementation has four exit directions and one interactive entity type. Catalog mechanic tags are metadata only; they do not activate new rules.
+Movement advances the tail-to-head body along its stored route, then extends the head on its final compass heading while the tail follows. Before committing, the simulator checks every body segment and arrowhead against every stationary arrow. The solver calls the same simulator. A blocked move costs one heart and changes no arrow geometry; an escape completes only after the full body is outside the board.
+
+#### Collision geometry
+
+Arrow body polylines are rendered through grid-cell centers with a 0.46-cell SVG stroke. Collision uses continuous segment-to-segment distance, not occupied grid cells. Centerline distances at or below 0.46 board units (plus `1e-8` floating-point tolerance) collide, matching overlap of the two visible body strokes. The triangular arrowhead polygon and its 0.08-cell outline are included in stationary and moving geometry. Endpoint contact and diagonal crossings between grid points therefore count. Path validation applies the same line-distance rule to nonadjacent segments of one arrow to reject ambiguous self-crossings. Grid coordinates remain integers in saved definitions; floating-point arithmetic is used only in the geometry calculations.
+
+The catalog mechanic ID `diagonal-arrow` is introduced at sequence 21 and is implemented. The other catalog mechanic IDs remain metadata only; they do not activate new rules.
 
 ### Black holes — planned
 
@@ -75,12 +81,14 @@ The current rule engine remains small and direct:
 
 - `Arrow` stores an ID, color, and path.
 - `Level` stores a numeric display number, optional seed, dimensions, and arrows. The seed is present for frozen generated legacy levels; authored entries store their exact definition.
-- `simulateMove` derives the cardinal exit vector from the last two path cells and checks all moving body cells against stationary arrows at every frame.
+- `simulateMove` derives one of eight grid-step headings from the last two path points and uses shared rendered-geometry collision checks for each frame.
 - `solveLevel` searches for an arrow-removal order. Its memo key is the sorted set of remaining arrow IDs.
 
 That solver key is sufficient for the current one-shot arrows: for a fixed remaining set, the board is unchanged. It is insufficient once switches can change gates or any interactive object can persist state.
 
-The level catalog and mechanic-ID metadata are implemented in `src/game/catalog.ts` and versioned snapshots `src/game/catalog/adventure-v1.json` and `adventure-v2.json`. The first file preserves levels 1–10; the second contains curated levels 11–20. The catalog validator checks stable IDs, display numbers, sequence numbers, chapter/tutorial references, content versions, supported mechanic tags, level geometry, known generator provenance, exact reproduction, and solvability. It does not add interactive-object state to the current solver.
+The level catalog and mechanic-ID metadata are implemented in `src/game/catalog.ts` and versioned snapshots `src/game/catalog/adventure-v1.json` through `adventure-v3.json`. These preserve levels 1–10, 11–20, and 21–40 respectively. The catalog validator checks stable IDs, display numbers, sequence numbers, chapter/tutorial references, content versions, supported mechanic tags, level geometry, known generator provenance, exact reproduction, and solvability. It does not add interactive-object state to the current solver.
+
+The diagonal movement introduction is attached to Level 21 with tutorial reference `diagonal-movement`. The concise tutorial is shown only until dismissed and stored in a dedicated local-storage key, independent of the unchanged progression save schema v2.
 
 ### Proposed extension, to be introduced with the first approved interactive mechanic
 
@@ -95,7 +103,7 @@ Use a serializable, deterministic puzzle state rather than adding checks such as
 
 This is a proposed boundary, not a request to add empty interfaces or speculative plugin infrastructure now. Implement only the state and mechanic contracts required by a decided mechanic; keep the standard-arrow regression suite passing during that migration.
 
-For the current chapter targets, the proposed introduction targets are `standard-arrow` in First Flight, `black-hole` at the start of Into the Void, both `switch` and `directional-gate` at the start of Changing Paths, and `portal` at the start of Through the Looking Glass. Store these in mechanic/chapter metadata rather than treating numeric level ranges as rule logic. Revise the targets after playtesting.
+Current provisional targets are `standard-arrow` at First Flight sequence 1, `diagonal-arrow` at sequence 21, `black-hole` at Into the Void sequence 41, `switch` and `directional-gate` at sequence 61, and `portal` at sequence 86. Store these in mechanic/chapter metadata rather than treating numeric level ranges as rule logic. Revise targets after playtesting.
 
 ### Free Play configuration proposal
 

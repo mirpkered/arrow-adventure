@@ -10,6 +10,8 @@ import {
 import { isAdventureLevelComplete, markLevelComplete, loadProgress, saveProgress, selectAdventureLevel, type StorageLike } from './game/progress';
 import { createRun, loseHeart } from './game/session';
 import { completeLevel, directionName, exitDirection, simulateMove } from './game/rules';
+import { arrowHeadTriangle } from './game/geometry';
+import { markTutorialSeen, shouldShowTutorial } from './game/tutorials';
 import type { Arrow, Level, Point } from './game/types';
 import './style.css';
 
@@ -26,6 +28,7 @@ let view: 'title' | 'game' | 'complete' | 'out' = 'title';
 let animatingId: string | null = null;
 let shakeId: string | null = null;
 let openLevels = false;
+let tutorialOpen = false;
 
 const escapeHtml = (value: string): string => value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!);
 
@@ -33,6 +36,7 @@ function startLevel(number: number): void {
   catalogEntry = getAdventureLevelByDisplayNumber(number) ?? null;
   if (!catalogEntry || !isAdventureLevelUnlocked(catalogEntry, progress.highestUnlockedLevelId)) return;
   level = catalogEntry.puzzle;
+  tutorialOpen = shouldShowTutorial(catalogEntry.tutorialRef, storage);
   progress = selectAdventureLevel(progress, catalogEntry.id);
   saveProgress(storage, progress);
   const run = createRun(level);
@@ -49,14 +53,8 @@ function startLevel(number: number): void {
 function pointString(points: Point[]): string { return points.map(({ x, y }) => `${x + 0.5},${y + 0.5}`).join(' '); }
 
 function arrowMarkup(arrow: Arrow): string {
-  const last = arrow.path.at(-1)!;
   const direction = exitDirection(arrow);
-  const perpendicular = { x: -direction.y, y: direction.x };
-  const center = { x: last.x + 0.5, y: last.y + 0.5 };
-  const tip = { x: center.x + direction.x * 0.52, y: center.y + direction.y * 0.52 };
-  const base = { x: center.x + direction.x * 0.06, y: center.y + direction.y * 0.06 };
-  const wingA = { x: base.x + perpendicular.x * 0.31, y: base.y + perpendicular.y * 0.31 };
-  const wingB = { x: base.x - perpendicular.x * 0.31, y: base.y - perpendicular.y * 0.31 };
+  const [tip, wingA, wingB] = arrowHeadTriangle(arrow.path);
   const classes = [animatingId === arrow.id ? 'arrow moving' : 'arrow', shakeId === arrow.id ? 'shaking' : ''].join(' ');
   const tail = arrow.path[0];
   return `<g class="${classes}" data-arrow="${escapeHtml(arrow.id)}" role="button" tabindex="0" aria-label="Arrow facing ${directionName(direction)}, ${arrow.path.length} segments" style="--arrow-color:${arrow.color}">
@@ -124,6 +122,7 @@ function render(): void {
     <div class="prompt-row"><span class="prompt-icon">↗</span><span>${notice || 'Tap an arrow to send it on its way.'}</span></div>
     ${boardMarkup()}
     <div class="game-bottom"><span class="remaining">${arrows.length} <small>${arrows.length === 1 ? 'arrow' : 'arrows'} left</small></span><span class="bottom-hint">Clear the path to the edge</span></div>
+    ${tutorialOpen ? `<div class="scrim tutorial-scrim"><section class="modal-card tutorial-card" role="dialog" aria-modal="true" aria-labelledby="diagonal-tutorial-title"><div class="modal-icon">↗</div><div class="eyebrow">NEW ARROW MOVEMENT</div><h2 id="diagonal-tutorial-title">Diagonals change the route.</h2><ul><li>Follow each arrow’s path, including diagonal steps, then trace its final heading to an edge.</li><li>Diagonal lines can cross between grid points or meet a cardinal path at an endpoint.</li><li>Check the full body and arrowhead against nearby lines before selecting.</li></ul><button class="primary-button" data-action="tutorial-continue">Got it <span>→</span></button></section></div>` : ''}
     ${noHearts ? `<div class="scrim"><section class="modal-card"><div class="modal-icon">↻</div><div class="eyebrow">TAKE ANOTHER LOOK</div><h2>Out of hearts.</h2><p>Try the level again and watch for arrows that need a clear exit.</p><button class="primary-button" data-action="restart">Restart level <span>↻</span></button><button class="text-button" data-action="home">Back to title</button></section></div>` : ''}
   </main>`;
 }
@@ -177,6 +176,11 @@ app.addEventListener('click', (event) => {
       if (next) startLevel(next.displayNumber);
     }
     if (action === 'levels') { openLevels = !openLevels; render(); }
+    if (action === 'tutorial-continue' && catalogEntry?.tutorialRef) {
+      markTutorialSeen(catalogEntry.tutorialRef, storage);
+      tutorialOpen = false;
+      render();
+    }
     return;
   }
   if (button?.dataset.level) { startLevel(Number(button.dataset.level)); return; }

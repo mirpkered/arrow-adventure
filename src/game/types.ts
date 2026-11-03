@@ -3,7 +3,7 @@ export type Point = { x: number; y: number };
 export type Arrow = {
   id: string;
   color: string;
-  /** Occupied cells, ordered from tail to arrowhead. */
+  /** Integer grid points defining the centerline, ordered from tail to arrowhead. */
   path: Point[];
 };
 

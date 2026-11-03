@@ -1,4 +1,5 @@
 import type { Arrow, Level, MoveResult, Point } from './types';
+import { arrowsCollide, segmentDistance, ARROW_STROKE_WIDTH } from './geometry';
 
 export const pointKey = ({ x, y }: Point): string => `${x},${y}`;
 
@@ -10,10 +11,12 @@ export function exitDirection(arrow: Arrow): Point {
 }
 
 export function directionName(direction: Point): string {
-  if (direction.x === 1) return 'right';
-  if (direction.x === -1) return 'left';
-  if (direction.y === 1) return 'down';
-  if (direction.y === -1) return 'up';
+  const names: Record<string, string> = {
+    '1,0': 'east', '1,-1': 'northeast', '0,-1': 'north', '-1,-1': 'northwest',
+    '-1,0': 'west', '-1,1': 'southwest', '0,1': 'south', '1,1': 'southeast',
+  };
+  const name = names[`${direction.x},${direction.y}`];
+  if (name) return name;
   throw new Error(`Invalid exit direction (${direction.x}, ${direction.y})`);
 }
 
@@ -33,43 +36,40 @@ export function validateArrow(arrow: Arrow, width: number, height: number): void
     seen.add(key);
     if (index > 0) {
       const previous = arrow.path[index - 1];
-      if (Math.abs(previous.x - point.x) + Math.abs(previous.y - point.y) !== 1) throw new Error(`${arrow.id} has a disconnected path`);
+      const dx = Math.abs(previous.x - point.x);
+      const dy = Math.abs(previous.y - point.y);
+      if (Math.max(dx, dy) !== 1) throw new Error(`${arrow.id} has a disconnected path`);
     }
   });
-  const last = arrow.path.at(-1)!;
-  const previous = arrow.path.at(-2)!;
-  const direction = { x: last.x - previous.x, y: last.y - previous.y };
-  if (Math.abs(direction.x) + Math.abs(direction.y) !== 1) throw new Error(`${arrow.id} must face along a cardinal direction at its arrowhead`);
+  const pathSegments = arrow.path.slice(1).map((point, index) => ({ a: arrow.path[index], b: point }));
+  for (let left = 0; left < pathSegments.length; left += 1) {
+    for (let right = left + 2; right < pathSegments.length; right += 1) {
+      if (segmentDistance(pathSegments[left], pathSegments[right]) <= ARROW_STROKE_WIDTH) {
+        throw new Error(`${arrow.id} has a visually self-intersecting path`);
+      }
+    }
+  }
 }
 
 export function validateLevel(level: Level): void {
   if (!Number.isInteger(level.width) || level.width < 1 || !Number.isInteger(level.height) || level.height < 1) throw new Error(`Level ${level.number} has invalid dimensions`);
   if (level.arrows.length === 0) throw new Error(`Level ${level.number} is empty`);
-  const occupied = new Map<string, string>();
   const ids = new Set<string>();
-  for (const arrow of level.arrows) {
+  for (const [index, arrow] of level.arrows.entries()) {
     if (ids.has(arrow.id)) throw new Error(`Level ${level.number} has duplicate arrow ID ${arrow.id}`);
     ids.add(arrow.id);
     validateArrow(arrow, level.width, level.height);
-    for (const point of arrow.path) {
-      const key = pointKey(point);
-      const owner = occupied.get(key);
-      if (owner) throw new Error(`${arrow.id} overlaps ${owner} at ${key}`);
-      occupied.set(key, arrow.id);
-    }
+    for (const other of level.arrows.slice(0, index)) if (arrowsCollide(arrow, other)) throw new Error(`${arrow.id} visually collides with ${other.id}`);
   }
 }
 
-/** Simulate every one-cell advance. No state is changed unless the full exit succeeds. */
+/** Simulate every path-step advance. No state is changed unless the full exit succeeds. */
 export function simulateMove(arrow: Arrow, others: Arrow[], width: number, height: number): MoveResult {
-  const stationary = new Map<string, string>();
-  for (const other of others) for (const point of other.path) stationary.set(pointKey(point), other.id);
-
   let body = arrow.path.map((point) => ({ ...point }));
   const frames: Point[][] = [];
   let head = body.at(-1)!;
   const direction = exitDirection(arrow);
-  if (Math.abs(direction.x) + Math.abs(direction.y) !== 1) throw new Error(`${arrow.id} has an invalid exit direction`);
+  if (Math.max(Math.abs(direction.x), Math.abs(direction.y)) !== 1 || (direction.x === 0 && direction.y === 0)) throw new Error(`${arrow.id} has an invalid exit direction`);
 
   // The body advances as a chain along its winding route. Check every occupied
   // cell in each new frame, so a future curved route cannot silently clip a blocker.
@@ -77,10 +77,9 @@ export function simulateMove(arrow: Arrow, others: Arrow[], width: number, heigh
     head = body.at(-1)!;
     const nextHead = { x: head.x + direction.x, y: head.y + direction.y };
     const nextBody = [...body.slice(1), nextHead];
-    for (const point of nextBody) {
-      const blocker = stationary.get(pointKey(point));
-      if (blocker) return { ok: false, blockedBy: blocker };
-    }
+    const moving = { ...arrow, path: nextBody };
+    const blocker = others.find((other) => arrowsCollide(moving, other));
+    if (blocker) return { ok: false, blockedBy: blocker.id };
     body = nextBody;
     frames.push(body.map((point) => ({ ...point })));
     // Each frame follows the final facing direction until every segment is
