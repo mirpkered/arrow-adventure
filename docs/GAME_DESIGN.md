@@ -13,6 +13,10 @@ This document separates rules the prototype implements from design and architect
 - The original ten puzzles are literal catalog snapshots with stable IDs, progression sequences, chapter/difficulty/mechanic metadata, content version 1, and the original generator provenance. Levels 11–40 are versioned authored snapshots.
 - Catalog lookup is by stable ID, display number, or progression sequence. The UI keeps its numbered picker, while unlock and completion state use catalog IDs.
 
+### Branding assets
+
+The welcome screen uses the approved full-composition logo at `public/branding/arrow-adventure-official-logo.png`. This is the master artwork and should remain unchanged. Browser and install icon derivatives are stored separately in `public/icons/` and are proportional resizes of the master. `public/site.webmanifest` provides the app name, standalone display mode, colors, and install icon references. HTML branding links and the welcome-screen image use Vite's `/arrow-adventure/` base path.
+
 The original tile-serpentine generator remains available as a version-1 reproduction function and regression reference. Adventure Mode loads the catalog snapshots, not newly generated layouts. This catalog is not the future Free Play mode.
 
 ### Prototype-to-catalog compatibility findings

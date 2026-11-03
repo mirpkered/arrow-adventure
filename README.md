@@ -4,6 +4,8 @@ Arrow Adventure is a mobile-first, browser-based puzzle game by Mirpworks. Each 
 
 **Play:** [mirpkered.github.io/arrow-adventure](https://mirpkered.github.io/arrow-adventure/)
 
+The approved title artwork is shown on the welcome screen. The untouched master image is `public/branding/arrow-adventure-official-logo.png`; proportional PNG derivatives for the favicon, Apple touch icon, and install icons are in `public/icons/`. The web app manifest is `public/site.webmanifest`. Icon derivatives preserve the full square composition and use resizing only.
+
 ## Controls and rules
 
 - Tap or click an arrow to send it off the board. Keyboard users can focus an arrow and press Enter or Space.
@@ -49,6 +51,8 @@ Vite's base path is `/arrow-adventure/`, matching the project page URL. The work
 - `src/main.ts` — SVG interface, touch/keyboard input, animation, and progression flow.
 - `src/style.css` — responsive visual style and mobile layout.
 - `tests/game.test.ts` — movement geometry, solver, catalog integrity, frozen-layout compatibility, migration, progression, tutorial, and persistence tests.
+- `public/branding/` — approved source logo artwork.
+- `public/icons/` and `public/site.webmanifest` — generated browser and install icons plus PWA metadata.
 
 ## Long-term direction
 

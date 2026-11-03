@@ -90,12 +90,9 @@ function render(): void {
     const resumeEntry = getAdventureLevelById(progress.selectedLevelId) ?? getFirstAdventureLevel()!;
     const resume = resumeEntry.displayNumber;
     app.innerHTML = `<main class="screen title-screen">
-      <div class="brand"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>MIRPWORKS <b>ADVENTURE</b></span></div>
       <section class="title-content">
-        <div class="eyebrow">A LITTLE SPACE TO THINK</div>
-        <h1>Arrow<br /><em>Adventure</em></h1>
+        <img class="title-logo" src="${import.meta.env.BASE_URL}branding/arrow-adventure-official-logo.png" alt="Arrow Adventure" width="1254" height="1254" />
         <p class="intro">Find a clear path. Let every arrow go.</p>
-        <div class="title-art" aria-hidden="true"><span class="art-arrow art-one">↗</span><span class="art-arrow art-two">→</span><span class="art-arrow art-three">↘</span><span class="art-spark">✳</span></div>
         <button class="primary-button" data-action="play">${progress.completedLevelIds.length ? `Continue · Level ${resume}` : 'Start the adventure'} <span>→</span></button>
         <p class="quiet-note">No rush. Take your time.</p>
       </section>

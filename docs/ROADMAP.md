@@ -12,6 +12,7 @@ This roadmap records the approved product direction and provisional chapter plan
 - A curated Adventure catalog for levels 1–40, with stable IDs, display numbers, progression sequences, chapter IDs, content versions, difficulty tags, mechanic tags, and generated/authored provenance.
 - A one-time diagonal movement tutorial at Level 21, with acknowledgement saved separately from progression save schema v2.
 - Save schema v2 keyed by stable level IDs, with a non-destructive migration from the prototype's numeric schema.
+- Approved official logo on the welcome screen, proportional browser/install icon derivatives, and a base-path-safe standalone web app manifest.
 
 These are the current release's actual capabilities. The future modes and mechanics below are not implemented.
 
