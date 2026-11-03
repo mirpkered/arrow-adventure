@@ -47,6 +47,14 @@ Vite's base path is `/arrow-adventure/`, matching the project page URL. The work
 - `src/style.css` — responsive visual style and mobile layout.
 - `tests/game.test.ts` — rule, progression, persistence, and generated-level tests.
 
+## Long-term direction
+
+The current release is a ten-level prototype. The planned split between curated Adventure Mode and generated Free Play, provisional chapter progression, future mechanics, and level review process are documented in:
+
+- [Roadmap](docs/ROADMAP.md)
+- [Game design and engine direction](docs/GAME_DESIGN.md)
+- [Adventure level authoring](docs/LEVEL_AUTHORING.md)
+
 ## Puzzle generation and collision rules
 
 The ten release levels are deterministic definitions with stable numeric seeds. Each arrow is an orthogonal path of cell centers, stored tail-to-head. All segments must stay in bounds, be connected by single horizontal or vertical steps, avoid self-crossing, and end facing east. Arrows may not share any occupied cell.
