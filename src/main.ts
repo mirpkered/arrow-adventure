@@ -9,7 +9,7 @@ import {
 } from './game/catalog';
 import { isAdventureLevelComplete, markLevelComplete, loadProgress, saveProgress, selectAdventureLevel, type StorageLike } from './game/progress';
 import { createRun, loseHeart } from './game/session';
-import { completeLevel, simulateMove } from './game/rules';
+import { completeLevel, directionName, exitDirection, simulateMove } from './game/rules';
 import type { Arrow, Level, Point } from './game/types';
 import './style.css';
 
@@ -50,12 +50,19 @@ function pointString(points: Point[]): string { return points.map(({ x, y }) => 
 
 function arrowMarkup(arrow: Arrow): string {
   const last = arrow.path.at(-1)!;
+  const direction = exitDirection(arrow);
+  const perpendicular = { x: -direction.y, y: direction.x };
+  const center = { x: last.x + 0.5, y: last.y + 0.5 };
+  const tip = { x: center.x + direction.x * 0.52, y: center.y + direction.y * 0.52 };
+  const base = { x: center.x + direction.x * 0.06, y: center.y + direction.y * 0.06 };
+  const wingA = { x: base.x + perpendicular.x * 0.31, y: base.y + perpendicular.y * 0.31 };
+  const wingB = { x: base.x - perpendicular.x * 0.31, y: base.y - perpendicular.y * 0.31 };
   const classes = [animatingId === arrow.id ? 'arrow moving' : 'arrow', shakeId === arrow.id ? 'shaking' : ''].join(' ');
   const tail = arrow.path[0];
-  return `<g class="${classes}" data-arrow="${escapeHtml(arrow.id)}" role="button" tabindex="0" aria-label="Arrow facing right, ${arrow.path.length} segments" style="--arrow-color:${arrow.color}">
+  return `<g class="${classes}" data-arrow="${escapeHtml(arrow.id)}" role="button" tabindex="0" aria-label="Arrow facing ${directionName(direction)}, ${arrow.path.length} segments" style="--arrow-color:${arrow.color}">
     <polyline class="arrow-line" points="${pointString(arrow.path)}" />
     <circle class="tail-dot" cx="${tail.x + 0.5}" cy="${tail.y + 0.5}" r=".13" />
-    <path class="arrow-head" d="M ${last.x + 1.02} ${last.y + 0.5} L ${last.x + 0.57} ${last.y + 0.19} L ${last.x + 0.57} ${last.y + 0.81} Z" />
+    <path class="arrow-head" d="M ${tip.x} ${tip.y} L ${wingA.x} ${wingA.y} L ${wingB.x} ${wingB.y} Z" />
     <path class="hit-area" d="M ${pointString(arrow.path).replaceAll(' ', ' L ')}" />
   </g>`;
 }
@@ -125,7 +132,7 @@ async function attemptMove(id: string): Promise<void> {
   if (busy || view !== 'game' || !level) return;
   const arrow = arrows.find((item) => item.id === id);
   if (!arrow) return;
-  const result = simulateMove(arrow, arrows.filter((item) => item.id !== id), level.width);
+  const result = simulateMove(arrow, arrows.filter((item) => item.id !== id), level.width, level.height);
   if (!result.ok) {
     hearts = loseHeart(hearts);
     notice = `That arrow is blocked by another one.`;

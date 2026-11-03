@@ -9,7 +9,8 @@ export type Arrow = {
 
 export type Level = {
   number: number;
-  seed: number;
+  /** Optional for authored levels; generated legacy levels retain their seed. */
+  seed?: number;
   width: number;
   height: number;
   arrows: Arrow[];

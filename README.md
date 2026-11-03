@@ -1,13 +1,13 @@
 # Arrow Adventure
 
-Arrow Adventure is a mobile-first, browser-based puzzle game by Mirpworks. Each level packs winding arrows onto a small grid. Tap arrows that have a clear route to the right edge and clear the board without spending all three hearts.
+Arrow Adventure is a mobile-first, browser-based puzzle game by Mirpworks. Each level packs winding arrows onto a small grid. Tap arrows that have a clear route out of the board and clear the board without spending all three hearts. Adventure Mode currently contains 20 curated levels.
 
 **Play:** [mirpkered.github.io/arrow-adventure](https://mirpkered.github.io/arrow-adventure/)
 
 ## Controls and rules
 
 - Tap or click an arrow to send it off the board. Keyboard users can focus an arrow and press Enter or Space.
-- An arrow moves as a connected body along its existing winding line, then continues forward through its arrowhead until every segment clears the edge.
+- An arrow moves as a connected body along its existing winding line, then continues in its final facing direction until every segment clears the board. Arrows can exit up, down, left, or right.
 - The whole motion is simulated before it begins. If any segment meets another arrow, the move fails and costs one heart; the arrow stays where it was.
 - Each level starts with three hearts. Losing all three requires a restart. There is no timer, undo, advertising, reward currency, or power-up.
 - Use the restart button to reset a level, or tap its number to replay any unlocked level.
@@ -39,7 +39,7 @@ Vite's base path is `/arrow-adventure/`, matching the project page URL. The work
 ## Project layout
 
 - `src/game/types.ts` — level, arrow, move result, and save types.
-- `src/game/catalog.ts` and `src/game/catalog/adventure-v1.json` — stable curated level identities, metadata, frozen puzzle definitions, cross-reference checks, deterministic reproduction, and solver validation.
+- `src/game/catalog.ts` and `src/game/catalog/adventure-v*.json` — stable curated level identities, metadata, frozen puzzle definitions, cross-reference checks, deterministic reproduction, and solver validation.
 - `src/game/levels.ts` — version-1 prototype generator retained for reproducibility and compatibility regression checks.
 - `src/game/rules.ts` — path validation, full-frame move simulation, exit collision checks, and depth-first solvability solver.
 - `src/game/session.ts` — fresh run and heart-loss rules.
@@ -50,7 +50,7 @@ Vite's base path is `/arrow-adventure/`, matching the project page URL. The work
 
 ## Long-term direction
 
-The current release is a ten-level prototype. The planned split between curated Adventure Mode and generated Free Play, provisional chapter progression, future mechanics, and level review process are documented in:
+The planned split between curated Adventure Mode and generated Free Play, provisional chapter progression, future mechanics, and level review process are documented in:
 
 - [Roadmap](docs/ROADMAP.md)
 - [Game design and engine direction](docs/GAME_DESIGN.md)
@@ -58,11 +58,11 @@ The current release is a ten-level prototype. The planned split between curated 
 
 ## Puzzle generation and collision rules
 
-The first ten Adventure levels are frozen catalog definitions with stable numeric seeds and generator version metadata. Adventure loads these snapshots instead of generating a new layout at runtime. Their stable IDs are `first-flight-001` through `first-flight-010`; their displayed numbers and progression sequences are catalog fields, not array-position identities. Each arrow is an orthogonal path of cell centers, stored tail-to-head. All segments must stay in bounds, be connected by single horizontal or vertical steps, avoid self-crossing, and end facing east. Arrows may not share any occupied cell.
+Adventure loads frozen catalog snapshots instead of generating layouts at runtime. Levels 1–10 retain stable IDs `first-flight-001` through `first-flight-010`, their original seeds, generator version, and puzzle fingerprints. Levels 11–20 are curated authored definitions with content version 1. Display numbers and progression sequences are catalog fields, not array-position identities. Each arrow is an orthogonal path of cells stored tail-to-head. Segments stay in bounds, connect by single horizontal or vertical steps, avoid self-crossing, and may end facing in any cardinal direction. Arrows may not share occupied cells.
 
-The original generator packs a 3-by-3 serpentine path into each tile. Its implementation is retained as generator `tile-serpentine` version 1, with seeds recorded beside each snapshot. Arrows in a row block east-facing exits to their left, producing removal dependencies. Catalog validation reproduces generated records from their provenance and runs the solver; an invalid or unsolved catalog entry fails validation.
+The original generator packs a 3-by-3 serpentine path into each tile and remains available as generator `tile-serpentine` version 1. Levels 11–20 were selected as fixed catalog content: the first four were hand-authored for directional teaching and dependency patterns; six later boards were selected from a deterministic candidate search for mixed exits, path-length variation, turn variety, and constrained safe moves. Their final definitions are stored directly in the catalog. Catalog validation checks each path and runs the same move simulator used by gameplay; an invalid or unsolved entry fails validation.
 
-For each attempted move, the rule engine advances the connected body one cell at a time, appending a new head cell eastward and releasing the tail cell. At every frame it checks every occupied body cell against all stationary arrows. The move is committed only if the entire body exits the board. A blocked simulation does not alter the board.
+For each attempted move, the rule engine advances the connected body one cell at a time along its ordered path, then appends new head cells in the final cardinal direction while releasing the tail. At every frame it checks every occupied body cell against all stationary arrows. The move succeeds only after the complete body is outside the board. A blocked simulation does not alter the board. The solver calls this same simulation for each candidate removal, avoiding a separate set of movement rules.
 
 ## Progress compatibility
 
@@ -70,7 +70,7 @@ New saves use schema v2 at `mirpworks.arrow-adventure.save.v2` and store stable 
 
 ## Current prototype limitations
 
-- The first ten levels use one path motif and arrows that exit east; visual and directional variety is intentionally limited. Their exact puzzle snapshots and generator provenance are recorded in the curated catalog.
+- The first ten frozen puzzles retain their original east-facing motif. Levels 11–20 add mixed cardinal exits and more path shapes, but the catalog is still small and needs playtesting for difficulty, visual clarity, and variety.
 - Catalog solvability checks cover the current standard-arrow rules. Future state-changing mechanics will need corresponding solver-state support before levels using them can be validated.
 - Saves are local to one browser and device and can be cleared with browser storage.
-- Browser layout and input are designed for touch and tested with automated rule/build checks; physical iPhone testing remains a follow-up.
+- Browser layout and input are designed for touch. Physical iPhone Safari testing remains a follow-up; automated unit checks do not replace device testing.

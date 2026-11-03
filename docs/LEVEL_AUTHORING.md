@@ -4,7 +4,7 @@ Adventure Mode levels are curated published content. Generators may help designe
 
 ## Catalog location and record
 
-The live catalog is `src/game/catalog/adventure-v1.json`; the runtime schema and validation live in `src/game/catalog.ts`. The first ten records are frozen snapshots of the original prototype puzzles.
+The live catalog snapshots are `src/game/catalog/adventure-v1.json` and `src/game/catalog/adventure-v2.json`; runtime schema and validation live in `src/game/catalog.ts`. The first ten records are frozen snapshots of the original prototype puzzles. The second catalog file adds levels 11–20 without editing those snapshots.
 
 | Display / sequence | Stable ID | Original seed | Arrows |
 | ---: | --- | ---: | ---: |
@@ -18,6 +18,21 @@ The live catalog is `src/game/catalog/adventure-v1.json`; the runtime schema and
 | 8 | `first-flight-008` | `10688385` | 9 |
 | 9 | `first-flight-009` | `10696305` | 10 |
 | 10 | `first-flight-010` | `10704226` | 12 |
+
+Levels 11–20 are also in `first-flight`, each at content version 1 and tagged `standard-arrow`. They are authored snapshots and do not depend on runtime generation. Levels 11–14 were hand-authored to introduce up/down exits, then left exits and mixed dependencies. Levels 15–20 were selected from a deterministic candidate search after reviewing direction mix, path length, turn count, solvability, and opening-safe-move constraints; they were then frozen as literal puzzle definitions. This is a selection aid, not an assertion that generated difficulty is calibrated. The regression suite locks the original ten fingerprints and checks the expanded entries' stable IDs, versions, directional coverage, and solver results.
+
+| Display / sequence | Stable ID | Content version | Difficulty | Arrows | Initial safe moves | Selection note |
+| ---: | --- | ---: | --- | ---: | ---: | --- |
+| 11 | `first-flight-011` | 1 | gentle | 3 | 1 | First up-facing arrow, with clear alternatives after opening |
+| 12 | `first-flight-012` | 1 | easy | 4 | 1 | Up/down path and simple exit dependencies |
+| 13 | `first-flight-013` | 1 | easy | 4 | 3 | First left exit and mixed directions |
+| 14 | `first-flight-014` | 1 | medium | 5 | 1 | Multiple direction dependencies |
+| 15 | `first-flight-015` | 1 | medium | 5 | 3 | Candidate-selected mix of all exits and winding paths |
+| 16 | `first-flight-016` | 1 | medium | 5 | 3 | Candidate-selected mix of all exits and winding paths |
+| 17 | `first-flight-017` | 1 | hard | 6 | 3 | More turns and dependencies |
+| 18 | `first-flight-018` | 1 | hard | 6 | 2 | Constrained opening choices and mixed exits |
+| 19 | `first-flight-019` | 1 | expert | 7 | 1 | Dense mixed-direction dependency puzzle |
+| 20 | `first-flight-020` | 1 | expert | 7 | 3 | Dense combined foundational patterns |
 
 Each entry contains:
 
@@ -49,7 +64,7 @@ This is the current runtime type. Mechanic tags are metadata only; only standard
 4. **Set the content version.** A new ID starts at version 1. Keep the version and puzzle unchanged for non-behavioral metadata edits. If a published puzzle's gameplay definition changes, increment `contentVersion`, document the change, and intentionally update its regression fingerprint. Completion remains credited by stable ID across content versions, so players are not forced to replay a revised puzzle.
 5. **Tag difficulty and mechanics.** Choose difficulty based on observed solution demands, not arrow count alone. Add only mechanics that the puzzle actually contains or uses; use the stable IDs listed in the type. An introduced mechanic remains eligible for later levels but is not required in every level. Add a tutorial reference only after its target exists.
 6. **Add authoring notes if useful.** Keep rationale or review context in `authoringNotes`; do not put runtime behavior in this field.
-7. **Add regression coverage.** Add the new stable ID and a frozen puzzle fingerprint to `tests/game.test.ts`. For generated records, assert the archived generator version and seed reproduce the snapshot. Review any fingerprint change as a content change.
+7. **Add regression coverage.** Keep all catalog entries covered by structural and solver validation. Add an explicit frozen fingerprint or snapshot check for published content. For generated records, assert the archived generator version and seed reproduce the snapshot. Review any fingerprint change as a content change. A changed puzzle needs a deliberate content-version increment and review note.
 
 ## Validation and publication
 
@@ -70,7 +85,7 @@ npm run typecheck
 npm run build
 ```
 
-The original ten entries have fixed fingerprints in the regression suite, and the original generator is retained for reproduction. A future catalog change must add its fingerprint to the exact expected-ID set; this makes an unreviewed definition change or an unprotected new entry fail tests. A reviewer should inspect the puzzle diff and solution trace before intentionally updating a fingerprint. Keep reviewed catalog edits in version control and never regenerate published Adventure layouts at app startup.
+The original ten entries have fixed fingerprints in the regression suite, and the original generator is retained for reproduction. All published catalog files are static snapshots; never regenerate Adventure layouts at app startup. For a new level, review the path map, directions, solver trace, dependencies, and at least one alternate solution if it exists. Do not silently update a published fingerprint: review the board change, increment content version, record why the change is needed, and preserve stable-ID completion credit.
 
 ## Difficulty and teaching review
 
@@ -83,7 +98,9 @@ Use several observable dimensions when assigning difficulty:
 - Number and interaction of enabled mechanics.
 - Whether the intended solution requires planning several moves ahead.
 
-The prototype had no difficulty field, so the first ten catalog labels are initial estimates based on the original gradual arrow-count progression. They are not established playtest ratings and should be calibrated when levels are reviewed on devices.
+The prototype had no difficulty field, so the original ten catalog labels are estimates based on their gradual arrow-count progression. Levels 11–20 also have provisional labels based on their structural complexity and candidate review. Neither set is a playtest rating; calibrate them on devices.
+
+For First Flight directional teaching, introduce new exit directions in low-density examples with a clearly readable arrowhead, then combine directions and dependencies gradually. Confirm that new players recognize arrow direction independent of path orientation, can identify a safe exit by tracing the complete path, and understand why the tail follows the head. Watch for color-only distinctions, ambiguous near-touching paths, repeated blocked taps, and restarts. An automated solver proves only that a legal removal order exists; it does not prove that the intended teaching beat is clear or that difficulty feels fair.
 
 For a new mechanic, begin with a low-complexity puzzle that makes the intended interaction legible, then add one complication at a time. Ask players to explain the rule in their own words. Observe incorrect assumptions, blocked selections, restarts, time to a useful move, and solution diversity. A solver proves solvability, not fairness or teaching quality. Review alternate valid solutions: if a lesson is intended to teach a mechanic, ensure that players cannot consistently bypass it without understanding it, unless that bypass is an intentional part of the lesson.
 

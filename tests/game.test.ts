@@ -21,7 +21,7 @@ import {
   type StorageLike,
 } from '../src/game/progress';
 import { createRun, loseHeart } from '../src/game/session';
-import { completeLevel, pointKey, simulateMove, solveLevel, validateArrow, validateLevel } from '../src/game/rules';
+import { completeLevel, directionName, exitDirection, pointKey, simulateMove, solveLevel, validateArrow, validateLevel } from '../src/game/rules';
 import type { Arrow, Level, SaveData } from '../src/game/types';
 
 class MemoryStorage implements StorageLike {
@@ -54,14 +54,19 @@ describe('arrow geometry and movement', () => {
     expect(() => validateArrow(arrow, 4, 2)).not.toThrow();
   });
 
-  it('rejects disconnected paths, self-crossing paths, and invalid exit direction', () => {
+  it('rejects disconnected/self-crossing paths and accepts any cardinal-facing head', () => {
     expect(() => validateArrow({ ...arrow, path: [{ x: 0, y: 0 }, { x: 2, y: 0 }] }, 4, 2)).toThrow(/disconnected/);
     expect(() => validateArrow({ ...arrow, path: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 0 }] }, 4, 2)).toThrow(/crosses itself/);
-    expect(() => validateArrow({ ...arrow, path: [{ x: 1, y: 0 }, { x: 0, y: 0 }] }, 4, 2)).toThrow(/face east/);
+    for (const path of [
+      [{ x: 0, y: 0 }, { x: 1, y: 0 }],
+      [{ x: 1, y: 0 }, { x: 0, y: 0 }],
+      [{ x: 0, y: 0 }, { x: 0, y: 1 }],
+      [{ x: 0, y: 1 }, { x: 0, y: 0 }],
+    ]) expect(() => validateArrow({ ...arrow, path }, 4, 2)).not.toThrow();
   });
 
   it('advances the winding body in path order and clears the whole arrow off board', () => {
-    const result = simulateMove(arrow, [], smallLevel.width);
+    const result = simulateMove(arrow, [], smallLevel.width, smallLevel.height);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.frames[0]).toEqual([
@@ -71,11 +76,11 @@ describe('arrow geometry and movement', () => {
     expect(result.frames.length).toBeGreaterThan(arrow.path.length);
   });
 
-  it('checks every advancing body cell, even when the head path is clear', () => {
-    const tailBlock: Arrow = { id: 'body-blocker', color: '#df6250', path: [{ x: 1, y: 1 }, { x: 2, y: 1 }] };
-    const result = simulateMove(arrow, [tailBlock], smallLevel.width);
-    expect(result).toEqual({ ok: false, blockedBy: tailBlock.id });
-    expect(pointKey({ x: 3, y: 0 })).not.toBe(pointKey(tailBlock.path[0]));
+  it('checks every occupied cell of each advancing body frame against legal stationary paths', () => {
+    const exitBlocker: Arrow = { id: 'exit-blocker', color: '#df6250', path: [{ x: 3, y: 0 }, { x: 3, y: 1 }] };
+    const result = simulateMove(arrow, [exitBlocker], smallLevel.width, smallLevel.height);
+    expect(result).toEqual({ ok: false, blockedBy: exitBlocker.id });
+    expect(arrow.path.some((point) => exitBlocker.path.some((block) => pointKey(block) === pointKey(point)))).toBe(false);
   });
 
   it('rejects illegal overlaps in actual puzzle definitions', () => {
@@ -84,9 +89,39 @@ describe('arrow geometry and movement', () => {
   });
 
   it('reports failed exits and successful exits distinctly', () => {
-    const blocker: Arrow = { id: 'blocker', color: '#df6250', path: [{ x: 3, y: 0 }, { x: 4, y: 0 }] };
-    expect(simulateMove(arrow, [blocker], 4).ok).toBe(false);
-    expect(simulateMove(arrow, [], 4).ok).toBe(true);
+    const blocker: Arrow = { id: 'blocker', color: '#df6250', path: [{ x: 3, y: 0 }, { x: 3, y: 1 }] };
+    expect(simulateMove(arrow, [blocker], 4, 2).ok).toBe(false);
+    expect(simulateMove(arrow, [], 4, 2).ok).toBe(true);
+  });
+
+  it('supports up, down, left, and right exits while following the winding body', () => {
+    const examples: Array<{ direction: string; arrow: Arrow; width: number; height: number }> = [
+      { direction: 'right', arrow, width: 4, height: 2 },
+      { direction: 'left', arrow: { ...arrow, id: 'left', path: [{x:3,y:1},{x:2,y:1},{x:2,y:0},{x:1,y:0}] }, width: 4, height: 2 },
+      { direction: 'down', arrow: { ...arrow, id: 'down', path: [{x:0,y:0},{x:0,y:1},{x:1,y:1},{x:1,y:2}] }, width: 3, height: 4 },
+      { direction: 'up', arrow: { ...arrow, id: 'up', path: [{x:2,y:3},{x:2,y:2},{x:1,y:2},{x:1,y:1}] }, width: 4, height: 4 },
+    ];
+    for (const example of examples) {
+      expect(directionName(exitDirection(example.arrow))).toBe(example.direction);
+      expect(() => validateArrow(example.arrow, example.width, example.height)).not.toThrow();
+      const result = simulateMove(example.arrow, [], example.width, example.height);
+      expect(result.ok).toBe(true);
+      if (!result.ok) continue;
+      const firstFrame = result.frames[0];
+      expect(firstFrame.slice(0, -1)).toEqual(example.arrow.path.slice(1));
+      const lastFrame = result.frames.at(-1)!;
+      if (example.direction === 'right') expect(lastFrame.every((point) => point.x >= example.width)).toBe(true);
+      if (example.direction === 'left') expect(lastFrame.every((point) => point.x < 0)).toBe(true);
+      if (example.direction === 'down') expect(lastFrame.every((point) => point.y >= example.height)).toBe(true);
+      if (example.direction === 'up') expect(lastFrame.every((point) => point.y < 0)).toBe(true);
+
+      const head = example.arrow.path.at(-1)!;
+      const next = { x: head.x + exitDirection(example.arrow).x, y: head.y + exitDirection(example.arrow).y };
+      const side = example.direction === 'right' || example.direction === 'left' ? { x: next.x, y: next.y + 1 } : { x: next.x + 1, y: next.y };
+      const blocker: Arrow = { id: `block-${example.direction}`, color: '#df6250', path: [next, side] };
+      expect(() => validateLevel({ number: 1, width: example.width, height: example.height, arrows: [example.arrow, blocker] })).not.toThrow();
+      expect(simulateMove(example.arrow, [blocker], example.width, example.height)).toEqual({ ok: false, blockedBy: blocker.id });
+    }
   });
 });
 
@@ -98,10 +133,10 @@ describe('curated catalog and prototype compatibility', () => {
     'first-flight-010': '5842f694',
   };
 
-  it('has ten stable, unique entries with valid references and solvable puzzles', () => {
-    expect(ADVENTURE_LEVELS).toHaveLength(10);
+  it('has twenty stable, unique entries with valid references and solvable puzzles', () => {
+    expect(ADVENTURE_LEVELS).toHaveLength(20);
     expect(() => validateCatalog(ADVENTURE_LEVELS)).not.toThrow();
-    expect(new Set(ADVENTURE_LEVELS.map((entry) => entry.id)).size).toBe(10);
+    expect(new Set(ADVENTURE_LEVELS.map((entry) => entry.id)).size).toBe(20);
     for (const entry of ADVENTURE_LEVELS) {
       expect(() => validateLevel(entry.puzzle)).not.toThrow();
       expect(solveLevel(entry.puzzle)).not.toBeNull();
@@ -120,7 +155,7 @@ describe('curated catalog and prototype compatibility', () => {
     expect(entry.displayNumber).toBe(7);
     expect(getAdventureLevelByDisplayNumber(7)?.id).toBe(entry.id);
     expect(getAdventureLevelBySequence(7)?.id).toBe(entry.id);
-    expect(getAdventureLevelsInProgressionOrder().map((item) => item.sequence)).toEqual([1,2,3,4,5,6,7,8,9,10]);
+    expect(getAdventureLevelsInProgressionOrder().map((item) => item.sequence)).toEqual(Array.from({ length: 20 }, (_, index) => index + 1));
   });
 
   it('records future mechanic introduction milestones as metadata only', () => {
@@ -132,14 +167,14 @@ describe('curated catalog and prototype compatibility', () => {
     const source = ADVENTURE_LEVELS[0];
     const authored: AdventureLevel = {
       ...source,
-      id: 'first-flight-011',
+      id: 'authored-draft-011',
       displayNumber: 11,
-      sequence: 11,
+      sequence: 1,
       contentVersion: 1,
       provenance: { kind: 'authored', authoringSource: 'designer-draft-11' },
       puzzle: { ...source.puzzle, number: 11 },
     };
-    expect(() => validateCatalog([...ADVENTURE_LEVELS, authored])).not.toThrow();
+    expect(() => validateCatalog([authored])).not.toThrow();
   });
 
   it('rejects a structurally valid authored puzzle with a cyclic exit deadlock', () => {
@@ -157,11 +192,45 @@ describe('curated catalog and prototype compatibility', () => {
     expect(() => validateCatalog([entry])).toThrow(/no verified solution/);
   });
 
+  it('adds ten frozen, solver-verified directional variety levels', () => {
+    const fingerprints: Record<string, string> = {
+      'first-flight-011': '8684dbe6', 'first-flight-012': '29ba2dd6', 'first-flight-013': '090b92b1',
+      'first-flight-014': 'c4ad8897', 'first-flight-015': 'bec4e165', 'first-flight-016': 'c89cc87a',
+      'first-flight-017': '5378f8bf', 'first-flight-018': 'c266c2e2', 'first-flight-019': 'ec759ebd',
+      'first-flight-020': 'a68596a0',
+    };
+    const expanded = ADVENTURE_LEVELS.filter((entry) => entry.sequence >= 11);
+    expect(expanded.map((entry) => [entry.id, entry.contentVersion])).toEqual(
+      Array.from({ length: 10 }, (_, index) => [`first-flight-${String(index + 11).padStart(3, '0')}`, 1]),
+    );
+    expect(expanded.every((entry) => entry.provenance.kind === 'authored')).toBe(true);
+    const directions = new Set(expanded.flatMap((entry) => entry.puzzle.arrows.map((item) => directionName(exitDirection(item)))));
+    expect(directions).toEqual(new Set(['up', 'down', 'left', 'right']));
+    const pathLengths = expanded.flatMap((entry) => entry.puzzle.arrows.map((item) => item.path.length));
+    expect(Math.max(...pathLengths)).toBeGreaterThan(Math.min(...pathLengths) + 2);
+    for (const entry of expanded) {
+      expect(solveLevel(entry.puzzle)).not.toBeNull();
+      expect(fingerprint(entry.puzzle)).toBe(fingerprints[entry.id]);
+    }
+    const openingSafeCount = (number: number) => {
+      const puzzle = getAdventureLevelByDisplayNumber(number)!.puzzle;
+      return puzzle.arrows.filter((arrow) => simulateMove(
+        arrow,
+        puzzle.arrows.filter((other) => other.id !== arrow.id),
+        puzzle.width,
+        puzzle.height,
+      ).ok).length;
+    };
+    expect(openingSafeCount(18)).toBe(2);
+    expect(openingSafeCount(19)).toBe(1);
+    expect(openingSafeCount(20)).toBe(3);
+  });
+
   it('reproduces all ten frozen original puzzle layouts, paths, and seeds exactly', () => {
-    expect(Object.keys(expectedPuzzleFingerprints).sort()).toEqual(ADVENTURE_LEVELS.map((entry) => entry.id).sort());
+    expect(Object.keys(expectedPuzzleFingerprints).sort()).toEqual(ADVENTURE_LEVELS.slice(0, 10).map((entry) => entry.id).sort());
     const generated = generateLevels();
     expect(generated).toHaveLength(10);
-    for (const entry of ADVENTURE_LEVELS) {
+    for (const entry of ADVENTURE_LEVELS.slice(0, 10)) {
       expect(entry.provenance.kind).toBe('generated');
       if (entry.provenance.kind !== 'generated') throw new Error(`${entry.id} lost generator provenance`);
       expect(entry.contentVersion).toBe(1);
@@ -199,6 +268,18 @@ describe('save migration and stable-ID progression', () => {
     });
     expect(storage.getItem(LEGACY_V1)).toBe(oldSave);
     expect(JSON.parse(storage.getItem(SAVE_V2)!)).toEqual(migrated);
+  });
+
+  it('preserves a legacy player at level 10 without unlocking the newly added level early', () => {
+    const storage = new MemoryStorage();
+    storage.setItem(LEGACY_V1, JSON.stringify({ highestUnlocked: 10, completed: [1, 2, 3, 4, 5, 6, 7, 8, 9] }));
+    const migrated = loadProgress(storage);
+    expect(migrated.highestUnlockedLevelId).toBe('first-flight-010');
+    expect(migrated.selectedLevelId).toBe('first-flight-010');
+    expect(migrated.completedLevelIds).toHaveLength(9);
+    expect(isAdventureLevelUnlocked(getAdventureLevelById('first-flight-010')!, migrated.highestUnlockedLevelId)).toBe(true);
+    expect(isAdventureLevelUnlocked(getAdventureLevelById('first-flight-011')!, migrated.highestUnlockedLevelId)).toBe(false);
+    expect(storage.getItem(LEGACY_V1)).not.toBeNull();
   });
 
   it('is repeatable and idempotent after the v2 record has been written', () => {
@@ -284,6 +365,21 @@ describe('save migration and stable-ID progression', () => {
     progress = markLevelComplete(progress, getAdventureLevelById('first-flight-001')!);
     expect(progress.completedLevelIds).toEqual(['first-flight-001']);
     expect(progress.highestUnlockedLevelId).toBe('first-flight-002');
+  });
+
+  it('unlocks level 11 after level 10 without changing earlier credit or save schema', () => {
+    const level10 = getAdventureLevelById('first-flight-010')!;
+    const prior: SaveData = {
+      schemaVersion: 2,
+      highestUnlockedLevelId: level10.id,
+      selectedLevelId: level10.id,
+      completedLevelIds: ['first-flight-001', 'first-flight-005', level10.id],
+    };
+    const next = markLevelComplete(prior, level10);
+    expect(next.schemaVersion).toBe(2);
+    expect(next.highestUnlockedLevelId).toBe('first-flight-011');
+    expect(next.completedLevelIds).toEqual(prior.completedLevelIds);
+    expect(isAdventureLevelUnlocked(getAdventureLevelById('first-flight-011')!, next.highestUnlockedLevelId)).toBe(true);
   });
 });
 

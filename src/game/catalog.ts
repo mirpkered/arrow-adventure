@@ -1,4 +1,5 @@
 import catalogData from './catalog/adventure-v1.json';
+import catalogV2Data from './catalog/adventure-v2.json';
 import { LEGACY_GENERATOR_ID, LEGACY_GENERATOR_VERSION, reproduceLegacyLevel } from './levels';
 import { solveLevel, validateLevel } from './rules';
 import type { Level } from './types';
@@ -45,8 +46,9 @@ export type AdventureLevel = {
 
 type CatalogFile = { catalogVersion: number; entries: AdventureLevel[] };
 const data = catalogData as unknown as CatalogFile;
-export const ADVENTURE_LEVELS: readonly AdventureLevel[] = data.entries;
-export const ADVENTURE_CATALOG_VERSION = data.catalogVersion;
+const dataV2 = catalogV2Data as unknown as CatalogFile;
+export const ADVENTURE_LEVELS: readonly AdventureLevel[] = [...data.entries, ...dataV2.entries];
+export const ADVENTURE_CATALOG_VERSION = dataV2.catalogVersion;
 export const TUTORIAL_REFERENCES: readonly string[] = [];
 
 const byId = new Map(ADVENTURE_LEVELS.map((entry) => [entry.id, entry]));
@@ -127,11 +129,13 @@ export function validateCatalog(
     if (!entry.provenance || typeof entry.provenance !== 'object' || !['authored', 'generated'].includes(entry.provenance.kind)) throw new Error(`${entry.id} has invalid provenance metadata`);
     if (!entry.puzzle || typeof entry.puzzle !== 'object') throw new Error(`${entry.id} has no puzzle definition`);
     if (!Number.isInteger(entry.puzzle.width) || entry.puzzle.width < 1 || !Number.isInteger(entry.puzzle.height) || entry.puzzle.height < 1) throw new Error(`${entry.id} has invalid puzzle dimensions`);
-    if (!Number.isInteger(entry.puzzle.seed)) throw new Error(`${entry.id} has an invalid puzzle seed`);
     if (entry.puzzle.number !== entry.displayNumber) throw new Error(`${entry.id} puzzle number does not match its display number`);
     if (entry.provenance.kind === 'generated') {
       if (typeof entry.provenance.generatorId !== 'string' || !Number.isInteger(entry.provenance.seed) || !Number.isInteger(entry.provenance.generatorVersion) || entry.provenance.generatorVersion < 1) throw new Error(`${entry.id} has invalid generation metadata`);
+      if (!Number.isInteger(entry.puzzle.seed)) throw new Error(`${entry.id} has an invalid puzzle seed`);
       if (entry.puzzle.seed !== entry.provenance.seed) throw new Error(`${entry.id} puzzle seed does not match its generation metadata`);
+    } else if (entry.puzzle.seed !== undefined && !Number.isInteger(entry.puzzle.seed)) {
+      throw new Error(`${entry.id} has an invalid optional puzzle seed`);
     }
     validateLevel(entry.puzzle);
     const reproduced = reproduceAdventureLevel(entry);

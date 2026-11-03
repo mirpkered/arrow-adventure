@@ -34,9 +34,9 @@ The original tile-serpentine generator remains available as a version-1 reproduc
 
 ### Standard arrows — implemented foundation
 
-An arrow is represented by ordered grid cells from tail to head. The prototype accepts connected, orthogonal, non-self-crossing paths; all arrows face east, and any occupied-cell overlap is invalid. Movement is simulated frame by frame against other arrows before it is committed. The prototype tests a complete exit and does not mutate the arrow on a failed attempt.
+An arrow is represented by ordered grid cells from tail to head. The game accepts connected, orthogonal, non-self-crossing paths; the final segment determines one of four cardinal exit directions, and any occupied-cell overlap is invalid. Movement is simulated frame by frame against other arrows before it is committed. The simulator advances the body along the stored winding path, then continues the head in its final facing direction while the rest follows. The complete body must leave the board. A failed attempt does not mutate the arrow.
 
-The current rule implementation has one exit direction and one interactive entity type. General direction vectors and object interaction are future work. Catalog mechanic tags are metadata only; they do not activate new rules.
+The current rule implementation has four exit directions and one interactive entity type. Catalog mechanic tags are metadata only; they do not activate new rules.
 
 ### Black holes — planned
 
@@ -74,13 +74,13 @@ Portals are linked in pairs. An arrow entering one should emerge from its partne
 The current rule engine remains small and direct:
 
 - `Arrow` stores an ID, color, and path.
-- `Level` stores a numeric level number, seed, dimensions, and arrows.
-- `simulateMove` hardcodes eastward movement and checks cells occupied by stationary arrows.
+- `Level` stores a numeric display number, optional seed, dimensions, and arrows. The seed is present for frozen generated legacy levels; authored entries store their exact definition.
+- `simulateMove` derives the cardinal exit vector from the last two path cells and checks all moving body cells against stationary arrows at every frame.
 - `solveLevel` searches for an arrow-removal order. Its memo key is the sorted set of remaining arrow IDs.
 
 That solver key is sufficient for the current one-shot arrows: for a fixed remaining set, the board is unchanged. It is insufficient once switches can change gates or any interactive object can persist state.
 
-The level catalog and mechanic-ID metadata are implemented in `src/game/catalog.ts` and `src/game/catalog/adventure-v1.json`. The catalog validator checks stable IDs, display numbers, sequence numbers, chapter/tutorial references, content versions, supported mechanic tags, level geometry, known generator provenance, exact reproduction, and solvability. It does not add interactive-object state to the current solver.
+The level catalog and mechanic-ID metadata are implemented in `src/game/catalog.ts` and versioned snapshots `src/game/catalog/adventure-v1.json` and `adventure-v2.json`. The first file preserves levels 1–10; the second contains curated levels 11–20. The catalog validator checks stable IDs, display numbers, sequence numbers, chapter/tutorial references, content versions, supported mechanic tags, level geometry, known generator provenance, exact reproduction, and solvability. It does not add interactive-object state to the current solver.
 
 ### Proposed extension, to be introduced with the first approved interactive mechanic
 

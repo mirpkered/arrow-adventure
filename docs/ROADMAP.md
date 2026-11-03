@@ -6,13 +6,13 @@ This roadmap records the approved product direction and provisional chapter plan
 
 ### Implemented
 
-- A standalone browser game with ten deterministic, solver-checked levels.
-- Winding standard arrows, eastward exits, collision failures, three hearts, restart, numbered progression, and browser-local progress saving.
+- A standalone browser game with twenty deterministic, solver-checked Adventure levels.
+- Winding standard arrows with all four cardinal exit directions, collision failures, three hearts, restart, numbered progression, and browser-local progress saving.
 - A mobile-first SVG interface and a GitHub Pages build/deployment workflow.
-- A curated Adventure catalog for the original ten levels, with stable IDs, display numbers, progression sequences, chapter IDs, content versions, difficulty tags, mechanic tags, and generator provenance.
+- A curated Adventure catalog for levels 1–20, with stable IDs, display numbers, progression sequences, chapter IDs, content versions, difficulty tags, mechanic tags, and generated/authored provenance.
 - Save schema v2 keyed by stable level IDs, with a non-destructive migration from the prototype's numeric schema.
 
-These are the prototype's actual capabilities. The future modes and mechanics below are not implemented.
+These are the current release's actual capabilities. The future modes and mechanics below are not implemented.
 
 ### Approved direction
 
@@ -37,14 +37,15 @@ The chapter names, ranges, and introduction points are provisional. A chapter ma
 
 ## Development sequence
 
-1. **Complete — Protect the prototype.** Preserve the ten playable levels, snapshot their definitions, and retain the original numeric save as a migration source.
-2. **Complete — Establish the catalog.** Register the original levels with stable IDs and content metadata. New authored entries can use literal puzzle definitions; generated content records its generator and version.
-3. **Define the stateful rules boundary.** Move future solver and movement decisions toward pure state transitions over arrows and board objects. Do this alongside the first designed interactive mechanic, with tests for current standard-arrow behavior.
-4. **Design and playtest one mechanic at a time.** Resolve its rules, implement it behind a mechanic-specific rule module, author a small teaching sequence, and review player understanding before adding another mechanic.
-5. **Build Free Play as a separate mode.** Add difficulty, mechanic toggles, generation metadata, and seed replay without changing Adventure completion or unlock progression.
-6. **Combine mechanics after individual rules are stable.** Use authored review and the stateful solver to verify combinations before publication.
+1. **Complete — Protect the prototype.** Preserve the first ten playable levels, snapshot their definitions, and retain the original numeric save as a migration source.
+2. **Complete — Establish the catalog.** Register levels 1–20 with stable IDs and content metadata. The original ten retain their generated snapshots and seeds; the expansion is frozen authored content.
+3. **Next — Review First Flight on devices.** Playtest the 20 levels on iPhone Safari and desktop, calibrate difficulty, confirm path legibility, and revise only through explicit content-version changes.
+4. **Define the stateful rules boundary.** Move future solver and movement decisions toward pure state transitions over arrows and board objects. Do this alongside the first designed interactive mechanic, with tests for current standard-arrow behavior.
+5. **Design and playtest one mechanic at a time.** Resolve its rules, implement it behind a mechanic-specific rule module, author a small teaching sequence, and review player understanding before adding another mechanic.
+6. **Build Free Play as a separate mode.** Add difficulty, mechanic toggles, generation metadata, and seed replay without changing Adventure completion or unlock progression.
+7. **Combine mechanics after individual rules are stable.** Use authored review and the stateful solver to verify combinations before publication.
 
-These are sequencing recommendations, not a schedule. The next implementation task is the authored-level catalog and its compatibility design; future gameplay mechanics should wait for explicit design decisions.
+These are sequencing recommendations, not a schedule. The expanded directional foundation is in place; future gameplay mechanics should wait for explicit design decisions and First Flight playtesting.
 
 ## Future Free Play
 
