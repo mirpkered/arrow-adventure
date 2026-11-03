@@ -1,6 +1,9 @@
 import type { Arrow, Level, MoveResult, Point } from './types';
 import { arrowsCollide, segmentDistance, ARROW_STROKE_WIDTH } from './geometry';
 
+/** Animated positions sampled while each point follows its next path segment. */
+export const MOVE_SUBSTEPS = 4;
+
 export const pointKey = ({ x, y }: Point): string => `${x},${y}`;
 
 export function exitDirection(arrow: Arrow): Point {
@@ -77,14 +80,21 @@ export function simulateMove(arrow: Arrow, others: Arrow[], width: number, heigh
     head = body.at(-1)!;
     const nextHead = { x: head.x + direction.x, y: head.y + direction.y };
     const nextBody = [...body.slice(1), nextHead];
-    const moving = { ...arrow, path: nextBody };
-    const blocker = others.find((other) => arrowsCollide(moving, other));
-    if (blocker) return { ok: false, blockedBy: blocker.id };
+    for (let step = 1; step <= MOVE_SUBSTEPS; step += 1) {
+      const amount = step / MOVE_SUBSTEPS;
+      const frame = body.map((point, index) => ({
+        x: point.x + (nextBody[index].x - point.x) * amount,
+        y: point.y + (nextBody[index].y - point.y) * amount,
+      }));
+      const moving = { ...arrow, path: frame };
+      const blocker = others.find((other) => arrowsCollide(moving, other));
+      if (blocker) return { ok: false, blockedBy: blocker.id };
+      frames.push(frame);
+      // Each point follows the next segment while the head advances along its
+      // final heading. Collision and animation consume these same substeps.
+      if (frame.every((point) => isOutside(point, width, height))) return { ok: true, frames };
+    }
     body = nextBody;
-    frames.push(body.map((point) => ({ ...point })));
-    // Each frame follows the final facing direction until every segment is
-    // beyond the board boundary, regardless of which edge it exits.
-    if (body.every((point) => isOutside(point, width, height))) return { ok: true, frames };
   }
   return { ok: true, frames };
 }

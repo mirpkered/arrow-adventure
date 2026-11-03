@@ -1,25 +1,14 @@
-import {
-  getAdventureLevelByDisplayNumber,
-  getAdventureLevelById,
-  getAdventureLevelsInProgressionOrder,
-  getFirstAdventureLevel,
-  getNextAdventureLevel,
-  isAdventureLevelUnlocked,
-  type AdventureLevel,
-} from './game/catalog';
-import { isAdventureLevelComplete, markLevelComplete, loadProgress, saveProgress, selectAdventureLevel, type StorageLike } from './game/progress';
-import { createRun, loseHeart } from './game/session';
+import { CURATED_LEVELS, getCuratedLevel, getNextCuratedLevel } from './game/catalog';
+import { advanceSession, createRun, createSession, loseHeart, type PrototypeSession } from './game/session';
 import { completeLevel, directionName, exitDirection, simulateMove } from './game/rules';
 import { arrowHeadTriangle } from './game/geometry';
-import { markTutorialSeen, shouldShowTutorial } from './game/tutorials';
 import type { Arrow, Level, Point } from './game/types';
 import './style.css';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
-const storage = window.localStorage as StorageLike;
-let progress = loadProgress(storage);
-let catalogEntry: AdventureLevel | null = null;
-let level: Level | null = null;
+let session: PrototypeSession = createSession();
+let catalogEntry = getCuratedLevel(session.levelNumber)!;
+let level: Level = catalogEntry.puzzle;
 let arrows: Arrow[] = [];
 let hearts = 3;
 let busy = false;
@@ -27,18 +16,15 @@ let notice = '';
 let view: 'title' | 'game' | 'complete' | 'out' = 'title';
 let animatingId: string | null = null;
 let shakeId: string | null = null;
-let openLevels = false;
-let tutorialOpen = false;
 
 const escapeHtml = (value: string): string => value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!);
 
 function startLevel(number: number): void {
-  catalogEntry = getAdventureLevelByDisplayNumber(number) ?? null;
-  if (!catalogEntry || !isAdventureLevelUnlocked(catalogEntry, progress.highestUnlockedLevelId)) return;
-  level = catalogEntry.puzzle;
-  tutorialOpen = shouldShowTutorial(catalogEntry.tutorialRef, storage);
-  progress = selectAdventureLevel(progress, catalogEntry.id);
-  saveProgress(storage, progress);
+  const entry = getCuratedLevel(number);
+  if (!entry) return;
+  session = { levelNumber: entry.number };
+  catalogEntry = entry;
+  level = entry.puzzle;
   const run = createRun(level);
   arrows = run.arrows;
   hearts = run.hearts;
@@ -46,7 +32,6 @@ function startLevel(number: number): void {
   busy = false;
   animatingId = null;
   view = 'game';
-  openLevels = false;
   render();
 }
 
@@ -57,16 +42,16 @@ function arrowMarkup(arrow: Arrow): string {
   const [tip, wingA, wingB] = arrowHeadTriangle(arrow.path);
   const classes = [animatingId === arrow.id ? 'arrow moving' : 'arrow', shakeId === arrow.id ? 'shaking' : ''].join(' ');
   const tail = arrow.path[0];
-  return `<g class="${classes}" data-arrow="${escapeHtml(arrow.id)}" role="button" tabindex="0" aria-label="Arrow facing ${directionName(direction)}, ${arrow.path.length} segments" style="--arrow-color:${arrow.color}">
-    <polyline class="arrow-line" points="${pointString(arrow.path)}" />
+  const points = pointString(arrow.path);
+  return `<g class="${classes}" data-arrow="${escapeHtml(arrow.id)}" role="button" tabindex="0" aria-label="Arrow facing ${directionName(direction)}, ${arrow.path.length - 1} segments">
+    <polyline class="arrow-line" points="${points}" />
     <circle class="tail-dot" cx="${tail.x + 0.5}" cy="${tail.y + 0.5}" r=".13" />
     <path class="arrow-head" d="M ${tip.x} ${tip.y} L ${wingA.x} ${wingA.y} L ${wingB.x} ${wingB.y} Z" />
-    <path class="hit-area" d="M ${pointString(arrow.path).replaceAll(' ', ' L ')}" />
+    <path class="hit-area" d="M ${points.replaceAll(' ', ' L ')}" />
   </g>`;
 }
 
 function boardMarkup(): string {
-  if (!level) return '';
   const grid = [];
   for (let x = 1; x < level.width; x += 1) grid.push(`<path d="M ${x} 0 V ${level.height}" />`);
   for (let y = 1; y < level.height; y += 1) grid.push(`<path d="M 0 ${y} H ${level.width}" />`);
@@ -77,24 +62,14 @@ function boardMarkup(): string {
   </svg></div>`;
 }
 
-function levelPicker(): string {
-  return `<div class="level-picker" aria-label="Choose a level">${getAdventureLevelsInProgressionOrder().map((item) => {
-    const unlocked = isAdventureLevelUnlocked(item, progress.highestUnlockedLevelId);
-    const done = isAdventureLevelComplete(progress, item);
-    return `<button class="level-chip ${unlocked ? '' : 'locked'} ${done ? 'done' : ''}" data-level="${item.displayNumber}" ${unlocked ? '' : 'disabled'}>${unlocked ? item.displayNumber : '·'}${done ? '<span>✓</span>' : ''}</button>`;
-  }).join('')}</div>`;
-}
-
 function render(): void {
   if (view === 'title') {
-    const resumeEntry = getAdventureLevelById(progress.selectedLevelId) ?? getFirstAdventureLevel()!;
-    const resume = resumeEntry.displayNumber;
     app.innerHTML = `<main class="screen title-screen">
       <section class="title-content">
         <img class="title-logo" src="${import.meta.env.BASE_URL}branding/arrow-adventure-official-logo.png" alt="Arrow Adventure" width="1254" height="1254" />
-        <p class="intro">Find a clear path. Let every arrow go.</p>
-        <button class="primary-button" data-action="play">${progress.completedLevelIds.length ? `Continue · Level ${resume}` : 'Start the adventure'} <span>→</span></button>
-        <p class="quiet-note">No rush. Take your time.</p>
+        <p class="intro">Unthread the winding arrows.</p>
+        <button class="primary-button" data-action="play">Start at Level 1 <span>→</span></button>
+        <p class="quiet-note">${CURATED_LEVELS.length} handcrafted prototype puzzles · No saved progress</p>
       </section>
       <footer class="title-footer">A puzzle adventure by <strong>Mirpworks</strong></footer>
     </main>`;
@@ -102,36 +77,34 @@ function render(): void {
   }
 
   if (view === 'complete') {
-    const next = getNextAdventureLevel(catalogEntry!) !== undefined;
-    app.innerHTML = `<main class="screen finish-screen"><div class="brand compact"><span class="brand-mark"><i></i><i></i><i></i></span><span>MIRPWORKS <b>ADVENTURE</b></span></div>
-      <section class="finish-card"><div class="finish-spark">✳</div><div class="eyebrow">LEVEL ${catalogEntry!.displayNumber} COMPLETE</div><h1>All clear.</h1><p>Every arrow found its way out.</p>
-      <div class="finish-stats"><span>Arrows cleared</span><b>${level!.arrows.length} / ${level!.arrows.length}</b></div>
-      <button class="primary-button" data-action="${next ? 'next' : 'home'}">${next ? 'Next level' : 'Back to adventure'} <span>→</span></button>
-      <button class="text-button" data-action="home">Choose a level</button></section></main>`;
+    const next = getNextCuratedLevel(catalogEntry);
+    app.innerHTML = `<main class="screen finish-screen"><div class="brand compact"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>MIRPWORKS <b>ADVENTURE</b></span></div>
+      <section class="finish-card"><div class="finish-spark">✳</div><div class="eyebrow">${next ? `LEVEL ${catalogEntry.number} COMPLETE` : 'PROTOTYPE COMPLETE'}</div><h1>${next ? 'All clear.' : 'Nicely untangled.'}</h1><p>${next ? 'Every arrow found its way out.' : 'You cleared the current curated set.'}</p>
+      <div class="finish-stats"><span>Arrows cleared</span><b>${level.arrows.length} / ${level.arrows.length}</b></div>
+      <button class="primary-button" data-action="${next ? 'next' : 'replay'}">${next ? `Next · Level ${next.number}` : 'Replay from Level 1'} <span>→</span></button>
+      <button class="text-button" data-action="home">Back to title</button></section></main>`;
     return;
   }
 
   const noHearts = view === 'out';
   app.innerHTML = `<main class="screen game-screen">
-    <header class="game-header"><button class="icon-button home-button" data-action="home" aria-label="Back to title">⌂</button><div class="brand compact"><span class="brand-mark"><i></i><i></i><i></i></span><span>MIRPWORKS <b>ADVENTURE</b></span></div><button class="icon-button restart-button" data-action="restart" aria-label="Restart level">↻</button></header>
-    <div class="level-row"><button class="level-title" data-action="levels">LEVEL <strong>${catalogEntry!.displayNumber}</strong><span class="chevron">⌄</span></button><div class="hearts" aria-label="${hearts} of 3 hearts remaining">${[0, 1, 2].map((index) => `<span class="heart ${index < hearts ? 'live' : 'lost'}">♥</span>`).join('')}</div></div>
-    ${openLevels ? levelPicker() : ''}
-    <div class="prompt-row"><span class="prompt-icon">↗</span><span>${notice || 'Tap an arrow to send it on its way.'}</span></div>
+    <header class="game-header"><button class="icon-button home-button" data-action="home" aria-label="Back to title">⌂</button><div class="brand compact"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>MIRPWORKS <b>ADVENTURE</b></span></div><button class="icon-button restart-button" data-action="restart" aria-label="Restart level">↻</button></header>
+    <div class="level-row"><div class="level-title">LEVEL <strong>${catalogEntry.number}</strong><span class="level-name">${escapeHtml(catalogEntry.title)}</span></div><div class="hearts" aria-label="${hearts} of 3 hearts remaining">${[0, 1, 2].map((index) => `<span class="heart ${index < hearts ? 'live' : 'lost'}">♥</span>`).join('')}</div></div>
+    <div class="prompt-row"><span class="prompt-icon">↗</span><span>${notice || 'Tap an arrow to trace its path out.'}</span></div>
     ${boardMarkup()}
-    <div class="game-bottom"><span class="remaining">${arrows.length} <small>${arrows.length === 1 ? 'arrow' : 'arrows'} left</small></span><span class="bottom-hint">Clear the path to the edge</span></div>
-    ${tutorialOpen ? `<div class="scrim tutorial-scrim"><section class="modal-card tutorial-card" role="dialog" aria-modal="true" aria-labelledby="diagonal-tutorial-title"><div class="modal-icon">↗</div><div class="eyebrow">NEW ARROW MOVEMENT</div><h2 id="diagonal-tutorial-title">Diagonals change the route.</h2><ul><li>Follow each arrow’s path, including diagonal steps, then trace its final heading to an edge.</li><li>Diagonal lines can cross between grid points or meet a cardinal path at an endpoint.</li><li>Check the full body and arrowhead against nearby lines before selecting.</li></ul><button class="primary-button" data-action="tutorial-continue">Got it <span>→</span></button></section></div>` : ''}
-    ${noHearts ? `<div class="scrim"><section class="modal-card"><div class="modal-icon">↻</div><div class="eyebrow">TAKE ANOTHER LOOK</div><h2>Out of hearts.</h2><p>Try the level again and watch for arrows that need a clear exit.</p><button class="primary-button" data-action="restart">Restart level <span>↻</span></button><button class="text-button" data-action="home">Back to title</button></section></div>` : ''}
+    <div class="game-bottom"><span class="remaining">${arrows.length} <small>${arrows.length === 1 ? 'arrow' : 'arrows'} left</small></span><span class="bottom-hint">Watch how paths share the board</span></div>
+    ${noHearts ? `<div class="scrim"><section class="modal-card"><div class="modal-icon">↻</div><div class="eyebrow">TAKE ANOTHER LOOK</div><h2>Out of hearts.</h2><p>Try the level again and look for a path that must clear first.</p><button class="primary-button" data-action="restart">Restart level <span>↻</span></button><button class="text-button" data-action="home">Back to title</button></section></div>` : ''}
   </main>`;
 }
 
 async function attemptMove(id: string): Promise<void> {
-  if (busy || view !== 'game' || !level) return;
+  if (busy || view !== 'game') return;
   const arrow = arrows.find((item) => item.id === id);
   if (!arrow) return;
   const result = simulateMove(arrow, arrows.filter((item) => item.id !== id), level.width, level.height);
   if (!result.ok) {
     hearts = loseHeart(hearts);
-    notice = `That arrow is blocked by another one.`;
+    notice = 'That arrow is blocked by another one.';
     shakeId = id;
     if (hearts <= 0) view = 'out';
     render();
@@ -147,14 +120,14 @@ async function attemptMove(id: string): Promise<void> {
     if (!live) break;
     live.path = frame;
     render();
-    await new Promise<void>((resolve) => window.setTimeout(resolve, 42));
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 16));
   }
   arrows = arrows.filter((item) => item.id !== id);
   animatingId = null;
   busy = false;
   if (completeLevel(arrows)) {
-    progress = markLevelComplete(progress, catalogEntry!);
-    saveProgress(storage, progress);
+    const next = advanceSession(session, CURATED_LEVELS.length);
+    if (next) session = next;
     view = 'complete';
   }
   render();
@@ -162,25 +135,16 @@ async function attemptMove(id: string): Promise<void> {
 
 app.addEventListener('click', (event) => {
   const target = event.target as Element;
-  const button = target.closest<HTMLElement>('[data-action], [data-level]');
+  const button = target.closest<HTMLElement>('[data-action]');
   if (button?.dataset.action) {
     const action = button.dataset.action;
-    if (action === 'play') startLevel((getAdventureLevelById(progress.selectedLevelId) ?? getFirstAdventureLevel()!).displayNumber);
-    if (action === 'restart' && catalogEntry) startLevel(catalogEntry.displayNumber);
-    if (action === 'home') { view = 'title'; openLevels = false; render(); }
-    if (action === 'next' && catalogEntry) {
-      const next = getNextAdventureLevel(catalogEntry);
-      if (next) startLevel(next.displayNumber);
-    }
-    if (action === 'levels') { openLevels = !openLevels; render(); }
-    if (action === 'tutorial-continue' && catalogEntry?.tutorialRef) {
-      markTutorialSeen(catalogEntry.tutorialRef, storage);
-      tutorialOpen = false;
-      render();
-    }
+    if (action === 'play') { session = createSession(); startLevel(session.levelNumber); }
+    if (action === 'restart') startLevel(catalogEntry.number);
+    if (action === 'home') { view = 'title'; render(); }
+    if (action === 'next') startLevel(session.levelNumber);
+    if (action === 'replay') { session = createSession(); startLevel(session.levelNumber); }
     return;
   }
-  if (button?.dataset.level) { startLevel(Number(button.dataset.level)); return; }
   const arrow = target.closest<SVGGElement>('[data-arrow]');
   if (arrow?.dataset.arrow) void attemptMove(arrow.dataset.arrow);
 });
