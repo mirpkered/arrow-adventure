@@ -9,6 +9,8 @@ This roadmap records the approved product direction and provisional chapter plan
 - A standalone browser game with ten deterministic, solver-checked levels.
 - Winding standard arrows, eastward exits, collision failures, three hearts, restart, numbered progression, and browser-local progress saving.
 - A mobile-first SVG interface and a GitHub Pages build/deployment workflow.
+- A curated Adventure catalog for the original ten levels, with stable IDs, display numbers, progression sequences, chapter IDs, content versions, difficulty tags, mechanic tags, and generator provenance.
+- Save schema v2 keyed by stable level IDs, with a non-destructive migration from the prototype's numeric schema.
 
 These are the prototype's actual capabilities. The future modes and mechanics below are not implemented.
 
@@ -35,8 +37,8 @@ The chapter names, ranges, and introduction points are provisional. A chapter ma
 
 ## Development sequence
 
-1. **Protect the prototype.** Preserve the ten playable levels and current save behavior while documenting rules, IDs, and content change policy.
-2. **Make authored levels versionable.** Add a curated level catalog with stable IDs, content versions, chapter metadata, mechanic tags, and tutorial references. Keep this separate from the current prototype generator until catalog migration is reviewed.
+1. **Complete — Protect the prototype.** Preserve the ten playable levels, snapshot their definitions, and retain the original numeric save as a migration source.
+2. **Complete — Establish the catalog.** Register the original levels with stable IDs and content metadata. New authored entries can use literal puzzle definitions; generated content records its generator and version.
 3. **Define the stateful rules boundary.** Move future solver and movement decisions toward pure state transitions over arrows and board objects. Do this alongside the first designed interactive mechanic, with tests for current standard-arrow behavior.
 4. **Design and playtest one mechanic at a time.** Resolve its rules, implement it behind a mechanic-specific rule module, author a small teaching sequence, and review player understanding before adding another mechanic.
 5. **Build Free Play as a separate mode.** Add difficulty, mechanic toggles, generation metadata, and seed replay without changing Adventure completion or unlock progression.

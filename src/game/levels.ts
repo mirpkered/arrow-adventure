@@ -1,6 +1,9 @@
 import type { Arrow, Level, Point } from './types';
 import { solveLevel, validateLevel } from './rules';
 
+export const LEGACY_GENERATOR_ID = 'tile-serpentine';
+export const LEGACY_GENERATOR_VERSION = 1;
+
 const ARROW_COUNTS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 12];
 const COLORS = ['#df6250', '#427a9c', '#da9b36', '#688d62', '#986c9b', '#cf7658', '#4f9390', '#ab704f', '#6e7fb3', '#bb6475', '#73844a', '#d18a47'];
 
@@ -31,6 +34,13 @@ function makeLevel(number: number, count: number): Level {
   return { number, seed: 0xa22000 + number * 7919 + count, width: columns * 3, height: rows * 3, arrows };
 }
 
+/** Reproduce a level from the original prototype generator without changing its rules. */
+export function reproduceLegacyLevel(seed: number, number: number, count: number): Level {
+  const expectedSeed = 0xa22000 + number * 7919 + count;
+  if (seed !== expectedSeed) throw new Error(`Seed ${seed} does not match legacy level ${number}`);
+  return makeLevel(number, count);
+}
+
 export function generateLevels(): Level[] {
   return ARROW_COUNTS.map((count, index) => {
     const level = makeLevel(index + 1, count);
@@ -39,5 +49,3 @@ export function generateLevels(): Level[] {
     return level;
   });
 }
-
-export const LEVELS = generateLevels();

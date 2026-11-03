@@ -1,5 +1,13 @@
-import { LEVELS } from './game/levels';
-import { markLevelComplete, loadProgress, saveProgress, type StorageLike } from './game/progress';
+import {
+  getAdventureLevelByDisplayNumber,
+  getAdventureLevelById,
+  getAdventureLevelsInProgressionOrder,
+  getFirstAdventureLevel,
+  getNextAdventureLevel,
+  isAdventureLevelUnlocked,
+  type AdventureLevel,
+} from './game/catalog';
+import { isAdventureLevelComplete, markLevelComplete, loadProgress, saveProgress, selectAdventureLevel, type StorageLike } from './game/progress';
 import { createRun, loseHeart } from './game/session';
 import { completeLevel, simulateMove } from './game/rules';
 import type { Arrow, Level, Point } from './game/types';
@@ -8,6 +16,7 @@ import './style.css';
 const app = document.querySelector<HTMLDivElement>('#app')!;
 const storage = window.localStorage as StorageLike;
 let progress = loadProgress(storage);
+let catalogEntry: AdventureLevel | null = null;
 let level: Level | null = null;
 let arrows: Arrow[] = [];
 let hearts = 3;
@@ -21,8 +30,11 @@ let openLevels = false;
 const escapeHtml = (value: string): string => value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!);
 
 function startLevel(number: number): void {
-  level = LEVELS[number - 1];
-  if (!level || number > progress.highestUnlocked) return;
+  catalogEntry = getAdventureLevelByDisplayNumber(number) ?? null;
+  if (!catalogEntry || !isAdventureLevelUnlocked(catalogEntry, progress.highestUnlockedLevelId)) return;
+  level = catalogEntry.puzzle;
+  progress = selectAdventureLevel(progress, catalogEntry.id);
+  saveProgress(storage, progress);
   const run = createRun(level);
   arrows = run.arrows;
   hearts = run.hearts;
@@ -61,16 +73,17 @@ function boardMarkup(): string {
 }
 
 function levelPicker(): string {
-  return `<div class="level-picker" aria-label="Choose a level">${LEVELS.map((item) => {
-    const unlocked = item.number <= progress.highestUnlocked;
-    const done = progress.completed.includes(item.number);
-    return `<button class="level-chip ${unlocked ? '' : 'locked'} ${done ? 'done' : ''}" data-level="${item.number}" ${unlocked ? '' : 'disabled'}>${unlocked ? item.number : '·'}${done ? '<span>✓</span>' : ''}</button>`;
+  return `<div class="level-picker" aria-label="Choose a level">${getAdventureLevelsInProgressionOrder().map((item) => {
+    const unlocked = isAdventureLevelUnlocked(item, progress.highestUnlockedLevelId);
+    const done = isAdventureLevelComplete(progress, item);
+    return `<button class="level-chip ${unlocked ? '' : 'locked'} ${done ? 'done' : ''}" data-level="${item.displayNumber}" ${unlocked ? '' : 'disabled'}>${unlocked ? item.displayNumber : '·'}${done ? '<span>✓</span>' : ''}</button>`;
   }).join('')}</div>`;
 }
 
 function render(): void {
   if (view === 'title') {
-    const resume = Math.min(progress.highestUnlocked, 10);
+    const resumeEntry = getAdventureLevelById(progress.selectedLevelId) ?? getFirstAdventureLevel()!;
+    const resume = resumeEntry.displayNumber;
     app.innerHTML = `<main class="screen title-screen">
       <div class="brand"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>MIRPWORKS <b>ADVENTURE</b></span></div>
       <section class="title-content">
@@ -78,7 +91,7 @@ function render(): void {
         <h1>Arrow<br /><em>Adventure</em></h1>
         <p class="intro">Find a clear path. Let every arrow go.</p>
         <div class="title-art" aria-hidden="true"><span class="art-arrow art-one">↗</span><span class="art-arrow art-two">→</span><span class="art-arrow art-three">↘</span><span class="art-spark">✳</span></div>
-        <button class="primary-button" data-action="play">${progress.completed.length ? `Continue · Level ${resume}` : 'Start the adventure'} <span>→</span></button>
+        <button class="primary-button" data-action="play">${progress.completedLevelIds.length ? `Continue · Level ${resume}` : 'Start the adventure'} <span>→</span></button>
         <p class="quiet-note">No rush. Take your time.</p>
       </section>
       <footer class="title-footer">A puzzle adventure by <strong>Mirpworks</strong></footer>
@@ -87,9 +100,9 @@ function render(): void {
   }
 
   if (view === 'complete') {
-    const next = level!.number < 10;
+    const next = getNextAdventureLevel(catalogEntry!) !== undefined;
     app.innerHTML = `<main class="screen finish-screen"><div class="brand compact"><span class="brand-mark"><i></i><i></i><i></i></span><span>MIRPWORKS <b>ADVENTURE</b></span></div>
-      <section class="finish-card"><div class="finish-spark">✳</div><div class="eyebrow">LEVEL ${level!.number} COMPLETE</div><h1>All clear.</h1><p>Every arrow found its way out.</p>
+      <section class="finish-card"><div class="finish-spark">✳</div><div class="eyebrow">LEVEL ${catalogEntry!.displayNumber} COMPLETE</div><h1>All clear.</h1><p>Every arrow found its way out.</p>
       <div class="finish-stats"><span>Arrows cleared</span><b>${level!.arrows.length} / ${level!.arrows.length}</b></div>
       <button class="primary-button" data-action="${next ? 'next' : 'home'}">${next ? 'Next level' : 'Back to adventure'} <span>→</span></button>
       <button class="text-button" data-action="home">Choose a level</button></section></main>`;
@@ -99,7 +112,7 @@ function render(): void {
   const noHearts = view === 'out';
   app.innerHTML = `<main class="screen game-screen">
     <header class="game-header"><button class="icon-button home-button" data-action="home" aria-label="Back to title">⌂</button><div class="brand compact"><span class="brand-mark"><i></i><i></i><i></i></span><span>MIRPWORKS <b>ADVENTURE</b></span></div><button class="icon-button restart-button" data-action="restart" aria-label="Restart level">↻</button></header>
-    <div class="level-row"><button class="level-title" data-action="levels">LEVEL <strong>${level!.number}</strong><span class="chevron">⌄</span></button><div class="hearts" aria-label="${hearts} of 3 hearts remaining">${[0, 1, 2].map((index) => `<span class="heart ${index < hearts ? 'live' : 'lost'}">♥</span>`).join('')}</div></div>
+    <div class="level-row"><button class="level-title" data-action="levels">LEVEL <strong>${catalogEntry!.displayNumber}</strong><span class="chevron">⌄</span></button><div class="hearts" aria-label="${hearts} of 3 hearts remaining">${[0, 1, 2].map((index) => `<span class="heart ${index < hearts ? 'live' : 'lost'}">♥</span>`).join('')}</div></div>
     ${openLevels ? levelPicker() : ''}
     <div class="prompt-row"><span class="prompt-icon">↗</span><span>${notice || 'Tap an arrow to send it on its way.'}</span></div>
     ${boardMarkup()}
@@ -137,7 +150,7 @@ async function attemptMove(id: string): Promise<void> {
   animatingId = null;
   busy = false;
   if (completeLevel(arrows)) {
-    progress = markLevelComplete(progress, level.number);
+    progress = markLevelComplete(progress, catalogEntry!);
     saveProgress(storage, progress);
     view = 'complete';
   }
@@ -149,10 +162,13 @@ app.addEventListener('click', (event) => {
   const button = target.closest<HTMLElement>('[data-action], [data-level]');
   if (button?.dataset.action) {
     const action = button.dataset.action;
-    if (action === 'play') startLevel(Math.min(progress.highestUnlocked, 10));
-    if (action === 'restart' && level) startLevel(level.number);
+    if (action === 'play') startLevel((getAdventureLevelById(progress.selectedLevelId) ?? getFirstAdventureLevel()!).displayNumber);
+    if (action === 'restart' && catalogEntry) startLevel(catalogEntry.displayNumber);
     if (action === 'home') { view = 'title'; openLevels = false; render(); }
-    if (action === 'next' && level) startLevel(Math.min(10, level.number + 1));
+    if (action === 'next' && catalogEntry) {
+      const next = getNextAdventureLevel(catalogEntry);
+      if (next) startLevel(next.displayNumber);
+    }
     if (action === 'levels') { openLevels = !openLevels; render(); }
     return;
   }

@@ -39,13 +39,14 @@ Vite's base path is `/arrow-adventure/`, matching the project page URL. The work
 ## Project layout
 
 - `src/game/types.ts` — level, arrow, move result, and save types.
-- `src/game/levels.ts` — deterministic level construction and generation-time validation.
+- `src/game/catalog.ts` and `src/game/catalog/adventure-v1.json` — stable curated level identities, metadata, frozen puzzle definitions, cross-reference checks, deterministic reproduction, and solver validation.
+- `src/game/levels.ts` — version-1 prototype generator retained for reproducibility and compatibility regression checks.
 - `src/game/rules.ts` — path validation, full-frame move simulation, exit collision checks, and depth-first solvability solver.
 - `src/game/session.ts` — fresh run and heart-loss rules.
-- `src/game/progress.ts` — defensive local storage loading and level unlocks.
+- `src/game/progress.ts` — schema-v2 ID-based progress, selection persistence, and non-destructive migration from the numeric v1 save.
 - `src/main.ts` — SVG interface, touch/keyboard input, animation, and progression flow.
 - `src/style.css` — responsive visual style and mobile layout.
-- `tests/game.test.ts` — rule, progression, persistence, and generated-level tests.
+- `tests/game.test.ts` — rule, catalog integrity, frozen-layout compatibility, migration, progression, and persistence tests.
 
 ## Long-term direction
 
@@ -57,15 +58,19 @@ The current release is a ten-level prototype. The planned split between curated 
 
 ## Puzzle generation and collision rules
 
-The ten release levels are deterministic definitions with stable numeric seeds. Each arrow is an orthogonal path of cell centers, stored tail-to-head. All segments must stay in bounds, be connected by single horizontal or vertical steps, avoid self-crossing, and end facing east. Arrows may not share any occupied cell.
+The first ten Adventure levels are frozen catalog definitions with stable numeric seeds and generator version metadata. Adventure loads these snapshots instead of generating a new layout at runtime. Their stable IDs are `first-flight-001` through `first-flight-010`; their displayed numbers and progression sequences are catalog fields, not array-position identities. Each arrow is an orthogonal path of cell centers, stored tail-to-head. All segments must stay in bounds, be connected by single horizontal or vertical steps, avoid self-crossing, and end facing east. Arrows may not share any occupied cell.
 
-The initial generator packs a 3-by-3 serpentine path into each tile. Arrows in a row block the east-facing exits of arrows to their left, so they create a clear removal dependency. The solver explores available moves and tests each full exit against every other arrow; a level is rejected if no complete removal order exists. This gives the first release ten reproducible, guaranteed-solvable puzzles while keeping each path and collision rule unambiguous.
+The original generator packs a 3-by-3 serpentine path into each tile. Its implementation is retained as generator `tile-serpentine` version 1, with seeds recorded beside each snapshot. Arrows in a row block east-facing exits to their left, producing removal dependencies. Catalog validation reproduces generated records from their provenance and runs the solver; an invalid or unsolved catalog entry fails validation.
 
 For each attempted move, the rule engine advances the connected body one cell at a time, appending a new head cell eastward and releasing the tail cell. At every frame it checks every occupied body cell against all stationary arrows. The move is committed only if the entire body exits the board. A blocked simulation does not alter the board.
 
+## Progress compatibility
+
+New saves use schema v2 at `mirpworks.arrow-adventure.save.v2` and store stable IDs for completed levels, the highest unlocked level, and the selected level. On first load, the numeric v1 record at `mirpworks.arrow-adventure.save.v1` is translated through a fixed number-to-ID migration table. The old key is kept as a recovery source. Since v1 did not persist selection, migration selects the highest unlocked level. Completion remains attached to the stable ID across content-version updates.
+
 ## Current prototype limitations
 
-- The first ten levels use one path motif and arrows that exit east; visual and directional variety is intentionally limited.
-- The levels are authored by a deterministic tiled generator rather than an open-ended random puzzle generator. The solver and validation rules are ready to guard future generated boards.
+- The first ten levels use one path motif and arrows that exit east; visual and directional variety is intentionally limited. Their exact puzzle snapshots and generator provenance are recorded in the curated catalog.
+- Catalog solvability checks cover the current standard-arrow rules. Future state-changing mechanics will need corresponding solver-state support before levels using them can be validated.
 - Saves are local to one browser and device and can be cleared with browser storage.
 - Browser layout and input are designed for touch and tested with automated rule/build checks; physical iPhone testing remains a follow-up.

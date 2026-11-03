@@ -9,9 +9,20 @@ This document separates rules the prototype implements from design and architect
 - One mode: ten numbered puzzles, with the next level unlocked by completion and unlocked levels replayable.
 - A puzzle contains standard winding arrows. A selected arrow advances along its connected body representation and continues in its terminal direction until its body leaves the board.
 - A blocked move costs one of three hearts and leaves the arrow in place. Restart restores the level. There is no timer, undo, advertisement, reward currency, or power-up.
-- Progress is stored locally under `mirpworks.arrow-adventure.save.v1` as `{ highestUnlocked, completed }`.
+- Progress is stored locally under `mirpworks.arrow-adventure.save.v2` using stable level IDs. Existing `mirpworks.arrow-adventure.save.v1` numeric saves migrate on load and remain in storage as a recovery source.
+- The original ten puzzles are literal catalog snapshots with stable IDs, progression sequences, chapter/difficulty/mechanic metadata, content version 1, and the original generator provenance.
+- Catalog lookup is by stable ID, display number, or progression sequence. The UI keeps its numbered picker, while unlock and completion state use catalog IDs.
 
-The current prototype generator produces a deterministic ten-level set. It is not the future Free Play mode or the planned curated Adventure catalog.
+The original tile-serpentine generator remains available as a version-1 reproduction function and regression reference. Adventure Mode loads the catalog snapshots, not newly generated layouts. This catalog is not the future Free Play mode.
+
+### Prototype-to-catalog compatibility findings
+
+| Before this catalog | Catalog release |
+| --- | --- |
+| Levels were identified by displayed number and generated from a deterministic seed formula; no stable level ID or stored board snapshot existed. | Each original puzzle is now stored as a literal snapshot with a stable ID, displayed number, separate progression sequence, and generator/version/seed provenance. |
+| No difficulty metadata existed, so there was no prior difficulty value to preserve. | Initial difficulty labels are estimates based on the existing gradual arrow-count sequence; playtest calibration is still needed. |
+| Chapter, mechanic, content-version, and tutorial metadata were absent. | Catalog entries include chapter, content version, mechanic tags, and an optional validated tutorial reference. No tutorial content or advanced mechanic behavior was added. |
+| V1 saves stored `highestUnlocked` and `completed`; the selected level lived only in memory and was not saved. | V2 stores IDs for highest unlocked, completed, and selected levels. V1 migration defaults selection to the highest unlocked level and leaves the v1 key intact. |
 
 ### Approved future product direction
 
@@ -25,7 +36,7 @@ The current prototype generator produces a deterministic ten-level set. It is no
 
 An arrow is represented by ordered grid cells from tail to head. The prototype accepts connected, orthogonal, non-self-crossing paths; all arrows face east, and any occupied-cell overlap is invalid. Movement is simulated frame by frame against other arrows before it is committed. The prototype tests a complete exit and does not mutate the arrow on a failed attempt.
 
-The current rule implementation has one exit direction and one interactive entity type. General direction vectors and object interaction are future work.
+The current rule implementation has one exit direction and one interactive entity type. General direction vectors and object interaction are future work. Catalog mechanic tags are metadata only; they do not activate new rules.
 
 ### Black holes — planned
 
@@ -60,7 +71,7 @@ Portals are linked in pairs. An arrow entering one should emerge from its partne
 
 ## Proposed engine boundary
 
-The current implementation is small and direct:
+The current rule engine remains small and direct:
 
 - `Arrow` stores an ID, color, and path.
 - `Level` stores a numeric level number, seed, dimensions, and arrows.
@@ -69,11 +80,13 @@ The current implementation is small and direct:
 
 That solver key is sufficient for the current one-shot arrows: for a fixed remaining set, the board is unchanged. It is insufficient once switches can change gates or any interactive object can persist state.
 
+The level catalog and mechanic-ID metadata are implemented in `src/game/catalog.ts` and `src/game/catalog/adventure-v1.json`. The catalog validator checks stable IDs, display numbers, sequence numbers, chapter/tutorial references, content versions, supported mechanic tags, level geometry, known generator provenance, exact reproduction, and solvability. It does not add interactive-object state to the current solver.
+
 ### Proposed extension, to be introduced with the first approved interactive mechanic
 
 Use a serializable, deterministic puzzle state rather than adding checks such as `if (level.number >= 41)`:
 
-- Maintain a mechanic catalog keyed by stable IDs such as `standard-arrow`, `black-hole`, `switch-gate`, and `portal`. A catalog entry can carry its tutorial key and a proposed introduction target (`chapterId` plus sequence) separately from the rule implementation. After its introduction, a mechanic is eligible for later Adventure levels; eligibility does not mean every level uses it. These IDs are proposals to standardize before implementation.
+- The implemented mechanic-ID list and provisional `MECHANIC_INTRODUCTIONS` metadata already separate eligibility targets from the actual rules. Add a mechanic's rule implementation only after its design is approved; the advanced IDs accepted in level metadata do not enable gameplay. After introduction, a mechanic is eligible for later Adventure levels; eligibility does not mean every level uses it.
 - A **level definition** owns stable content identity, initial arrows, board objects, declared mechanic IDs, and tutorial/progression metadata.
 - A **board state** contains the surviving/moving arrows and mutable object state. Static object definitions (such as portal links) remain separate from runtime state where practical.
 - Each registered mechanic supplies focused behavior for definition validation, legal state transitions, collision/occupancy rules, and any state change it causes. Standard arrows remain a mechanic module too.
@@ -82,7 +95,7 @@ Use a serializable, deterministic puzzle state rather than adding checks such as
 
 This is a proposed boundary, not a request to add empty interfaces or speculative plugin infrastructure now. Implement only the state and mechanic contracts required by a decided mechanic; keep the standard-arrow regression suite passing during that migration.
 
-For the current chapter targets, the proposed introduction targets are `standard-arrow` in First Flight, `black-hole` at the start of Into the Void, `switch-gate` at the start of Changing Paths, and `portal` at the start of Through the Looking Glass. Store these in mechanic/chapter metadata rather than treating numeric level ranges as rule logic. Revise the targets after playtesting.
+For the current chapter targets, the proposed introduction targets are `standard-arrow` in First Flight, `black-hole` at the start of Into the Void, both `switch` and `directional-gate` at the start of Changing Paths, and `portal` at the start of Through the Looking Glass. Store these in mechanic/chapter metadata rather than treating numeric level ranges as rule logic. Revise the targets after playtesting.
 
 ### Free Play configuration proposal
 
@@ -90,11 +103,11 @@ An eventual generation request should explicitly record difficulty, enabled mech
 
 ## Save and content compatibility
 
-The current save format uses numeric unlock/completion state and must remain readable. Do not reinterpret the current key or overwrite progress during a catalog migration.
+The v1 numeric format is migrated to schema v2 using an explicit, fixed mapping from each of the original ten numbers to its stable ID. It does not infer IDs from catalog order or a future display-number arrangement. V2 stores `highestUnlockedLevelId`, `selectedLevelId`, and `completedLevelIds`. The shipped v1 format did not store a selected level, so migration defaults selection to the highest unlocked level, matching the prototype's Continue behavior. Starting/replaying a level now persists its ID. V1 is never deleted or overwritten; v2 is written only after a complete migration value is serialized. Repeated loads use v2 and produce the same state. A failed v2 write leaves v1 available for retry.
 
-For the authored catalog, propose stable IDs such as `first-flight-001`, a separate integer `contentVersion`, and chapter/sequence metadata. Save completion by stable level ID in a new schema version while retaining the old completed-number and highest-unlocked fields during migration. Convert old level numbers using an explicit mapping for the initial ten levels. If the mapping is absent or a level is retired, preserve the old record for recovery and avoid granting progress by accidentally matching a different puzzle at the same number.
+Completion is keyed by stable level ID, not content version, so revising a published level while retaining its ID preserves completion credit. A new content version still requires intentional review and an updated regression fingerprint. Do not silently reset progression. Retiring or re-identifying a published level requires an explicit mapping and save migration.
 
-Content changes to a published puzzle should either keep its behavior and version unchanged or create an explicit new content version. Tests and release review should flag changed published definitions and solver traces. Whether past completions count for a revised version is a product decision; do not silently reset or silently mark it complete.
+For future save schemas, introduce a new schema version and a sequential migration from the last supported version. Preserve the previous key until the new record has been validated and written successfully. Unknown or malformed data must not be interpreted as extra unlocks/completions; keep an untouched recovery copy where possible. Never reuse a stable level ID for a different puzzle.
 
 ## Open decisions register
 

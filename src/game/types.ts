@@ -20,6 +20,9 @@ export type MoveResult =
   | { ok: false; blockedBy: string };
 
 export type SaveData = {
-  highestUnlocked: number;
-  completed: number[];
+  schemaVersion: 2;
+  highestUnlockedLevelId: string;
+  selectedLevelId: string;
+  /** Stable IDs retain credit when the same published level gets a new content version. */
+  completedLevelIds: string[];
 };
