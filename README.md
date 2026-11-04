@@ -4,6 +4,8 @@ This redesign replaces the previous 40-level set with six newly authored prototy
 
 The approved logo and PWA icons remain in `public/branding/` and `public/icons/`. The Vite base path and GitHub Pages workflow are unchanged. This redesign is being developed on `redesign/shared-board-prototype`; it has not been merged or deployed to the production Pages site.
 
+An independent QA environment is available at [mirpkered.github.io/arrow-adventure-qa](https://mirpkered.github.io/arrow-adventure-qa/). It deploys only a manually selected source commit after tests, typecheck, and a QA-base production build. See [QA environment and release procedures](docs/QA_ENVIRONMENT.md).
+
 ## Play the redesign locally
 
 Requires Node.js 22 or later and npm.

@@ -9,8 +9,11 @@ This roadmap describes the reset prototype on `redesign/shared-board-prototype`.
 - Three hearts, restart, and in-memory progression for the current browser session.
 - Every fresh page load starts at Level 1. There is no progression persistence and no compatibility read of old local-storage keys.
 - Official logo, PWA metadata, icons, Vite base path, and GitHub Pages workflow are retained.
+- An independent manual QA Pages site builds and identifies selected feature commits without deploying them to production.
 
 The old 40 puzzles, versioned catalogs, tile-serpentine generator, save migration, saved progression, and one-time diagonal tutorial were removed from this branch.
+
+QA hosting and release instructions are documented in [QA_ENVIRONMENT.md](QA_ENVIRONMENT.md). The initial QA deployment used the expected prototype commit and left production `main` and its Pages workflow untouched.
 
 ## Review gates
 
