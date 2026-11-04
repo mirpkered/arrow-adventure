@@ -36,7 +36,7 @@ describe('curated shared-board catalog', () => {
     expect(solutionDepths).toEqual([3, 4, 4, 5, 5, 6]);
     const metrics = CURATED_LEVELS.map(({ puzzle }) => analyzeLevel(puzzle));
     expect(metrics.map(({ interleavedPairs }) => interleavedPairs)).toEqual([1, 1, 1, 1, 1, 1]);
-    expect(metrics.map(({ closeSegmentContacts }) => closeSegmentContacts)).toEqual([22, 8, 8, 11, 8, 16]);
+    expect(metrics.map(({ closeSegmentContacts }) => closeSegmentContacts)).toEqual([22, 8, 25, 11, 8, 16]);
     expect(metrics.map(({ dependencyDepth }) => dependencyDepth)).toEqual([3, 4, 4, 5, 5, 6]);
     expect(metrics.map(({ newlyUnlockedByRemoval }) => newlyUnlockedByRemoval)).toEqual([[1], [1], [1], [1], [1], [1]]);
     expect(metrics.every(({ newlyUnlockedByRemoval }) => newlyUnlockedByRemoval.some((count) => count > 0))).toBe(true);

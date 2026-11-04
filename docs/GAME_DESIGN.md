@@ -18,9 +18,9 @@ Progression exists only in memory while the page is open. Completion advances to
 
 ## Interlocking metrics and content review
 
-`analyzeLevel` counts segment-pair contacts within 1.5 cells, and counts an arrow pair as interleaved only when at least three segments from each route participate. This tests repeated close runs rather than bounding-box overlap. It also reports initially removable arrows, newly unlocked arrows per initial safe removal, path lengths, turns, and elimination dependency depth. Catalog validation requires at least one interleaved pair and eight close segment contacts. The six current levels produce 22, 8, 8, 11, 8, and 16 close contacts, with dependency depths 3, 4, 4, 5, 5, and 6.
+`analyzeLevel` counts segment-pair contacts within 1.5 cells, and counts an arrow pair as interleaved only when at least three segments from each route participate. This tests repeated close runs rather than bounding-box overlap. It also reports initially removable arrows, newly unlocked arrows per initial safe removal, path lengths, turns, and elimination dependency depth. Catalog validation requires at least one interleaved pair and eight close segment contacts. The six current levels produce 22, 8, 25, 11, 8, and 16 close contacts, with dependency depths 3, 4, 4, 5, 5, and 6.
 
-Compared with the original sample set, close contacts increased from 0, 0, 0, 0, 0, 5 to 22, 8, 8, 11, 8, 16. The original set had no qualifying repeated interleaved pairs; all six revised boards have one or more.
+Compared with the original sample set, close contacts increased from 0, 0, 0, 0, 0, 5 to 22, 8, 25, 11, 8, 16. The original set had no qualifying repeated interleaved pairs; all six revised boards have one or more.
 
 ## Content review
 

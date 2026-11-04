@@ -29,16 +29,19 @@ function mapPuzzle(source: Level, number: number, width: number, height: number,
 }
 
 const nested = openingLevels[1].puzzle;
-const clockwise = (point: Point): Point => ({ x: point.y, y: nested.width - 1 - point.x });
 const mirrorX = (point: Point): Point => ({ x: nested.width - 1 - point.x, y: point.y });
 const halfTurn = (point: Point): Point => ({ x: nested.width - 1 - point.x, y: nested.height - 1 - point.y });
 
 export const CURATED_LEVELS: readonly CuratedLevel[] = [
   ...openingLevels,
   {
-    id: 'shared-board-003', number: 3, title: 'Turn the weave', difficulty: 'steady',
-    designNote: 'The nested dependency is turned upright; players must read the same close braid in a new orientation.',
-    puzzle: mapPuzzle(nested, 3, nested.height, nested.width, clockwise),
+    id: 'shared-board-003', number: 3, title: 'Last thread', difficulty: 'steady',
+    designNote: 'A fourth short arrow crosses the introductory tangle and adds one more ordered unlock.',
+    puzzle: (() => {
+      const puzzle = mapPuzzle(openingLevels[0].puzzle, 3, openingLevels[0].puzzle.width, openingLevels[0].puzzle.height, (point) => ({ ...point }));
+      puzzle.arrows.push({ id: 'd', path: [{ x: 9, y: 6 }, { x: 9, y: 5 }] });
+      return puzzle;
+    })(),
   },
   {
     id: 'shared-board-004', number: 4, title: 'Back through', difficulty: 'steady',
