@@ -8,7 +8,7 @@ When selected, the line is pulled by distance along its complete stored route. E
 
 For every 0.05 board-cell sweep sample, the simulator checks the moving arrow's complete polyline and arrowhead against every remaining arrow. It adds the maximum sample travel as conservative clearance, so collision does not depend on display frame pacing. Collision uses continuous segment distance for body strokes plus triangular arrowhead checks. Static validation rejects disconnected routes, self-crossings, out-of-board points, duplicate arrow IDs, and visible overlap. The solver calls the same simulator as gameplay, so a removal order is valid under the same collision rules used for moves. The visual body stroke is 0.22 board cells; the shared geometry uses the same width.
 
-Arrow selection uses one delegated `pointerdown` handler. Pointer coordinates are transformed into SVG board coordinates and compared with each line; the nearest centerline within 0.62 cells wins, with arrow ID as the deterministic tie-break. This gives a generous invisible target without thickening the art. The separate click handler only handles controls, so a synthesized touch click cannot trigger a second arrow action.
+Arrow selection uses one delegated `pointerdown` handler. Pointer coordinates are transformed into SVG board coordinates and compared with each line; the nearest centerline within 0.75 cells wins, with arrow ID as the deterministic tie-break. This gives an invisible hit region about 1.5 board cells across without thickening the art. The separate click handler only handles controls, so a synthesized touch click cannot trigger a second arrow action.
 
 ## Level set and progression
 

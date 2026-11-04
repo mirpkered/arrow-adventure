@@ -5,7 +5,7 @@ import { arrowsCollide, segmentDistance, ARROW_STROKE_WIDTH, pointToPolylineDist
 export const COLLISION_STEP = 0.05;
 /** Kept as a compatibility export for callers that describe sub-grid samples. */
 export const MOVE_SUBSTEPS = 1 / COLLISION_STEP;
-export const TOUCH_PICK_RADIUS = 0.62;
+export const TOUCH_PICK_RADIUS = 0.75;
 
 /** Deterministic closest-path hit testing, used for mouse and touch alike. */
 export function nearestArrowAt(point: Point, arrows: Arrow[], radius = TOUCH_PICK_RADIUS): string | undefined {

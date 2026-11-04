@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import appSource from '../src/main.ts?raw';
 import { CURATED_LEVELS, getCuratedLevel, getNextCuratedLevel, validateCuratedLevels } from '../src/game/catalog';
 import { arrowsCollide } from '../src/game/geometry';
-import { analyzeLevel, completeLevel, directionName, exitDirection, MOVE_SUBSTEPS, movedPathIsOffBoard, moveArrowDistance, nearestArrowAt, simulateMove, solveLevel, validateArrow, validateLevel } from '../src/game/rules';
+import { analyzeLevel, completeLevel, directionName, exitDirection, MOVE_SUBSTEPS, movedPathIsOffBoard, moveArrowDistance, nearestArrowAt, simulateMove, solveLevel, TOUCH_PICK_RADIUS, validateArrow, validateLevel } from '../src/game/rules';
 import { advanceSession, createRun, createSession, loseHeart } from '../src/game/session';
 import type { Arrow, Level, Point } from '../src/game/types';
 
@@ -127,6 +127,7 @@ describe('shared arrow geometry and movement', () => {
     expect(nearestArrowAt({ x: 1.5, y: 1.58 }, [far, near])).toBe('a-near');
     expect(nearestArrowAt({ x: 1.5, y: 1.5 }, [far, near])).toBe('a-near');
     expect(nearestArrowAt({ x: 8, y: 8 }, [near, far])).toBeUndefined();
+    expect(TOUCH_PICK_RADIUS * 2).toBeGreaterThanOrEqual(1.5);
   });
 
   it('uses board pointerdown and requestAnimationFrame without rebuilding the board each frame', () => {
