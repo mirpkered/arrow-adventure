@@ -1,6 +1,6 @@
 import { CURATED_LEVELS, getCuratedLevel, getNextCuratedLevel } from './game/catalog';
 import { advanceSession, createRun, createSession, loseHeart, type PrototypeSession } from './game/session';
-import { completeLevel, directionName, exitDirection, simulateMove } from './game/rules';
+import { completeLevel, directionName, exitDirection, moveArrowDistance, nearestArrowAt, simulateMove } from './game/rules';
 import { arrowHeadTriangle } from './game/geometry';
 import type { Arrow, Level, Point } from './game/types';
 import './style.css';
@@ -16,10 +16,12 @@ let notice = '';
 let view: 'title' | 'game' | 'complete' | 'out' = 'title';
 let animatingId: string | null = null;
 let shakeId: string | null = null;
+let animationToken = 0;
 
 const escapeHtml = (value: string): string => value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!);
 
 function startLevel(number: number): void {
+  animationToken += 1;
   const entry = getCuratedLevel(number);
   if (!entry) return;
   session = { levelNumber: entry.number };
@@ -47,7 +49,6 @@ function arrowMarkup(arrow: Arrow): string {
     <polyline class="arrow-line" points="${points}" />
     <circle class="tail-dot" cx="${tail.x + 0.5}" cy="${tail.y + 0.5}" r=".13" />
     <path class="arrow-head" d="M ${tip.x} ${tip.y} L ${wingA.x} ${wingA.y} L ${wingB.x} ${wingB.y} Z" />
-    <path class="hit-area" d="M ${points.replaceAll(' ', ' L ')}" />
   </g>`;
 }
 
@@ -97,7 +98,7 @@ function render(): void {
   </main>`;
 }
 
-async function attemptMove(id: string): Promise<void> {
+function attemptMove(id: string): void {
   if (busy || view !== 'game') return;
   const arrow = arrows.find((item) => item.id === id);
   if (!arrow) return;
@@ -115,23 +116,66 @@ async function attemptMove(id: string): Promise<void> {
   busy = true;
   animatingId = id;
   notice = '';
-  for (const frame of result.frames) {
-    const live = arrows.find((item) => item.id === id);
-    if (!live) break;
-    live.path = frame;
+  const token = ++animationToken;
+  const moving = arrows.find((item) => item.id === id)!;
+  const movingGroup = [...app.querySelectorAll<SVGGElement>('[data-arrow]')].find((item) => item.dataset.arrow === id);
+  movingGroup?.classList.add('moving');
+  const original = moving.path.map((point) => ({ ...point }));
+  const travelLength = result.travelDistance;
+  const started = performance.now();
+  const speed = 5.5; // Board cells per second; independent of display refresh rate.
+  const animate = (now: number): void => {
+    if (token !== animationToken || view !== 'game') return;
+    const traveled = Math.min(travelLength, (now - started) / 1000 * speed);
+    const centers = moveArrowDistance({ ...moving, path: original }, traveled);
+    const livePath = centers.map(({ x, y }) => ({ x: x - 0.5, y: y - 0.5 }));
+    moving.path = livePath;
+    if (!movingGroup) { busy = false; animatingId = null; return; }
+    const line = movingGroup.querySelector<SVGPolylineElement>('.arrow-line')!;
+    line.setAttribute('points', pointString(livePath));
+    const tail = livePath[0];
+    movingGroup.querySelector<SVGCircleElement>('.tail-dot')!.setAttribute('cx', `${tail.x + 0.5}`);
+    movingGroup.querySelector<SVGCircleElement>('.tail-dot')!.setAttribute('cy', `${tail.y + 0.5}`);
+    const [tip, wingA, wingB] = arrowHeadTriangle(livePath);
+    movingGroup.querySelector<SVGPathElement>('.arrow-head')!.setAttribute('d', `M ${tip.x} ${tip.y} L ${wingA.x} ${wingA.y} L ${wingB.x} ${wingB.y} Z`);
+    if (traveled < travelLength) {
+      requestAnimationFrame(animate);
+      return;
+    }
+    arrows = arrows.filter((item) => item.id !== id);
+    animatingId = null;
+    busy = false;
+    if (completeLevel(arrows)) {
+      const next = advanceSession(session, CURATED_LEVELS.length);
+      if (next) session = next;
+      view = 'complete';
+    }
     render();
-    await new Promise<void>((resolve) => window.setTimeout(resolve, 16));
-  }
-  arrows = arrows.filter((item) => item.id !== id);
-  animatingId = null;
-  busy = false;
-  if (completeLevel(arrows)) {
-    const next = advanceSession(session, CURATED_LEVELS.length);
-    if (next) session = next;
-    view = 'complete';
-  }
-  render();
+  };
+  requestAnimationFrame(animate);
 }
+
+function boardPointFromEvent(event: PointerEvent, board: SVGSVGElement): Point | undefined {
+  const transform = board.getScreenCTM();
+  if (!transform) return undefined;
+  const point = board.createSVGPoint();
+  point.x = event.clientX;
+  point.y = event.clientY;
+  const local = point.matrixTransform(transform.inverse());
+  return { x: local.x, y: local.y };
+}
+
+app.addEventListener('pointerdown', (event) => {
+  if (busy || view !== 'game' || event.button !== 0) return;
+  const board = (event.target as Element).closest<SVGSVGElement>('.board');
+  if (!board) return;
+  const point = boardPointFromEvent(event, board);
+  if (!point) return;
+  const id = nearestArrowAt(point, arrows);
+  if (!id) return;
+  event.preventDefault();
+  void attemptMove(id);
+});
 
 app.addEventListener('click', (event) => {
   const target = event.target as Element;
@@ -145,8 +189,6 @@ app.addEventListener('click', (event) => {
     if (action === 'replay') { session = createSession(); startLevel(session.levelNumber); }
     return;
   }
-  const arrow = target.closest<SVGGElement>('[data-arrow]');
-  if (arrow?.dataset.arrow) void attemptMove(arrow.dataset.arrow);
 });
 
 app.addEventListener('keydown', (event) => {

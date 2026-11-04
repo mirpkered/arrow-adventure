@@ -21,7 +21,7 @@ Open the local Vite URL. Start at Level 1 and clear each board to advance throug
 
 - Tap or click an arrow to send it out; keyboard users can focus an arrow and press Enter or Space.
 - The arrow body follows its stored winding path as the head moves onward along its final heading. Cardinal and diagonal path segments are supported.
-- Collision is checked against the complete visible line and arrowhead at each movement substep. A blocked selection costs one heart and leaves the board geometry unchanged.
+- Collision is checked against the complete moving body and arrowhead. The solver samples the swept route every 0.05 board cells and adds that interval as a conservative collision margin. A blocked selection costs one heart and leaves the board geometry unchanged.
 - Each level starts with three hearts. Losing all three requires a restart. There is no undo or timer.
 - There is no level selection or automatic progress saving in this prototype.
 
@@ -33,22 +33,22 @@ npm run typecheck
 npm run build
 ```
 
-Catalog validation runs at import and in tests. It rejects malformed or overlapping arrow paths and any puzzle without a solver-found solution. Gameplay and solver use the same movement simulator and collision geometry.
+Catalog validation runs at import and in tests. It rejects malformed or overlapping arrow paths, layouts below the authored proximity/interleaving threshold, and any puzzle without a solver-found solution. Gameplay and solver use the same movement simulator and collision geometry.
 
 ## Architecture
 
 - `src/game/catalog.ts` — six authored puzzle definitions, minimal progression metadata, and structural/solvability validation.
 - `src/game/types.ts` — board, arrow, curated entry, and move result types.
 - `src/game/geometry.ts` — continuous segment-distance checks and visible arrowhead/body collision geometry.
-- `src/game/rules.ts` — path validation, interpolated body movement, collision simulation, and solver.
+- `src/game/rules.ts` — path validation, distance-based body movement, conservative swept collision simulation, solver, and curation metrics.
 - `src/game/session.ts` — in-memory session progression, run creation, restart, and hearts.
-- `src/main.ts` — SVG interaction, animation frames, and session progression.
+- `src/main.ts` — SVG interaction, single delegated pointer hit-testing, requestAnimationFrame animation, and session progression.
 - `tests/game.test.ts` — catalog integrity, solvability, geometry, movement, hearts, restart, and nonpersistent session tests.
 - `public/branding/` and `public/icons/` — approved master logo and full-composition icon derivatives.
 
 ## Prototype limitations
 
-- The six new puzzles have automated solver verification but still need human playtesting for difficulty, clarity, and mobile touch accuracy.
-- Movement is represented by four interpolated geometry samples per grid step; this is a lightweight discrete simulation and may need refinement after playtesting.
+- The revised six puzzles have solver and geometry-metric checks. Human review is still needed for difficulty, clarity, and mobile touch accuracy.
+- Physical iPhone Safari frame pacing and touch behavior have not been re-tested in this implementation round.
 - Progress intentionally resets on a fresh visit and there is no level picker.
 - Black holes, switches, gates, portals, tutorials, undo, timers, Free Play, and persistence are out of scope.

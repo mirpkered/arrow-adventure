@@ -1,10 +1,10 @@
 import type { Arrow, Point } from './types';
 
 /** SVG arrow body stroke width in board-cell units (src/style.css). */
-export const ARROW_STROKE_WIDTH = 0.46;
+export const ARROW_STROKE_WIDTH = 0.22;
 /** Floating point slack used at exact contacts; it is far smaller than a pixel at board scale. */
 export const GEOMETRY_EPSILON = 1e-8;
-const HEAD_STROKE_WIDTH = 0.08;
+const HEAD_STROKE_WIDTH = 0.045;
 
 type Segment = { a: Point; b: Point };
 
@@ -19,12 +19,12 @@ export function arrowHeadTriangle(path: Point[]): [Point, Point, Point] {
   const direction = { x: dx / length, y: dy / length };
   const perpendicular = { x: -direction.y, y: direction.x };
   const center = { x: head.x + 0.5, y: head.y + 0.5 };
-  const tip = { x: center.x + direction.x * 0.52, y: center.y + direction.y * 0.52 };
-  const base = { x: center.x + direction.x * 0.06, y: center.y + direction.y * 0.06 };
+  const tip = { x: center.x + direction.x * 0.43, y: center.y + direction.y * 0.43 };
+  const base = { x: center.x + direction.x * 0.09, y: center.y + direction.y * 0.09 };
   return [
     tip,
-    { x: base.x + perpendicular.x * 0.31, y: base.y + perpendicular.y * 0.31 },
-    { x: base.x - perpendicular.x * 0.31, y: base.y - perpendicular.y * 0.31 },
+    { x: base.x + perpendicular.x * 0.23, y: base.y + perpendicular.y * 0.23 },
+    { x: base.x - perpendicular.x * 0.23, y: base.y - perpendicular.y * 0.23 },
   ];
 }
 
@@ -72,6 +72,11 @@ export function segmentDistance(left: Segment, right: Segment): number {
   );
 }
 
+export function pointToPolylineDistance(point: Point, path: Point[]): number {
+  const centerline = cellCenters(path);
+  return Math.min(...segments(centerline).map((segment) => pointSegmentDistance(point, segment)));
+}
+
 function segments(points: Point[]): Segment[] {
   return points.slice(1).map((point, index) => ({ a: points[index], b: point }));
 }
@@ -106,20 +111,36 @@ function polylineHitsPolygon(path: Point[], polygon: Point[]): boolean {
     || polygonEdges.some((edge) => segmentDistance(line, edge) <= tolerance + GEOMETRY_EPSILON));
 }
 
-function polygonsCollide(left: Point[], right: Point[]): boolean {
+function polygonsCollide(left: Point[], right: Point[], clearance = 0): boolean {
   if (pointInPolygon(left[0], right) || pointInPolygon(right[0], left)) return true;
   const leftEdges = segments([...left, left[0]]);
   const rightEdges = segments([...right, right[0]]);
-  const tolerance = HEAD_STROKE_WIDTH + GEOMETRY_EPSILON;
+  const tolerance = HEAD_STROKE_WIDTH + clearance + GEOMETRY_EPSILON;
   return leftEdges.some((a) => rightEdges.some((b) => segmentDistance(a, b) <= tolerance));
 }
 
 /** Matches visible arrow bodies and triangular heads, not just occupied grid points. */
-export function arrowsCollide(left: Arrow, right: Arrow): boolean {
-  if (polylinesCollide(left.path, right.path)) return true;
+export function arrowsCollide(left: Arrow, right: Arrow, extraClearance = 0): boolean {
+  if (polylinesCollide(left.path, right.path, ARROW_STROKE_WIDTH + extraClearance)) return true;
   const leftHead = arrowHeadTriangle(left.path);
   const rightHead = arrowHeadTriangle(right.path);
+  if (extraClearance > 0) {
+    // Expand the body/head contact tolerances by the maximum travel between
+    // collision samples. This makes the sampled sweep conservative.
+    return polylinesCollide(left.path, right.path, ARROW_STROKE_WIDTH + extraClearance)
+      || sweptHeadBodyContact(left.path, rightHead, extraClearance)
+      || sweptHeadBodyContact(right.path, leftHead, extraClearance)
+      || polygonsCollide(leftHead, rightHead, extraClearance);
+  }
   return polylineHitsPolygon(left.path, rightHead)
     || polylineHitsPolygon(right.path, leftHead)
     || polygonsCollide(leftHead, rightHead);
+}
+
+function sweptHeadBodyContact(path: Point[], polygon: Point[], extraClearance: number): boolean {
+  const polygonEdges = segments([...polygon, polygon[0]]);
+  const tolerance = ARROW_STROKE_WIDTH / 2 + HEAD_STROKE_WIDTH / 2 + extraClearance;
+  return segments(cellCenters(path)).some((line) => pointInPolygon(line.a, polygon)
+    || pointInPolygon(line.b, polygon)
+    || polygonEdges.some((edge) => segmentDistance(line, edge) <= tolerance + GEOMETRY_EPSILON));
 }

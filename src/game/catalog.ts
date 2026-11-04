@@ -1,68 +1,82 @@
-import { solveLevel, validateLevel } from './rules';
-import type { CuratedLevel } from './types';
+import { analyzeLevel, solveLevel, validateLevel } from './rules';
+import type { CuratedLevel, Level, Point } from './types';
 
 /** Small, authored prototype set. Puzzle geometry is the source of truth; there is no runtime generator. */
+const openingLevels: CuratedLevel[] = [
+  {
+    id: 'shared-board-001', number: 1, title: 'First tangle', difficulty: 'intro',
+    designNote: 'Three close threads form a clear removal chain: c, then b, then a.',
+    puzzle: { number: 1, width: 10, height: 8, arrows: [
+      { id: 'a', path: [{ x: 1, y: 5 }, { x: 1, y: 4 }, { x: 2, y: 4 }, { x: 2, y: 5 }, { x: 3, y: 5 }, { x: 3, y: 4 }, { x: 4, y: 4 }, { x: 4, y: 5 }, { x: 5, y: 5 }, { x: 6, y: 5 }, { x: 7, y: 5 }] },
+      { id: 'b', path: [{ x: 7, y: 2 }, { x: 7, y: 3 }, { x: 8, y: 3 }, { x: 8, y: 4 }, { x: 8, y: 5 }] },
+      { id: 'c', path: [{ x: 4, y: 6 }, { x: 5, y: 6 }, { x: 5, y: 7 }, { x: 6, y: 7 }, { x: 6, y: 6 }, { x: 7, y: 6 }, { x: 8, y: 6 }] },
+    ] },
+  },
+  {
+    id: 'shared-board-002', number: 2, title: 'Nested turns', difficulty: 'intro',
+    designNote: 'Four nested runs create a readable four-step dependency without isolated lanes.',
+    puzzle: { number: 2, width: 12, height: 10, arrows: [
+      { id: 'a', path: [{ x: 1, y: 7 }, { x: 1, y: 6 }, { x: 2, y: 6 }, { x: 2, y: 5 }, { x: 3, y: 5 }, { x: 3, y: 6 }, { x: 4, y: 6 }, { x: 4, y: 5 }, { x: 5, y: 5 }, { x: 5, y: 4 }, { x: 6, y: 4 }] },
+      { id: 'b', path: [{ x: 7, y: 7 }, { x: 8, y: 7 }, { x: 8, y: 6 }, { x: 9, y: 6 }, { x: 9, y: 5 }, { x: 9, y: 4 }] },
+      { id: 'c', path: [{ x: 6, y: 1 }, { x: 6, y: 2 }, { x: 7, y: 2 }, { x: 8, y: 2 }, { x: 9, y: 2 }] },
+      { id: 'd', path: [{ x: 10, y: 5 }, { x: 10, y: 4 }, { x: 10, y: 3 }, { x: 10, y: 2 }] },
+    ] },
+  },
+];
+
+function mapPuzzle(source: Level, number: number, width: number, height: number, map: (point: Point) => Point): Level {
+  return { number, width, height, arrows: source.arrows.map((arrow) => ({ id: arrow.id, path: arrow.path.map(map) })) };
+}
+
+const nested = openingLevels[1].puzzle;
+const clockwise = (point: Point): Point => ({ x: point.y, y: nested.width - 1 - point.x });
+const mirrorX = (point: Point): Point => ({ x: nested.width - 1 - point.x, y: point.y });
+const halfTurn = (point: Point): Point => ({ x: nested.width - 1 - point.x, y: nested.height - 1 - point.y });
+
 export const CURATED_LEVELS: readonly CuratedLevel[] = [
+  ...openingLevels,
   {
-    id: 'shared-board-001', number: 1, title: 'First crossing', difficulty: 'intro',
-    designNote: 'A clear two-arrow dependency introduces shared exit lanes.',
-    puzzle: { number: 1, width: 8, height: 7, arrows: [
-      { id: 'a', path: [{ x: 1, y: 4 }, { x: 2, y: 4 }, { x: 2, y: 3 }, { x: 3, y: 3 }, { x: 3, y: 4 }, { x: 4, y: 4 }] },
-      { id: 'b', path: [{ x: 6, y: 4 }, { x: 6, y: 3 }] },
-    ] },
+    id: 'shared-board-003', number: 3, title: 'Turn the weave', difficulty: 'steady',
+    designNote: 'The nested dependency is turned upright; players must read the same close braid in a new orientation.',
+    puzzle: mapPuzzle(nested, 3, nested.height, nested.width, clockwise),
   },
   {
-    id: 'shared-board-002', number: 2, title: 'Unthread the line', difficulty: 'intro',
-    designNote: 'A winding exit chain rewards reading beyond the nearest arrowhead.',
-    puzzle: { number: 2, width: 10, height: 8, arrows: [
-      { id: 'a', path: [{ x: 1, y: 5 }, { x: 1, y: 4 }, { x: 2, y: 4 }, { x: 2, y: 5 }, { x: 3, y: 5 }, { x: 4, y: 5 }] },
-      { id: 'b', path: [{ x: 7, y: 5 }, { x: 7, y: 4 }] },
-      { id: 'c', path: [{ x: 8, y: 1 }, { x: 8, y: 0 }, { x: 7, y: 0 }, { x: 7, y: 1 }, { x: 6, y: 1 }] },
-    ] },
+    id: 'shared-board-004', number: 4, title: 'Back through', difficulty: 'steady',
+    designNote: 'A mirrored braid reverses escape direction; a short fifth arrow gates the first dependency.',
+    puzzle: (() => {
+      const puzzle = mapPuzzle(nested, 4, nested.width, nested.height, mirrorX);
+      puzzle.arrows.push({ id: 'e', path: [{ x: 2, y: 1 }, { x: 1, y: 1 }] });
+      return puzzle;
+    })(),
   },
   {
-    id: 'shared-board-003', number: 3, title: 'Four links', difficulty: 'steady',
-    designNote: 'A four-step dependency chain uses both vertical and horizontal lanes.',
-    puzzle: { number: 3, width: 11, height: 10, arrows: [
-      { id: 'a', path: [{ x: 1, y: 7 }, { x: 1, y: 6 }, { x: 2, y: 6 }, { x: 2, y: 7 }, { x: 3, y: 7 }, { x: 4, y: 7 }] },
-      { id: 'b', path: [{ x: 8, y: 7 }, { x: 8, y: 6 }] },
-      { id: 'c', path: [{ x: 8, y: 1 }, { x: 7, y: 1 }] },
-      { id: 'd', path: [{ x: 4, y: 2 }, { x: 4, y: 1 }] },
-    ] },
+    id: 'shared-board-005', number: 5, title: 'Diagonal thread', difficulty: 'challenging',
+    designNote: 'A diagonal approach joins the nested maze, and a fifth arrow extends its removal chain.',
+    puzzle: (() => {
+      const puzzle = mapPuzzle(nested, 5, nested.width, nested.height, (point) => ({ ...point }));
+      puzzle.arrows.find(({ id }) => id === 'a')!.path.splice(1, 2, { x: 2, y: 6 });
+      puzzle.arrows.push({ id: 'e', path: [{ x: 9, y: 0 }, { x: 10, y: 0 }] });
+      return puzzle;
+    })(),
   },
   {
-    id: 'shared-board-004', number: 4, title: 'Two threads', difficulty: 'steady',
-    designNote: 'Two independent chains create a choice of which side to unwind first; the main route includes a diagonal bend.',
-    puzzle: { number: 4, width: 12, height: 10, arrows: [
-      { id: 'a', path: [{ x: 1, y: 5 }, { x: 2, y: 5 }, { x: 3, y: 4 }, { x: 4, y: 4 }, { x: 4, y: 5 }, { x: 5, y: 5 }] },
-      { id: 'b', path: [{ x: 8, y: 5 }, { x: 8, y: 4 }] },
-      { id: 'c', path: [{ x: 9, y: 1 }, { x: 9, y: 0 }, { x: 8, y: 0 }, { x: 8, y: 1 }, { x: 7, y: 1 }] },
-      { id: 'd', path: [{ x: 4, y: 2 }, { x: 4, y: 1 }] },
-      { id: 'e', path: [{ x: 10, y: 8 }, { x: 10, y: 7 }, { x: 9, y: 7 }, { x: 9, y: 8 }, { x: 8, y: 8 }] },
-    ] },
-  },
-  {
-    id: 'shared-board-005', number: 5, title: 'The long way around', difficulty: 'challenging',
-    designNote: 'A longer dependency chain mixes diagonal turns with separated exit corridors.',
-    puzzle: { number: 5, width: 12, height: 10, arrows: [
-      { id: 'a', path: [{ x: 1, y: 6 }, { x: 2, y: 6 }, { x: 3, y: 5 }, { x: 4, y: 5 }, { x: 4, y: 6 }, { x: 5, y: 6 }] },
-      { id: 'b', path: [{ x: 9, y: 6 }, { x: 9, y: 5 }] },
-      { id: 'c', path: [{ x: 10, y: 1 }, { x: 10, y: 0 }, { x: 9, y: 0 }, { x: 9, y: 1 }, { x: 8, y: 1 }] },
-      { id: 'd', path: [{ x: 5, y: 2 }, { x: 5, y: 1 }] },
-      { id: 'e', path: [{ x: 10, y: 8 }, { x: 11, y: 8 }, { x: 11, y: 9 }] },
-    ] },
-  },
-  {
-    id: 'shared-board-006', number: 6, title: 'Shared space', difficulty: 'challenging',
-    designNote: 'Two crossing dependency chains give several safe openings and combine long, winding paths with diagonal turns.',
-    puzzle: { number: 6, width: 12, height: 12, arrows: [
-      { id: 'a', path: [{ x: 1, y: 8 }, { x: 2, y: 8 }, { x: 3, y: 7 }, { x: 4, y: 7 }, { x: 4, y: 8 }, { x: 5, y: 8 }] },
-      { id: 'b', path: [{ x: 10, y: 8 }, { x: 10, y: 7 }] },
-      { id: 'c', path: [{ x: 10, y: 2 }, { x: 9, y: 2 }] },
-      { id: 'd', path: [{ x: 5, y: 3 }, { x: 5, y: 2 }] },
-      { id: 'e', path: [{ x: 10, y: 10 }, { x: 10, y: 9 }, { x: 9, y: 9 }, { x: 9, y: 10 }, { x: 8, y: 10 }, { x: 7, y: 10 }] },
-      { id: 'f', path: [{ x: 2, y: 9 }, { x: 2, y: 10 }] },
-    ] },
+    id: 'shared-board-006', number: 6, title: 'The tight braid', difficulty: 'challenging',
+    designNote: 'The densest version nests a 14-segment lead route and links six arrows into one removal chain.',
+    puzzle: (() => {
+      const puzzle = mapPuzzle(nested, 6, nested.width, nested.height, halfTurn);
+      const lead = puzzle.arrows.find(({ id }) => id === 'a')!;
+      lead.path = [
+        { x: 10, y: 1 }, { x: 10, y: 2 }, { x: 9, y: 2 }, { x: 9, y: 1 },
+        { x: 8, y: 1 }, { x: 8, y: 2 }, { x: 7, y: 2 }, { x: 7, y: 1 },
+        { x: 6, y: 1 }, { x: 6, y: 2 }, { x: 5, y: 2 }, { x: 5, y: 3 },
+        { x: 6, y: 3 }, { x: 6, y: 4 }, { x: 5, y: 4 },
+      ];
+      puzzle.arrows.push(
+        { id: 'e', path: [{ x: 0, y: 9 }, { x: 1, y: 9 }] },
+        { id: 'f', path: [{ x: 2, y: 8 }, { x: 2, y: 9 }, { x: 3, y: 9 }] },
+      );
+      return puzzle;
+    })(),
   },
 ];
 
@@ -85,6 +99,8 @@ export function validateCuratedLevels(entries: readonly CuratedLevel[] = CURATED
     ids.add(entry.id);
     numbers.add(entry.number);
     validateLevel(entry.puzzle);
+    const metrics = analyzeLevel(entry.puzzle);
+    if (metrics.interleavedPairs < 1 || metrics.closeSegmentContacts < 8) throw new Error(`${entry.id} is too spatially separated to publish`);
     if (!solveLevel(entry.puzzle)) throw new Error(`${entry.id} has no complete solution`);
   }
   const ordered = [...entries].sort((left, right) => left.number - right.number);

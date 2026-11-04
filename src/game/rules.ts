@@ -1,8 +1,18 @@
 import type { Arrow, Level, MoveResult, Point } from './types';
-import { arrowsCollide, segmentDistance, ARROW_STROKE_WIDTH } from './geometry';
+import { arrowsCollide, segmentDistance, ARROW_STROKE_WIDTH, pointToPolylineDistance } from './geometry';
 
-/** Animated positions sampled while each point follows its next path segment. */
-export const MOVE_SUBSTEPS = 4;
+/** Maximum sweep sampling interval, in board-cell distances. */
+export const COLLISION_STEP = 0.05;
+/** Kept as a compatibility export for callers that describe sub-grid samples. */
+export const MOVE_SUBSTEPS = 1 / COLLISION_STEP;
+export const TOUCH_PICK_RADIUS = 0.62;
+
+/** Deterministic closest-path hit testing, used for mouse and touch alike. */
+export function nearestArrowAt(point: Point, arrows: Arrow[], radius = TOUCH_PICK_RADIUS): string | undefined {
+  return arrows.map((arrow) => ({ arrow, distance: pointToPolylineDistance(point, arrow.path) }))
+    .filter(({ distance }) => distance <= radius)
+    .sort((left, right) => left.distance - right.distance || left.arrow.id.localeCompare(right.arrow.id))[0]?.arrow.id;
+}
 
 export const pointKey = ({ x, y }: Point): string => `${x},${y}`;
 
@@ -23,8 +33,16 @@ export function directionName(direction: Point): string {
   throw new Error(`Invalid exit direction (${direction.x}, ${direction.y})`);
 }
 
-function isOutside(point: Point, width: number, height: number): boolean {
-  return point.x < 0 || point.x >= width || point.y < 0 || point.y >= height;
+function fullyExited(points: Point[], width: number, height: number, direction: Point): boolean {
+  const margin = 0.3;
+  const centers = points.map((point) => ({ x: point.x + 0.5, y: point.y + 0.5 }));
+  if (direction.x > 0 && direction.y === 0) return centers.every(({ x }) => x >= width + margin);
+  if (direction.x < 0 && direction.y === 0) return centers.every(({ x }) => x <= -margin);
+  if (direction.y > 0 && direction.x === 0) return centers.every(({ y }) => y >= height + margin);
+  if (direction.y < 0 && direction.x === 0) return centers.every(({ y }) => y <= -margin);
+  const beyondX = direction.x > 0 ? centers.every(({ x }) => x >= width + margin) : centers.every(({ x }) => x <= -margin);
+  const beyondY = direction.y > 0 ? centers.every(({ y }) => y >= height + margin) : centers.every(({ y }) => y <= -margin);
+  return beyondX || beyondY;
 }
 
 export function validateArrow(arrow: Arrow, width: number, height: number): void {
@@ -66,37 +84,59 @@ export function validateLevel(level: Level): void {
   }
 }
 
-/** Simulate every path-step advance. No state is changed unless the full exit succeeds. */
+function distance(a: Point, b: Point): number { return Math.hypot(b.x - a.x, b.y - a.y); }
+
+function pointAtDistance(route: Point[], stations: number[], at: number, direction: Point): Point {
+  const last = route.at(-1)!;
+  const total = stations.at(-1)!;
+  if (at >= total) {
+    const excess = at - total;
+    const magnitude = Math.hypot(direction.x, direction.y);
+    return { x: last.x + direction.x / magnitude * excess, y: last.y + direction.y / magnitude * excess };
+  }
+  let segment = 0;
+  while (segment < stations.length - 2 && stations[segment + 1] < at) segment += 1;
+  const span = stations[segment + 1] - stations[segment];
+  const t = (at - stations[segment]) / span;
+  return {
+    x: route[segment].x + (route[segment + 1].x - route[segment].x) * t,
+    y: route[segment].y + (route[segment + 1].y - route[segment].y) * t,
+  };
+}
+
+/** Position every point of the flexible arrow after it has been pulled this far along its route. */
+export function moveArrowDistance(arrow: Arrow, traveled: number): Point[] {
+  const route = arrow.path.map((point) => ({ x: point.x + 0.5, y: point.y + 0.5 }));
+  const stations = [0];
+  for (let index = 1; index < route.length; index += 1) stations.push(stations[index - 1] + distance(route[index - 1], route[index]));
+  const direction = exitDirection(arrow);
+  const start = traveled;
+  const end = stations.at(-1)! + traveled;
+  const clipped = [pointAtDistance(route, stations, start, direction)];
+  for (const station of stations.slice(1, -1)) if (station > start && station < end) clipped.push(pointAtDistance(route, stations, station, direction));
+  clipped.push(pointAtDistance(route, stations, end, direction));
+  return clipped;
+}
+
+/** Deterministically sample the complete swept body; presentation animation uses an independent rAF clock. */
 export function simulateMove(arrow: Arrow, others: Arrow[], width: number, height: number): MoveResult {
-  let body = arrow.path.map((point) => ({ ...point }));
   const frames: Point[][] = [];
-  let head = body.at(-1)!;
   const direction = exitDirection(arrow);
   if (Math.max(Math.abs(direction.x), Math.abs(direction.y)) !== 1 || (direction.x === 0 && direction.y === 0)) throw new Error(`${arrow.id} has an invalid exit direction`);
-
-  // The body advances as a chain along its winding route. Check every occupied
-  // cell in each new frame, so a future curved route cannot silently clip a blocker.
-  while (body.length > 0) {
-    head = body.at(-1)!;
-    const nextHead = { x: head.x + direction.x, y: head.y + direction.y };
-    const nextBody = [...body.slice(1), nextHead];
-    for (let step = 1; step <= MOVE_SUBSTEPS; step += 1) {
-      const amount = step / MOVE_SUBSTEPS;
-      const frame = body.map((point, index) => ({
-        x: point.x + (nextBody[index].x - point.x) * amount,
-        y: point.y + (nextBody[index].y - point.y) * amount,
-      }));
-      const moving = { ...arrow, path: frame };
-      const blocker = others.find((other) => arrowsCollide(moving, other));
-      if (blocker) return { ok: false, blockedBy: blocker.id };
-      frames.push(frame);
-      // Each point follows the next segment while the head advances along its
-      // final heading. Collision and animation consume these same substeps.
-      if (frame.every((point) => isOutside(point, width, height))) return { ok: true, frames };
-    }
-    body = nextBody;
+  const totalRoute = arrow.path.slice(1).reduce((sum, point, index) => sum + distance(arrow.path[index], point), 0);
+  const exitDistance = Math.hypot(width, height) + 2;
+  const maxTravel = totalRoute + exitDistance;
+  const intervals = Math.ceil(maxTravel / COLLISION_STEP);
+  for (let index = 1; index <= intervals; index += 1) {
+    const traveled = Math.min(maxTravel, index * COLLISION_STEP);
+    const frame = moveArrowDistance(arrow, traveled);
+    const moving = { ...arrow, path: frame.map((point) => ({ x: point.x - 0.5, y: point.y - 0.5 })) };
+    const blocker = others.find((other) => arrowsCollide(moving, other, COLLISION_STEP));
+    if (blocker) return { ok: false, blockedBy: blocker.id };
+    frames.push(moving.path);
+    if (fullyExited(moving.path, width, height, direction)) return { ok: true, frames, travelDistance: traveled };
   }
-  return { ok: true, frames };
+  return { ok: false, blockedBy: 'boundary' };
 }
 
 export function solveLevel(level: Level): string[] | null {
@@ -118,9 +158,76 @@ export function solveLevel(level: Level): string[] | null {
   return search(initial);
 }
 
+export type LevelMetrics = {
+  interleavedPairs: number;
+  closeSegmentContacts: number;
+  initiallyRemovable: number;
+  newlyUnlockedByRemoval: number[];
+  dependencyDepth: number;
+  pathLengths: number[];
+  turnCounts: number[];
+};
+
+/** Curation metrics: close parallel/weaving runs count; bounding-box overlap does not. */
+export function analyzeLevel(level: Level): LevelMetrics {
+  const segmentList = (arrow: Arrow) => arrow.path.slice(1).map((point, index) => ({
+    a: { x: arrow.path[index].x + 0.5, y: arrow.path[index].y + 0.5 },
+    b: { x: point.x + 0.5, y: point.y + 0.5 },
+  }));
+  let interleavedPairs = 0;
+  let closeSegmentContacts = 0;
+  for (let i = 0; i < level.arrows.length; i += 1) for (let j = i + 1; j < level.arrows.length; j += 1) {
+    const left = segmentList(level.arrows[i]);
+    const right = segmentList(level.arrows[j]);
+    const contacts = left.flatMap((a) => right.filter((b) => segmentDistance(a, b) <= 1.5).map((b) => ({ a, b })));
+    closeSegmentContacts += contacts.length;
+    // Require multiple contact zones spread along both routes, not just a crossing or exit block.
+    const leftIndices = new Set<number>();
+    const rightIndices = new Set<number>();
+    for (let a = 0; a < left.length; a += 1) for (let b = 0; b < right.length; b += 1) {
+      if (segmentDistance(left[a], right[b]) <= 1.5) { leftIndices.add(a); rightIndices.add(b); }
+    }
+    if (leftIndices.size >= 3 && rightIndices.size >= 3) interleavedPairs += 1;
+  }
+  const safe = (remaining: Arrow[]) => remaining.filter((arrow) => simulateMove(arrow, remaining.filter((other) => other.id !== arrow.id), level.width, level.height).ok);
+  const initiallySafe = safe(level.arrows);
+  const newlyUnlockedByRemoval = initiallySafe.map((removed) => {
+    const remaining = level.arrows.filter((arrow) => arrow.id !== removed.id);
+    const before = new Set(initiallySafe.map(({ id }) => id));
+    return safe(remaining).filter(({ id }) => !before.has(id)).length;
+  });
+  let remaining = [...level.arrows];
+  let dependencyDepth = 0;
+  while (remaining.length > 0) {
+    const unlocked = safe(remaining);
+    if (unlocked.length === 0) break;
+    dependencyDepth += 1;
+    const removed = new Set(unlocked.map(({ id }) => id));
+    remaining = remaining.filter(({ id }) => !removed.has(id));
+  }
+  return {
+    interleavedPairs,
+    closeSegmentContacts,
+    initiallyRemovable: level.arrows.filter((arrow) => simulateMove(arrow, level.arrows.filter((other) => other.id !== arrow.id), level.width, level.height).ok).length,
+    newlyUnlockedByRemoval,
+    dependencyDepth,
+    pathLengths: level.arrows.map(({ path }) => path.slice(1).reduce((sum, point, index) => sum + Math.hypot(point.x - path[index].x, point.y - path[index].y), 0)),
+    turnCounts: level.arrows.map(({ path }) => path.slice(2).filter((point, index) => {
+      const previous = path[index + 1]; const before = path[index];
+      return point.x - previous.x !== previous.x - before.x || point.y - previous.y !== previous.y - before.y;
+    }).length),
+  };
+}
+
 export function completeLevel(arrows: Arrow[]): boolean { return arrows.length === 0; }
 
 export function movedPathIsOffBoard(frames: Point[][], width: number, height: number): boolean {
   const finalFrame = frames.at(-1) ?? [];
-  return finalFrame.length === 0 || finalFrame.every((point) => isOutside(point, width, height));
+  if (finalFrame.length === 0) return true;
+  const margin = 0.3;
+  const centers = finalFrame.map(({ x, y }) => ({ x: x + 0.5, y: y + 0.5 }));
+  return centers.every(({ x }) => x >= width + margin)
+    || centers.every(({ x }) => x <= -margin)
+    || centers.every(({ y }) => y >= height + margin)
+    || centers.every(({ y }) => y <= -margin);
 }

@@ -26,9 +26,9 @@ Use unique lowercase IDs and contiguous player-facing numbers beginning at 1. Pa
 
 ## Validation rules
 
-On catalog import and in the automated suite, each entry is checked for valid metadata and board geometry. The validator rejects out-of-bounds or disconnected paths, repeated points, visible self-intersections, duplicate arrow IDs, and overlaps between stationary arrows. It then runs the solver. An unsolvable or malformed entry prevents the catalog from loading.
+On catalog import and in the automated suite, each entry is checked for valid metadata and board geometry. The validator rejects out-of-bounds or disconnected paths, repeated points, visible self-intersections, duplicate arrow IDs, and overlaps between stationary arrows. It also runs `analyzeLevel`: segment proximity is measured directly (not inferred from overlapping bounding boxes), and each released board must contain at least one pair with three or more close route segments on both arrows plus at least eight close segment contacts overall. It then runs the solver. An unsolvable, weakly interleaved, or malformed entry prevents the catalog from loading.
 
-The solver searches removal orders by calling `simulateMove`. Gameplay calls that same function. Movement frames interpolate the body as each point follows the next route point and the head extends along its final heading; collision checks include the complete rendered body and arrowhead at each returned substep. Avoid paths whose visible strokes or heads nearly touch unless the resulting interaction is intentional and tested.
+The solver searches removal orders by calling `simulateMove`. Gameplay calls that same function before starting a move. Movement vertices are sampled by distance along the complete route, including bends and final exit extension. The visual animation uses the same position function on a `requestAnimationFrame` clock; it is independent of collision sampling. The simulator checks the complete body and arrowhead every 0.05 cells and adds the sample interval to collision clearance, conservatively covering between-sample travel. Avoid paths whose visible strokes or heads nearly touch unless the resulting interaction is intentional and tested.
 
 ## Curation and review
 
@@ -37,10 +37,11 @@ Use candidate sketches or scripts only as authoring aids; store the final board 
 - Path length, irregularity, turn count, and proportion of diagonal segments.
 - Number of safe first moves, dependency depth, and alternative valid sequences.
 - How closely paths share the board while remaining visually distinct.
+- `analyzeLevel` results: interleaved pair count, close segment contacts, initial safe moves, newly unlocked arrows, dependency depth, path lengths, and turn counts. Reject layouts that pass solvability but miss the catalog's interleaving thresholds.
 - Whether the player can trace each arrow and understand why a blocked move fails.
 - Touch selection and line contrast at a phone-sized viewport.
 
-Run the solver and the full test/build checks, then play the board manually. A solution proves solvability but not clarity, fairness, or calibrated difficulty. Keep the prototype to the smallest set that communicates the design; do not add levels to meet a quota.
+Run the solver and the full test/build checks, then play the board manually. A solution proves solvability but not clarity, fairness, or calibrated difficulty. Check hit selection on close neighboring paths and verify that a blocked first tap deducts exactly one heart. Keep the prototype to the smallest set that communicates the design; do not add levels to meet a quota.
 
 ## Session and persistence
 

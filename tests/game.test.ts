@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import appSource from '../src/main.ts?raw';
 import { CURATED_LEVELS, getCuratedLevel, getNextCuratedLevel, validateCuratedLevels } from '../src/game/catalog';
 import { arrowsCollide } from '../src/game/geometry';
-import { completeLevel, directionName, exitDirection, MOVE_SUBSTEPS, simulateMove, solveLevel, validateArrow, validateLevel } from '../src/game/rules';
+import { analyzeLevel, completeLevel, directionName, exitDirection, MOVE_SUBSTEPS, movedPathIsOffBoard, moveArrowDistance, nearestArrowAt, simulateMove, solveLevel, validateArrow, validateLevel } from '../src/game/rules';
 import { advanceSession, createRun, createSession, loseHeart } from '../src/game/session';
 import type { Arrow, Level, Point } from '../src/game/types';
 
@@ -32,8 +32,16 @@ describe('curated shared-board catalog', () => {
       simulateMove(arrow, puzzle.arrows.filter((other) => other.id !== arrow.id), puzzle.width, puzzle.height).ok,
     ).length);
     const solutionDepths = CURATED_LEVELS.map(({ puzzle }) => solveLevel(puzzle)!.length);
-    expect(openingCounts).toEqual([1, 1, 1, 2, 2, 2]);
-    expect(solutionDepths).toEqual([2, 3, 4, 5, 5, 6]);
+    expect(openingCounts).toEqual([1, 1, 1, 1, 1, 1]);
+    expect(solutionDepths).toEqual([3, 4, 4, 5, 5, 6]);
+    const metrics = CURATED_LEVELS.map(({ puzzle }) => analyzeLevel(puzzle));
+    expect(metrics.map(({ interleavedPairs }) => interleavedPairs)).toEqual([1, 1, 1, 1, 1, 1]);
+    expect(metrics.map(({ closeSegmentContacts }) => closeSegmentContacts)).toEqual([22, 8, 8, 11, 8, 16]);
+    expect(metrics.map(({ dependencyDepth }) => dependencyDepth)).toEqual([3, 4, 4, 5, 5, 6]);
+    expect(metrics.map(({ newlyUnlockedByRemoval }) => newlyUnlockedByRemoval)).toEqual([[1], [1], [1], [1], [1], [1]]);
+    expect(metrics.every(({ newlyUnlockedByRemoval }) => newlyUnlockedByRemoval.some((count) => count > 0))).toBe(true);
+    expect(CURATED_LEVELS[4].puzzle.arrows.some(({ path }) => path.some((point, index) => index > 0
+      && Math.abs(point.x - path[index - 1].x) === 1 && Math.abs(point.y - path[index - 1].y) === 1))).toBe(true);
   });
 
   it('rejects catalog identity and numbering mistakes', () => {
@@ -44,6 +52,18 @@ describe('curated shared-board catalog', () => {
     expect(() => validateCuratedLevels(numberingGap)).toThrow(/contiguously/i);
     expect(() => validateCuratedLevels(mismatchedPuzzle)).toThrow(/does not match/i);
     expect(CURATED_LEVELS.every((entry) => entry.puzzle.arrows.length > 1)).toBe(true);
+  });
+
+  it('rejects a solvable but visually separated candidate instead of relying on box overlap', () => {
+    const separated = CURATED_LEVELS.map((entry, index) => index === 0 ? {
+      ...entry,
+      puzzle: { number: 1, width: 10, height: 8, arrows: [
+        makeArrow('a', [{ x: 0, y: 0 }, { x: 1, y: 0 }]),
+        makeArrow('b', [{ x: 0, y: 3 }, { x: 1, y: 3 }]),
+        makeArrow('c', [{ x: 0, y: 6 }, { x: 1, y: 6 }]),
+      ] },
+    } : entry);
+    expect(() => validateCuratedLevels(separated)).toThrow(/spatially separated/i);
   });
 });
 
@@ -61,9 +81,9 @@ describe('shared arrow geometry and movement', () => {
     if (!result.ok) return;
     expect(result.frames.length).toBeGreaterThan(MOVE_SUBSTEPS);
     expect(result.frames[0]).toHaveLength(arrow.path.length);
-    expect(result.frames[0][0].x).toBeCloseTo(0.25);
-    expect(result.frames[0][1].y).toBeCloseTo(1.75);
-    expect(result.frames.at(-1)!.every((point) => point.x >= 6 || point.y < 0 || point.y >= 5)).toBe(true);
+    expect(result.frames[0][0].x).toBeCloseTo(0.05);
+    expect(result.frames[0][1].y).toBeCloseTo(2);
+    expect(result.travelDistance).toBeGreaterThan(0);
   });
 
   it('supports successful exits in all eight compass directions', () => {
@@ -80,6 +100,44 @@ describe('shared arrow geometry and movement', () => {
       expect(directionName(exitDirection(arrow))).toBe(direction.name);
       expect(simulateMove(arrow, [], 7, 7).ok).toBe(true);
     }
+  });
+
+  it('does not mistake a winding body straddling different board edges for a completed exit', () => {
+    expect(movedPathIsOffBoard([[{ x: -1, y: 3 }, { x: 5, y: 3 }]], 6, 6)).toBe(false);
+    expect(movedPathIsOffBoard([[{ x: 5.8, y: 3 }, { x: 6, y: 3 }]], 6, 6)).toBe(true);
+  });
+
+  it('interpolates by route distance and pulls the body through the same winding route', () => {
+    const arrow = makeArrow('thread', [{ x: 0, y: 2 }, { x: 1, y: 2 }, { x: 1, y: 1 }, { x: 2, y: 1 }]);
+    const half = moveArrowDistance(arrow, 0.5);
+    expect(half[0].x).toBeCloseTo(1);
+    expect(half[1].x).toBeCloseTo(1.5);
+    expect(half[1].y).toBeCloseTo(2.5);
+    expect(half).toContainEqual({ x: 1.5, y: 1.5 }); // The corner remains on the rendered route.
+    const afterCorner = moveArrowDistance(arrow, 1.5);
+    expect(afterCorner[0].x).toBeCloseTo(1.5);
+    expect(afterCorner[0].y).toBeCloseTo(2);
+    expect(afterCorner[1].x).toBeCloseTo(1.5);
+    expect(afterCorner[1].y).toBeCloseTo(1.5);
+  });
+
+  it('chooses the nearest path on the first pointer action and resolves ties consistently', () => {
+    const near = makeArrow('a-near', [{ x: 1, y: 1 }, { x: 2, y: 1 }]);
+    const far = makeArrow('z-far', [{ x: 1, y: 2 }, { x: 2, y: 2 }]);
+    expect(nearestArrowAt({ x: 1.5, y: 1.58 }, [far, near])).toBe('a-near');
+    expect(nearestArrowAt({ x: 1.5, y: 1.5 }, [far, near])).toBe('a-near');
+    expect(nearestArrowAt({ x: 8, y: 8 }, [near, far])).toBeUndefined();
+  });
+
+  it('uses board pointerdown and requestAnimationFrame without rebuilding the board each frame', () => {
+    expect(appSource).toMatch(/addEventListener\('pointerdown'/);
+    expect(appSource).toMatch(/requestAnimationFrame\(animate\)/);
+    expect(appSource).not.toMatch(/setTimeout\(resolve,\s*16\)/);
+    expect(appSource).toMatch(/let animationToken = 0/);
+    expect(appSource).toMatch(/animationToken \+= 1/);
+    expect(appSource).toMatch(/token !== animationToken/);
+    expect(appSource).toMatch(/if \(busy \|\| view !== 'game'\) return/);
+    expect(appSource.match(/hearts = loseHeart\(hearts\)/g)).toHaveLength(1);
   });
 
   it('detects diagonal crossings between grid points and illegal stationary overlap', () => {
@@ -118,7 +176,7 @@ describe('shared arrow geometry and movement', () => {
         const result = simulateMove(arrow, remaining.filter((candidate) => candidate.id !== id), entry.puzzle.width, entry.puzzle.height);
         expect(result.ok, `${entry.id}: ${id}`).toBe(true);
         if (!result.ok) break;
-        expect(result.frames.at(-1)!.every((point) => point.x < 0 || point.x >= entry.puzzle.width || point.y < 0 || point.y >= entry.puzzle.height)).toBe(true);
+        expect(result.travelDistance).toBeGreaterThan(0);
         remaining = remaining.filter((candidate) => candidate.id !== id);
       }
       expect(completeLevel(remaining)).toBe(true);
@@ -153,7 +211,7 @@ describe('nonpersistent prototype session and run rules', () => {
     expect(restarted.hearts).toBe(3);
     expect(restarted.arrows).toEqual(level.arrows);
     expect(restarted.arrows).not.toBe(level.arrows);
-    expect(level.arrows).toHaveLength(2);
+    expect(level.arrows).toHaveLength(CURATED_LEVELS[0].puzzle.arrows.length);
   });
 
   it('costs one heart per failed pick and stops at zero', () => {
