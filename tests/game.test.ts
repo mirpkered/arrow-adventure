@@ -1,10 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import appSource from '../src/main.ts?raw';
+import qaSource from '../src/qa/qaPanel.ts?raw';
+import { bindLongPress } from '../src/qa/qaPanel';
 import { CURATED_LEVELS, getCuratedLevel, getNextCuratedLevel, validateCuratedLevels } from '../src/game/catalog';
-import { arrowsCollide } from '../src/game/geometry';
+import { ARROW_STROKE_WIDTH, arrowsCollide } from '../src/game/geometry';
 import { analyzeLevel, completeLevel, directionName, exitDirection, MOVE_SUBSTEPS, movedPathIsOffBoard, moveArrowDistance, nearestArrowAt, simulateMove, solveLevel, TOUCH_PICK_RADIUS, validateArrow, validateLevel } from '../src/game/rules';
 import { advanceSession, createRun, createSession, loseHeart } from '../src/game/session';
+import { createActionGate } from '../src/game/input';
 import type { Arrow, Level, Point } from '../src/game/types';
+
 
 const makeArrow = (id: string, path: Point[]): Arrow => ({ id, path });
 
@@ -25,6 +29,16 @@ describe('curated shared-board catalog', () => {
       expect(() => validateLevel(entry.puzzle)).not.toThrow();
       expect(solveLevel(entry.puzzle), entry.id).not.toBeNull();
     }
+  });
+
+  it('keeps all six boards legal and solvable at every selectable visible stroke width', () => {
+    for (const width of [0.12, 0.15, 0.18]) {
+      for (const entry of CURATED_LEVELS) {
+        expect(() => validateLevel(entry.puzzle, width)).not.toThrow();
+        expect(solveLevel(entry.puzzle, width), `${entry.id} at ${width}`).not.toBeNull();
+      }
+    }
+    expect(ARROW_STROKE_WIDTH).toBe(0.15);
   });
 
   it('ramps from forced openings toward multiple safe choices and deeper dependencies', () => {
@@ -139,6 +153,9 @@ describe('shared arrow geometry and movement', () => {
     expect(appSource).toMatch(/token !== animationToken/);
     expect(appSource).toMatch(/if \(busy \|\| view !== 'game'\) return/);
     expect(appSource.match(/hearts = loseHeart\(hearts\)/g)).toHaveLength(1);
+    expect(appSource).toContain('actionGate.accept(performance.now())');
+    expect(appSource).toContain("addEventListener('pointerdown'");
+    expect(appSource).toMatch(/if \(action === 'restart'\) startLevel\(catalogEntry\.number\)/);
   });
 
   it('detects diagonal crossings between grid points and illegal stationary overlap', () => {
@@ -222,5 +239,79 @@ describe('nonpersistent prototype session and run rules', () => {
   it('completes only after every arrow leaves', () => {
     expect(completeLevel([])).toBe(true);
     expect(completeLevel(CURATED_LEVELS[0].puzzle.arrows)).toBe(false);
+  });
+});
+
+describe('QA presentation controls and mobile shell', () => {
+  afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+
+  const fakeTarget = () => {
+    const listeners = new Map<string, (event: never) => void>();
+    const target = {
+      classList: { add: vi.fn(), remove: vi.fn() },
+      addEventListener: (type: string, fn: (event: never) => void) => listeners.set(type, fn),
+      removeEventListener: (type: string) => listeners.delete(type),
+      dispatch: (type: string, event: object) => listeners.get(type)?.(event as never),
+    };
+    return target;
+  };
+
+  it('opens QA settings only after a full two-second hold and cancels early releases', () => {
+    vi.useFakeTimers();
+    const timerWindow = { setTimeout: globalThis.setTimeout.bind(globalThis), clearTimeout: globalThis.clearTimeout.bind(globalThis) };
+    vi.stubGlobal('window', timerWindow);
+    const target = fakeTarget(); const open = vi.fn();
+    bindLongPress(target as unknown as HTMLElement, open);
+    target.dispatch('pointerdown', { isPrimary: true, pointerType: 'touch', pointerId: 1, clientX: 20, clientY: 30, button: 0 });
+    vi.advanceTimersByTime(1999); expect(open).not.toHaveBeenCalled();
+    target.dispatch('pointerup', { pointerId: 1 }); vi.advanceTimersByTime(50);
+    expect(open).not.toHaveBeenCalled();
+    target.dispatch('pointerdown', { isPrimary: true, pointerType: 'touch', pointerId: 2, clientX: 20, clientY: 30, button: 0 });
+    vi.advanceTimersByTime(2000); expect(open).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels a QA hold when the pointer moves and supports keyboard activation', () => {
+    vi.useFakeTimers();
+    const timerWindow = { setTimeout: globalThis.setTimeout.bind(globalThis), clearTimeout: globalThis.clearTimeout.bind(globalThis) };
+    vi.stubGlobal('window', timerWindow);
+    const target = fakeTarget(); const open = vi.fn();
+    bindLongPress(target as unknown as HTMLElement, open);
+    target.dispatch('pointerdown', { isPrimary: true, pointerType: 'touch', pointerId: 3, clientX: 2, clientY: 2, button: 0 });
+    target.dispatch('pointermove', { pointerId: 3, clientX: 18, clientY: 2 });
+    vi.advanceTimersByTime(2100); expect(open).not.toHaveBeenCalled();
+    const event = { key: 'Enter', preventDefault: vi.fn() };
+    target.dispatch('keydown', event); expect(event.preventDefault).toHaveBeenCalledOnce(); expect(open).toHaveBeenCalledOnce();
+  });
+
+  it('boots directly into the game and fits within dynamic mobile viewport and safe areas', () => {
+    expect(appSource).toMatch(/startLevel\(1\)/);
+    expect(appSource).not.toMatch(/title-logo|title-screen/);
+    expect(appSource).toContain("import './style.css'");
+  });
+
+  it('defines the requested QA presets, diagnostics, candidate SHA, and level navigation', () => {
+    expect(qaSource).toContain('[1, 1.5, 2, 2.5]');
+    expect(qaSource).toContain('[0.12, 0.15, 0.18]');
+    for (const label of ['Arrow IDs', 'Path ownership', 'Hit targets', 'Board geometry', 'Candidate', 'Reset QA settings']) expect(qaSource).toContain(label);
+    expect(qaSource).toMatch(/\[1,2,3,4,5,6\]\.map/);
+    expect(qaSource).toContain('data-level="${value}"');
+    expect(qaSource).toContain('2000');
+    expect(appSource).toMatch(/import\.meta\.env\.DEV \|\| import\.meta\.env\.VITE_QA_MODE === 'true'/);
+    expect(appSource).toContain('5.5 * speedMultiplier');
+  });
+
+  it('does not persist temporary QA settings or game progress', () => {
+    expect(appSource).not.toMatch(/localStorage|sessionStorage/);
+    expect(qaSource).not.toMatch(/localStorage|sessionStorage/);
+  });
+
+  it('accepts the first tap immediately and suppresses rapid duplicate actions until cooldown ends', () => {
+    const gate = createActionGate(220);
+    expect(gate.accept(1000)).toBe(true);
+    expect(gate.accept(1001)).toBe(false);
+    expect(gate.accept(1219)).toBe(false);
+    expect(gate.accept(1220)).toBe(true);
+    gate.reset();
+    expect(gate.accept(0)).toBe(true);
   });
 });

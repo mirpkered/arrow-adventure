@@ -40,8 +40,12 @@ Use candidate sketches or scripts only as authoring aids; store the final board 
 - `analyzeLevel` results: interleaved pair count, close segment contacts, initial safe moves, newly unlocked arrows, dependency depth, path lengths, and turn counts. Reject layouts that pass solvability but miss the catalog's interleaving thresholds.
 - Whether the player can trace each arrow and understand why a blocked move fails.
 - Touch selection and line contrast at a phone-sized viewport.
+- Review the board as one complete composition at phone scale. Reject puzzles whose bounding boxes overlap while their actual paths sit in separate lanes; proximity counts alone do not prove interlocking.
+- Check the board at Thin, Medium, and Bold stroke widths. The solver and stationary validation must agree at each selectable width.
 
 Run the solver and the full test/build checks, then play the board manually. A solution proves solvability but not clarity, fairness, or calibrated difficulty. Check hit selection on close neighboring paths and verify that a blocked first tap deducts exactly one heart. Keep the prototype to the smallest set that communicates the design; do not add levels to meet a quota.
+
+For future dense boards, author the intended packed silhouette first, then route each arrow through shared corridors while preserving clearance beyond the body/head collision envelope. Freeze paths as catalog data only after solver validation at all supported line widths. Visually inspect a full-board render and use the QA panel's ownership and hit-target diagnostics to check arrow ownership and adjacent-path selection. The current six boards have not yet been replaced with this denser style; the Round 4 request requires its three reference screenshots before that geometry work proceeds.
 
 ## Session and persistence
 

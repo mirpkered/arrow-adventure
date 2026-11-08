@@ -45,7 +45,7 @@ function fullyExited(points: Point[], width: number, height: number, direction: 
   return beyondX || beyondY;
 }
 
-export function validateArrow(arrow: Arrow, width: number, height: number): void {
+export function validateArrow(arrow: Arrow, width: number, height: number, strokeWidth = ARROW_STROKE_WIDTH): void {
   if (arrow.path.length < 2) throw new Error(`${arrow.id} needs at least two cells`);
   const seen = new Set<string>();
   arrow.path.forEach((point, index) => {
@@ -65,22 +65,22 @@ export function validateArrow(arrow: Arrow, width: number, height: number): void
   const pathSegments = arrow.path.slice(1).map((point, index) => ({ a: arrow.path[index], b: point }));
   for (let left = 0; left < pathSegments.length; left += 1) {
     for (let right = left + 2; right < pathSegments.length; right += 1) {
-      if (segmentDistance(pathSegments[left], pathSegments[right]) <= ARROW_STROKE_WIDTH) {
+      if (segmentDistance(pathSegments[left], pathSegments[right]) <= strokeWidth) {
         throw new Error(`${arrow.id} has a visually self-intersecting path`);
       }
     }
   }
 }
 
-export function validateLevel(level: Level): void {
+export function validateLevel(level: Level, strokeWidth = ARROW_STROKE_WIDTH): void {
   if (!Number.isInteger(level.width) || level.width < 1 || !Number.isInteger(level.height) || level.height < 1) throw new Error(`Level ${level.number} has invalid dimensions`);
   if (level.arrows.length === 0) throw new Error(`Level ${level.number} is empty`);
   const ids = new Set<string>();
   for (const [index, arrow] of level.arrows.entries()) {
     if (ids.has(arrow.id)) throw new Error(`Level ${level.number} has duplicate arrow ID ${arrow.id}`);
     ids.add(arrow.id);
-    validateArrow(arrow, level.width, level.height);
-    for (const other of level.arrows.slice(0, index)) if (arrowsCollide(arrow, other)) throw new Error(`${arrow.id} visually collides with ${other.id}`);
+    validateArrow(arrow, level.width, level.height, strokeWidth);
+    for (const other of level.arrows.slice(0, index)) if (arrowsCollide(arrow, other, 0, strokeWidth)) throw new Error(`${arrow.id} visually collides with ${other.id}`);
   }
 }
 
@@ -119,7 +119,7 @@ export function moveArrowDistance(arrow: Arrow, traveled: number): Point[] {
 }
 
 /** Deterministically sample the complete swept body; presentation animation uses an independent rAF clock. */
-export function simulateMove(arrow: Arrow, others: Arrow[], width: number, height: number): MoveResult {
+export function simulateMove(arrow: Arrow, others: Arrow[], width: number, height: number, strokeWidth = ARROW_STROKE_WIDTH): MoveResult {
   const frames: Point[][] = [];
   const direction = exitDirection(arrow);
   if (Math.max(Math.abs(direction.x), Math.abs(direction.y)) !== 1 || (direction.x === 0 && direction.y === 0)) throw new Error(`${arrow.id} has an invalid exit direction`);
@@ -131,7 +131,7 @@ export function simulateMove(arrow: Arrow, others: Arrow[], width: number, heigh
     const traveled = Math.min(maxTravel, index * COLLISION_STEP);
     const frame = moveArrowDistance(arrow, traveled);
     const moving = { ...arrow, path: frame.map((point) => ({ x: point.x - 0.5, y: point.y - 0.5 })) };
-    const blocker = others.find((other) => arrowsCollide(moving, other, COLLISION_STEP));
+    const blocker = others.find((other) => arrowsCollide(moving, other, COLLISION_STEP, strokeWidth));
     if (blocker) return { ok: false, blockedBy: blocker.id };
     frames.push(moving.path);
     if (fullyExited(moving.path, width, height, direction)) return { ok: true, frames, travelDistance: traveled };
@@ -139,7 +139,7 @@ export function simulateMove(arrow: Arrow, others: Arrow[], width: number, heigh
   return { ok: false, blockedBy: 'boundary' };
 }
 
-export function solveLevel(level: Level): string[] | null {
+export function solveLevel(level: Level, strokeWidth = ARROW_STROKE_WIDTH): string[] | null {
   const initial = level.arrows.map((arrow) => ({ ...arrow, path: arrow.path.map((p) => ({ ...p })) }));
   const memo = new Set<string>();
   const search = (remaining: Arrow[]): string[] | null => {
@@ -148,7 +148,7 @@ export function solveLevel(level: Level): string[] | null {
     if (memo.has(key)) return null;
     memo.add(key);
     for (const arrow of remaining) {
-      const move = simulateMove(arrow, remaining.filter((other) => other.id !== arrow.id), level.width, level.height);
+      const move = simulateMove(arrow, remaining.filter((other) => other.id !== arrow.id), level.width, level.height, strokeWidth);
       if (!move.ok) continue;
       const tail = search(remaining.filter((other) => other.id !== arrow.id));
       if (tail) return [arrow.id, ...tail];
@@ -169,7 +169,7 @@ export type LevelMetrics = {
 };
 
 /** Curation metrics: close parallel/weaving runs count; bounding-box overlap does not. */
-export function analyzeLevel(level: Level): LevelMetrics {
+export function analyzeLevel(level: Level, strokeWidth = ARROW_STROKE_WIDTH): LevelMetrics {
   const segmentList = (arrow: Arrow) => arrow.path.slice(1).map((point, index) => ({
     a: { x: arrow.path[index].x + 0.5, y: arrow.path[index].y + 0.5 },
     b: { x: point.x + 0.5, y: point.y + 0.5 },
@@ -189,7 +189,7 @@ export function analyzeLevel(level: Level): LevelMetrics {
     }
     if (leftIndices.size >= 3 && rightIndices.size >= 3) interleavedPairs += 1;
   }
-  const safe = (remaining: Arrow[]) => remaining.filter((arrow) => simulateMove(arrow, remaining.filter((other) => other.id !== arrow.id), level.width, level.height).ok);
+  const safe = (remaining: Arrow[]) => remaining.filter((arrow) => simulateMove(arrow, remaining.filter((other) => other.id !== arrow.id), level.width, level.height, strokeWidth).ok);
   const initiallySafe = safe(level.arrows);
   const newlyUnlockedByRemoval = initiallySafe.map((removed) => {
     const remaining = level.arrows.filter((arrow) => arrow.id !== removed.id);
@@ -208,7 +208,7 @@ export function analyzeLevel(level: Level): LevelMetrics {
   return {
     interleavedPairs,
     closeSegmentContacts,
-    initiallyRemovable: level.arrows.filter((arrow) => simulateMove(arrow, level.arrows.filter((other) => other.id !== arrow.id), level.width, level.height).ok).length,
+    initiallyRemovable: level.arrows.filter((arrow) => simulateMove(arrow, level.arrows.filter((other) => other.id !== arrow.id), level.width, level.height, strokeWidth).ok).length,
     newlyUnlockedByRemoval,
     dependencyDepth,
     pathLengths: level.arrows.map(({ path }) => path.slice(1).reduce((sum, point, index) => sum + Math.hypot(point.x - path[index].x, point.y - path[index].y), 0)),

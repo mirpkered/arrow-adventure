@@ -1,14 +1,14 @@
 import type { Arrow, Point } from './types';
 
-/** SVG arrow body stroke width in board-cell units (src/style.css). */
-export const ARROW_STROKE_WIDTH = 0.22;
+/** Default visible SVG body stroke width in board-cell units. */
+export const ARROW_STROKE_WIDTH = 0.15;
 /** Floating point slack used at exact contacts; it is far smaller than a pixel at board scale. */
 export const GEOMETRY_EPSILON = 1e-8;
-const HEAD_STROKE_WIDTH = 0.045;
+const HEAD_STROKE_WIDTH = 0.03;
 
 type Segment = { a: Point; b: Point };
 
-export function arrowHeadTriangle(path: Point[]): [Point, Point, Point] {
+export function arrowHeadTriangle(path: Point[], strokeWidth = ARROW_STROKE_WIDTH): [Point, Point, Point] {
   const head = path.at(-1);
   const previous = path.at(-2);
   if (!head || !previous) throw new Error('An arrow head needs a preceding path point');
@@ -19,12 +19,13 @@ export function arrowHeadTriangle(path: Point[]): [Point, Point, Point] {
   const direction = { x: dx / length, y: dy / length };
   const perpendicular = { x: -direction.y, y: direction.x };
   const center = { x: head.x + 0.5, y: head.y + 0.5 };
-  const tip = { x: center.x + direction.x * 0.43, y: center.y + direction.y * 0.43 };
-  const base = { x: center.x + direction.x * 0.09, y: center.y + direction.y * 0.09 };
+  const scale = strokeWidth / ARROW_STROKE_WIDTH;
+  const tip = { x: center.x + direction.x * 0.36 * scale, y: center.y + direction.y * 0.36 * scale };
+  const base = { x: center.x + direction.x * 0.07 * scale, y: center.y + direction.y * 0.07 * scale };
   return [
     tip,
-    { x: base.x + perpendicular.x * 0.23, y: base.y + perpendicular.y * 0.23 },
-    { x: base.x - perpendicular.x * 0.23, y: base.y - perpendicular.y * 0.23 },
+    { x: base.x + perpendicular.x * 0.17 * scale, y: base.y + perpendicular.y * 0.17 * scale },
+    { x: base.x - perpendicular.x * 0.17 * scale, y: base.y - perpendicular.y * 0.17 * scale },
   ];
 }
 
@@ -103,8 +104,8 @@ function pointInPolygon(point: Point, polygon: Point[]): boolean {
   return inside;
 }
 
-function polylineHitsPolygon(path: Point[], polygon: Point[]): boolean {
-  const tolerance = ARROW_STROKE_WIDTH / 2 + HEAD_STROKE_WIDTH / 2;
+function polylineHitsPolygon(path: Point[], polygon: Point[], strokeWidth: number): boolean {
+  const tolerance = strokeWidth / 2 + HEAD_STROKE_WIDTH / 2;
   const polygonEdges = segments([...polygon, polygon[0]]);
   return segments(cellCenters(path)).some((line) => pointInPolygon(line.a, polygon)
     || pointInPolygon(line.b, polygon)
@@ -120,26 +121,26 @@ function polygonsCollide(left: Point[], right: Point[], clearance = 0): boolean 
 }
 
 /** Matches visible arrow bodies and triangular heads, not just occupied grid points. */
-export function arrowsCollide(left: Arrow, right: Arrow, extraClearance = 0): boolean {
-  if (polylinesCollide(left.path, right.path, ARROW_STROKE_WIDTH + extraClearance)) return true;
-  const leftHead = arrowHeadTriangle(left.path);
-  const rightHead = arrowHeadTriangle(right.path);
+export function arrowsCollide(left: Arrow, right: Arrow, extraClearance = 0, strokeWidth = ARROW_STROKE_WIDTH): boolean {
+  if (polylinesCollide(left.path, right.path, strokeWidth + extraClearance)) return true;
+  const leftHead = arrowHeadTriangle(left.path, strokeWidth);
+  const rightHead = arrowHeadTriangle(right.path, strokeWidth);
   if (extraClearance > 0) {
     // Expand the body/head contact tolerances by the maximum travel between
     // collision samples. This makes the sampled sweep conservative.
-    return polylinesCollide(left.path, right.path, ARROW_STROKE_WIDTH + extraClearance)
-      || sweptHeadBodyContact(left.path, rightHead, extraClearance)
-      || sweptHeadBodyContact(right.path, leftHead, extraClearance)
+    return polylinesCollide(left.path, right.path, strokeWidth + extraClearance)
+      || sweptHeadBodyContact(left.path, rightHead, extraClearance, strokeWidth)
+      || sweptHeadBodyContact(right.path, leftHead, extraClearance, strokeWidth)
       || polygonsCollide(leftHead, rightHead, extraClearance);
   }
-  return polylineHitsPolygon(left.path, rightHead)
-    || polylineHitsPolygon(right.path, leftHead)
+  return polylineHitsPolygon(left.path, rightHead, strokeWidth)
+    || polylineHitsPolygon(right.path, leftHead, strokeWidth)
     || polygonsCollide(leftHead, rightHead);
 }
 
-function sweptHeadBodyContact(path: Point[], polygon: Point[], extraClearance: number): boolean {
+function sweptHeadBodyContact(path: Point[], polygon: Point[], extraClearance: number, strokeWidth: number): boolean {
   const polygonEdges = segments([...polygon, polygon[0]]);
-  const tolerance = ARROW_STROKE_WIDTH / 2 + HEAD_STROKE_WIDTH / 2 + extraClearance;
+  const tolerance = strokeWidth / 2 + HEAD_STROKE_WIDTH / 2 + extraClearance;
   return segments(cellCenters(path)).some((line) => pointInPolygon(line.a, polygon)
     || pointInPolygon(line.b, polygon)
     || polygonEdges.some((edge) => segmentDistance(line, edge) <= tolerance + GEOMETRY_EPSILON));

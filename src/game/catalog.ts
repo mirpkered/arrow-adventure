@@ -101,10 +101,11 @@ export function validateCuratedLevels(entries: readonly CuratedLevel[] = CURATED
     if (entry.puzzle.number !== entry.number) throw new Error(`${entry.id} puzzle number does not match its catalog entry`);
     ids.add(entry.id);
     numbers.add(entry.number);
-    validateLevel(entry.puzzle);
-    const metrics = analyzeLevel(entry.puzzle);
+    // The curated board must remain legal at the boldest selectable art width.
+    validateLevel(entry.puzzle, 0.18);
+    const metrics = analyzeLevel(entry.puzzle, 0.18);
     if (metrics.interleavedPairs < 1 || metrics.closeSegmentContacts < 8) throw new Error(`${entry.id} is too spatially separated to publish`);
-    if (!solveLevel(entry.puzzle)) throw new Error(`${entry.id} has no complete solution`);
+    if (!solveLevel(entry.puzzle, 0.18)) throw new Error(`${entry.id} has no complete solution`);
   }
   const ordered = [...entries].sort((left, right) => left.number - right.number);
   ordered.forEach((entry, index) => {

@@ -40,6 +40,8 @@ Or open the QA repository's Actions tab, select **Deploy QA candidate**, and pro
 3. `npm run typecheck`
 4. `npm run build -- --base=/arrow-adventure-qa/`
 
+The QA workflow sets `VITE_QA_MODE=true` and passes the selected `VITE_CANDIDATE_SHA` at build time. This enables the two-second HUD long-press panel and exposes the candidate SHA in its diagnostics. The production Pages workflow sets neither value, so the QA panel's dynamic chunk is omitted from normal production builds.
+
 Any failed check prevents artifact upload and Pages deployment. The workflow has a single QA concurrency group so overlapping candidate deployments do not race.
 
 ## Identifying and reverting QA
