@@ -1,8 +1,8 @@
-# Prototype Level Authoring
+# Curated Level Authoring
 
 ## Current catalog contract
 
-The QA prototype is intentionally fixed at six boards. Do not add levels until the current gameplay has been reviewed. The catalog in `src/game/catalog.ts` stores exact definitions under stable IDs `shared-board-001` through `shared-board-006`; the display number is separate metadata and remains contiguous from 1.
+The current release contains exactly six boards. Do not add levels until the current gameplay has been reviewed. The catalog in `src/game/catalog.ts` stores exact definitions under stable IDs `shared-board-001` through `shared-board-006`; the display number is separate metadata and remains contiguous from 1.
 
 Each entry contains a title, difficulty, authoring note, and puzzle dimensions and arrows. Arrow paths are ordered tail-to-head. Coordinates may use integer or half-integer values inside the board, but every point must lie on a half-cell lattice. Each path step must be exactly one cardinal or 45-degree diagonal board unit. This sub-cell alignment allows neighboring routes to interleave more closely while retaining unambiguous eight-direction movement. Paths may not repeat a point, cross themselves, leave the board, or overlap another stationary arrow's collision envelope.
 
@@ -45,8 +45,10 @@ The line art widths are 0.12, 0.15 and 0.18 board cells. Collision and solver ru
 
 ## Protecting published QA content
 
-Each current puzzle's SHA-256 fingerprint is asserted in `tests/game.test.ts`. Any path edit changes that fingerprint. Update it only with a deliberate content review and a commit that includes a new preview and solver/geometry results. QA candidate deployments are pinned to a full source SHA, so each layout is reproducible. Production remains unchanged until separate review and explicit promotion.
+Each current puzzle's SHA-256 fingerprint is asserted in `tests/game.test.ts`. Any path edit changes that fingerprint. Update it only with a deliberate content review and a commit that includes a new preview and solver/geometry results. QA candidate deployments are pinned to a full source SHA, so each layout is reproducible. Push selected production releases to `main` only after validation; feature candidates remain independently deployable to QA.
 
-## Session and persistence
+## Progress and persistence
 
-This reset prototype does not save progress. A fresh load starts at Level 1, completion advances in memory, and restart restores the current board and three hearts. Do not add storage reads or writes until the redesigned content and progression model have been reviewed. Previous release keys may remain in a browser but stay unused.
+The game stores a versioned save with current stable level ID, completed IDs, remaining arrow IDs, persistent red-arrow IDs, hearts and completion state. It saves only between actions; in-flight path animation is never serialized. Invalid saves are ignored without deleting their source. The old release keys are never imported. Settings are saved independently.
+
+Production uses `arrow-adventure.production.*`; QA uses `arrow-adventure.qa.*`. Both Pages URLs share the `github.io` origin, so the environment namespace is required to prevent QA testing from changing production progress or preferences. Keep this namespace separation in future persistence changes.

@@ -129,16 +129,29 @@ export function simulateMove(arrow: Arrow, others: Arrow[], width: number, heigh
   const exitDistance = Math.hypot(width, height) + 2;
   const maxTravel = totalRoute + exitDistance;
   const intervals = Math.ceil(maxTravel / COLLISION_STEP);
+  let lastSafeTravel = 0;
   for (let index = 1; index <= intervals; index += 1) {
     const traveled = Math.min(maxTravel, index * COLLISION_STEP);
     const frame = moveArrowDistance(arrow, traveled);
     const moving = { ...arrow, path: frame.map((point) => ({ x: point.x - 0.5, y: point.y - 0.5 })) };
     const blocker = others.find((other) => arrowsCollide(moving, other, COLLISION_STEP));
-    if (blocker) return { ok: false, blockedBy: blocker.id };
+    if (blocker) {
+      let low = lastSafeTravel;
+      let high = traveled;
+      // Refine the first deterministic swept-contact sample so the visual impact lands at the blocker.
+      for (let refinement = 0; refinement < 7; refinement += 1) {
+        const midpoint = (low + high) / 2;
+        const impactPath = moveArrowDistance(arrow, midpoint).map((point) => ({ x: point.x - 0.5, y: point.y - 0.5 }));
+        if (arrowsCollide({ ...arrow, path: impactPath }, blocker, COLLISION_STEP)) high = midpoint;
+        else low = midpoint;
+      }
+      return { ok: false, blockedBy: blocker.id, travelDistance: high };
+    }
     frames.push(moving.path);
     if (fullyExited(moving.path, width, height, direction)) return { ok: true, frames, travelDistance: traveled };
+    lastSafeTravel = traveled;
   }
-  return { ok: false, blockedBy: 'boundary' };
+  return { ok: false, blockedBy: 'boundary', travelDistance: maxTravel };
 }
 
 /** Pairwise exits are sufficient because every other arrow is stationary during a move. */

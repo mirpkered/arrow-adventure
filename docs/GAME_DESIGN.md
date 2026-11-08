@@ -10,7 +10,7 @@ Collision checks use continuous segment distance plus the arrowhead triangle. Sw
 
 Arrow selection uses one delegated `pointerdown` handler. Pointer coordinates are transformed to board coordinates and compared with every path; the nearest centerline within 0.75 cells wins, with arrow ID as deterministic tie-break. The separate click handler only handles controls, so a synthesized touch click cannot activate an arrow twice. The 220 ms action gate suppresses rapid duplicate input and is reset when an animation completes or a level restarts.
 
-The game opens directly into a viewport-filling screen with dynamic viewport sizing and safe-area insets. In development and explicitly flagged QA builds, holding the compact level label for two seconds opens temporary settings; release, cancellation or pointer drift over ten CSS pixels cancels the hold. Enter or Space opens it for keyboard testing. The panel adjusts speed and stroke width, toggles diagnostics, jumps among six levels, restarts and resets QA settings. No settings are persisted. Production builds omit the QA panel chunk.
+The app opens with the Merpworks launch splash, then presents the title menu. The gameplay shell fills the dynamic viewport, respects safe-area insets, and prevents page scrolling. The board is fitted initially, supports pinch zoom and panning, and can be reset to fit. In development and explicitly flagged QA builds, holding the compact level label for two seconds opens temporary settings; release, cancellation or pointer drift over ten CSS pixels cancels the hold. Enter or Space opens it for keyboard testing. The panel adjusts speed and stroke width, toggles diagnostics, jumps among six levels, restarts and resets QA settings. Production builds omit the dynamically imported QA panel chunk.
 
 ## Curated QA set
 
@@ -44,11 +44,17 @@ Levels alternate between compact and broad compositions. Level 5 is hand-authore
 
 These metrics screen weak boards but do not prove readability. Inspect the full board at phone scale and play it with each visible stroke preset. Use the QA ownership and hit-target overlays to check close neighboring arrows. The current geometry preview is available at `docs/previews/round-4-levels.png`; it is a local render, not a mobile-browser screenshot.
 
-## Progress and deferred features
+## Menus, saves and appearance
 
-Completion advances through the six numbered boards in memory. Restart restores the current definition and three hearts. A fresh page load begins at Level 1. The app does not read or write local storage, so previous release data remains unused.
+The title screen provides Play, Continue, Settings and Credits. The in-game pause sheet offers Resume, Restart, Settings and Return to Title. A versioned local save stores the stable current level ID, completed level IDs, remaining arrows, red failure marks, hearts and completion state. It never serializes intermediate animation frames. Invalid or unknown saves are ignored without deleting the raw value. The retired `mirpworks.arrow-adventure.save.v1/v2` records are never read or imported.
 
-This prototype has no persistent progress, chapter selector, tutorial system, generator, Free Play, black holes, switches, gates, portals, undo, timer or monetization. Revisit these after the current board style has been playtested and approved.
+Production uses `arrow-adventure.production.*` keys. QA uses `arrow-adventure.qa.*` keys because GitHub Pages project URLs share the `github.io` origin; path separation alone would not isolate `localStorage`. Appearance and audio settings have the same environment separation. Light, Dark and Automatic appearance is supported. Optional synthesized music is off by default; original sound effects can be toggled separately. Audio settings do not pause or interrupt other apps' music.
+
+Three hearts, restart, and numbered progression remain the only gameplay rules. There is no persistent level selector, tutorial, generator, Free Play, black holes, switches, gates, portals, undo, timer or monetization. Further mechanics remain future work.
+
+## Launch splash
+
+The app reuses `public/branding/mirpworks-logo.jpg` and timing adapted from Word Search Adventure's `launchSplash.ts`: 750 ms initial hold, fade starting at 1950 ms, black transition at 2800 ms, application reveal at 3000–3150 ms, completion at 3750 ms, and 4550 ms failsafe. Reduced-motion timing is shortened. The splash runs once during initial document boot; in-app navigation and returning to an already-running tab do not reinitialize it.
 
 ## Branding and delivery
 

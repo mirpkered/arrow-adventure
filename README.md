@@ -1,68 +1,67 @@
-# Arrow Adventure — shared-board QA prototype
+# Arrow Adventure
 
-Arrow Adventure is a mobile-first puzzle game about clearing winding arrows from one tightly composed board. The arrowheads follow their own paths, the bodies trail behind, and the player must choose a safe exit order. This redesign contains six original, fixed QA boards. It keeps the approved logo and PWA assets while opening directly into the full-screen game.
+Arrow Adventure is a mobile-first, advertisement-free puzzle game from Merpworks. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. The redesign replaces the former 40-level game with a new six-level shared-board collection.
 
-The current feature branch is `redesign/shared-board-prototype`. Its deployments go to the independent [Arrow Adventure QA site](https://mirpkered.github.io/arrow-adventure-qa/); production at [arrow-adventure](https://mirpkered.github.io/arrow-adventure/) remains unchanged until an approved promotion.
+Production: <https://mirpkered.github.io/arrow-adventure/>
 
-## Geometry preview
+Independent QA: <https://mirpkered.github.io/arrow-adventure-qa/>
 
-The contact sheet below shows the six authored board layouts. It is a local geometry render for composition review, not a browser or physical-device screenshot.
+## Play
 
-![Six Arrow Adventure QA puzzle geometry previews](docs/previews/round-4-levels.png)
+The Merpworks startup splash leads to the title menu. Choose **Play** to begin at Level 1, or **Continue** to restore the last stable board state. The game saves progress and settings locally on this device. Existing saves from the former release use different keys and are ignored.
 
-## Play locally
+Tap an arrow to try to clear it. It follows its winding route, then travels in its final heading until its whole body exits. If blocked, the arrow moves to the collision point, turns red, and returns along its path; it stays red until successfully cleared. Each failed attempt costs one of three hearts, including a repeat attempt on a red arrow. Restart resets the level and hearts. There is no undo, timer, advertising, or monetization.
+
+The board fits the available viewport, supports pinch zoom and panning, and has a reset-view control. Touch hit tolerance is independent of visible line thickness. The interface adapts to Light, Dark, or Automatic appearance and respects device safe areas and reduced-motion preferences.
+
+## Menus and settings
+
+The title screen has Play, Continue, Settings, and Credits. The in-game menu offers resume, restart, settings, and return to title. Settings save Light/Dark/Automatic appearance, optional background music, and independently optional sound effects. Background music is a quiet synthesized original loop; it is off by default. The game does not pause or replace music from Apple Music, Spotify, or other services.
+
+## Local development and validation
 
 Requires Node.js 22 or later and npm.
 
 ```sh
 npm ci
 npm run dev
-```
-
-The session starts at Level 1 and advances through the six boards. Restart restores the current board and its three hearts. Refreshing starts again at Level 1. This prototype does not read or write local storage, so stale saves from prior releases are ignored.
-
-## Controls and rules
-
-- Tap or click an arrow to try to clear it. Keyboard users can focus an arrow and press Enter or Space.
-- The arrowhead follows its winding route; the body follows and retracts from the tail. After the route, the arrow continues in its final heading until its full body leaves the board.
-- A blocked arrow loses one heart. Each board has three hearts. Restart after losing all hearts. There is no undo or timer.
-- Body and arrowhead collisions are checked across the moving route. The solver and gameplay use the same deterministic simulator.
-- The visible stroke presets are Thin 0.12, Medium 0.15 (default), and Bold 0.18 board cells. Collision width remains fixed at 0.18 cells, so a visual choice cannot change which moves are legal.
-- In development and QA builds, hold the level label for two seconds to open QA settings. It includes animation speed, stroke presets, diagnostics, level navigation, restart, and settings reset. This panel and its dynamic code are excluded from production builds.
-
-## Checks and builds
-
-```sh
 npm test
 npm run typecheck
 npm run build
 ```
 
-To build locally with the QA Pages path and controls:
+To build the QA deployment locally:
 
-```sh
+```powershell
 $env:VITE_BASE_PATH='/arrow-adventure-qa/'
 $env:VITE_QA_MODE='true'
+$env:VITE_CANDIDATE_SHA='local-preview'
 npm run build
 ```
 
-The QA repository's manually dispatched GitHub Actions workflow validates a selected full source commit, runs tests and typecheck, builds with `/arrow-adventure-qa/`, and deploys only to the separate QA Pages repository. See [QA environment and release procedures](docs/QA_ENVIRONMENT.md). Do not use the production deployment for this branch.
+The QA panel is available only in development or builds with `VITE_QA_MODE=true`. Hold the level label for two seconds (or use Enter/Space when focused) to open speed, stroke, diagnostics, level navigation, restart, and reset controls. QA values are temporary. QA and production use separate local-storage namespaces because both Pages sites share the same browser origin.
+
+## Deployment
+
+`main` deploys to production with `/arrow-adventure/` using GitHub Actions. The standalone [`arrow-adventure-qa`](https://github.com/mirpkered/arrow-adventure-qa) repository has a manually dispatched workflow that checks out an explicitly selected source SHA, validates it, builds with `/arrow-adventure-qa/`, and publishes only to the QA Pages repository. Changing QA cannot deploy to production. See [QA environment and release procedures](docs/QA_ENVIRONMENT.md).
 
 ## Architecture
 
-- `src/game/catalog.ts` — six stable, frozen puzzle IDs and definitions, progression lookup, metadata and catalog checks.
-- `src/game/geometry.ts` — fixed collision envelopes, segment and arrowhead geometry, nearest-path distance.
-- `src/game/rules.ts` — path validation, full-body movement, deterministic collision simulation, solver and layout metrics.
-- `src/game/session.ts` — hearts, restart state and in-memory level progression.
-- `src/main.ts` — SVG board, delegated pointer hit-testing, requestAnimationFrame animation and game screen.
-- `src/qa/qaPanel.ts` — QA-only long-press panel and diagnostics.
-- `tests/game.test.ts` — frozen puzzle fingerprints, catalog checks, solver/gameplay agreement, geometry, input, hearts and non-persistence.
+- `src/game/catalog.ts` — six fixed, solver-screened shared-board puzzles and integrity checks.
+- `src/game/geometry.ts`, `src/game/rules.ts` — canonical collision envelopes, path validation, distance-based body movement, solver, and layout metrics.
+- `src/game/session.ts` — heart and run-state helpers.
+- `src/app/viewport.ts` — fitted board view, pinch zoom, pan, and reset.
+- `src/app/persistence.ts` — versioned local progress/settings with separate QA and production keys.
+- `src/app/audio.ts` — optional synthesized music and original sound effects using Web Audio.
+- `src/app/launchSplash.ts` — one-time Merpworks splash sequence adapted from Word Search Adventure.
+- `src/main.ts` — title/menu flow, SVG board, delegated touch handling, rAF movement and save orchestration.
+- `src/qa/qaPanel.ts` — development/QA-only testing controls, dynamically imported.
 
-Detailed rules and authoring guidance: [Game Design](docs/GAME_DESIGN.md) and [Level Authoring](docs/LEVEL_AUTHORING.md).
+Puzzle geometry and collision assumptions are documented in [Game Design](docs/GAME_DESIGN.md). The repeatable process for curated content is in [Level Authoring](docs/LEVEL_AUTHORING.md).
 
-## Current limitations
+## Current scope and limitations
 
-- The six boards are a QA sample and are not approved for production. Their puzzle definitions are fingerprinted to flag accidental edits.
-- Browser mobile emulation and physical iPhone Safari testing were unavailable in this session. The preview is a local board render, not an interactive browser capture.
-- Progress resets on a fresh visit; there is no level picker, persistent saving, tutorial, or Free Play mode.
-- Black holes, switches, gates and portals are not implemented. No undo, timer or monetization is present.
+- Six curated prototype levels, Levels 1–6. These replace the earlier 40 levels; their progress is not imported.
+- Puzzle content is solver-verified and fingerprinted. Future levels should keep the intentionally varied, densely shared-board geometry.
+- Physical iPhone Safari playtesting was not performed in this release. Confirm gestures, safe areas, zoom, splash timing, and frame pacing on a device before public announcement.
+- Free Play, tutorials, black holes, switches, gates, portals, and additional chapters are future work.

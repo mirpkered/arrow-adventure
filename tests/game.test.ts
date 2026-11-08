@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import appSource from '../src/main.ts?raw';
 import qaSource from '../src/qa/qaPanel.ts?raw';
 import { bindLongPress } from '../src/qa/qaPanel';
@@ -7,8 +9,10 @@ import { ARROW_COLLISION_WIDTH, ARROW_STROKE_WIDTH, arrowHeadTriangle, arrowsCol
 import { analyzeLevel, completeLevel, directionName, exitDirection, MOVE_SUBSTEPS, movedPathIsOffBoard, moveArrowDistance, nearestArrowAt, simulateMove, solveLevel, TOUCH_PICK_RADIUS, validateArrow, validateLevel } from '../src/game/rules';
 import { advanceSession, createRun, createSession, loseHeart } from '../src/game/session';
 import { createActionGate } from '../src/game/input';
+import { movementDuration, NORMAL_MOVE_SPEED, RETURN_MOVE_SPEED } from '../src/app/motion';
 import type { Arrow, Level, Point } from '../src/game/types';
 
+const styleSource = readFileSync(fileURLToPath(new URL('../src/style.css', import.meta.url)), 'utf8');
 
 const makeArrow = (id: string, path: Point[]): Arrow => ({ id, path });
 
@@ -167,18 +171,18 @@ describe('shared arrow geometry and movement', () => {
     expect(TOUCH_PICK_RADIUS * 2).toBeGreaterThanOrEqual(1.5);
   });
 
-  it('uses board pointerdown and requestAnimationFrame without rebuilding the board each frame', () => {
+  it('uses board pointer input and continuous requestAnimationFrame movement', () => {
     expect(appSource).toMatch(/addEventListener\('pointerdown'/);
-    expect(appSource).toMatch(/requestAnimationFrame\(animate\)/);
+    expect(appSource).toMatch(/requestAnimationFrame\(tick\)/);
     expect(appSource).not.toMatch(/setTimeout\(resolve,\s*16\)/);
     expect(appSource).toMatch(/let animationToken = 0/);
     expect(appSource).toMatch(/animationToken \+= 1/);
     expect(appSource).toMatch(/token !== animationToken/);
-    expect(appSource).toMatch(/if \(busy \|\| view !== 'game'\) return/);
+    expect(appSource).toMatch(/if \(busy \|\| screen !== 'game'\) return/);
     expect(appSource.match(/hearts = loseHeart\(hearts\)/g)).toHaveLength(1);
     expect(appSource).toContain('actionGate.accept(performance.now())');
     expect(appSource).toContain("addEventListener('pointerdown'");
-    expect(appSource).toMatch(/if \(action === 'restart'\) startLevel\(catalogEntry\.number\)/);
+    expect(appSource).toMatch(/if \(action === 'restart' && \(screen === 'game'/);
   });
 
   it('detects diagonal crossings between grid points and illegal stationary overlap', () => {
@@ -195,6 +199,15 @@ describe('shared arrow geometry and movement', () => {
     const remaining = level.arrows.slice(1);
     const result = simulateMove(arrowA, remaining, level.width, level.height);
     expect(result.ok).toBe(false);
+  });
+
+  it('animates a blocked arrow to impact, marks it red, reverses faster, and clears the mark only on removal', () => {
+    expect(appSource).toMatch(/hearts = loseHeart\(hearts\)[\s\S]*?animateDistance\(arrow, group, 0, result\.travelDistance/);
+    expect(appSource).toContain("group.classList.add('is-red', 'at-impact')");
+    expect(appSource).toMatch(/animateDistance\(returning, group, result\.travelDistance, 0, RETURN_MOVE_SPEED/);
+    expect(appSource).toContain('redArrowIds.add(id)');
+    expect(appSource).toContain('redArrowIds.delete(id)');
+    expect(appSource).toContain("redArrowIds.has(arrow.id) ? 'is-red' : ''");
   });
 
   it('rejects a mutually blocked board and accepts the same rules through the solver', () => {
@@ -239,8 +252,8 @@ describe('nonpersistent prototype session and run rules', () => {
     expect([...staleSaves.values()]).toContain(JSON.stringify({ highestUnlocked: 40, completed: Array.from({ length: 40 }, (_, index) => index + 1) }));
   });
 
-  it('does not read old progress keys or access local storage from the app entry point', () => {
-    expect(appSource).not.toMatch(/localStorage|save\.v1|save\.v2|loadProgress|saveProgress|migrateLegacyProgress/i);
+  it('uses only the new save key and ignores old prototype progress keys', () => {
+    expect(appSource).not.toMatch(/mirpworks\.arrow-adventure\.save|save\.v1|save\.v2|loadProgress|saveProgress|migrateLegacyProgress/i);
   });
 
   it('restarts from original arrows and three hearts without mutating the curated definition', () => {
@@ -306,9 +319,12 @@ describe('QA presentation controls and mobile shell', () => {
     target.dispatch('keydown', event); expect(event.preventDefault).toHaveBeenCalledOnce(); expect(open).toHaveBeenCalledOnce();
   });
 
-  it('boots directly into the game and fits within dynamic mobile viewport and safe areas', () => {
-    expect(appSource).toMatch(/startLevel\(1\)/);
-    expect(appSource).not.toMatch(/title-logo|title-screen/);
+  it('shows the Merpworks splash and title menu before gameplay in a viewport-fitted shell', () => {
+    expect(appSource).toContain('showLaunchSplash(document, window');
+    expect(appSource).toContain("let screen: Screen = 'title'");
+    expect(appSource).toContain('title-art');
+    expect(appSource).toContain('function startNewGame()');
+    expect(styleSource).toContain('100dvh');
     expect(appSource).toContain("import './style.css'");
   });
 
@@ -320,12 +336,19 @@ describe('QA presentation controls and mobile shell', () => {
     expect(qaSource).toContain('data-level="${value}"');
     expect(qaSource).toContain('2000');
     expect(appSource).toMatch(/import\.meta\.env\.DEV \|\| import\.meta\.env\.VITE_QA_MODE === 'true'/);
-    expect(appSource).toContain('5.5 * speedMultiplier');
-    expect(appSource).toMatch(/actionGate\.reset\(\);\s*if \(completeLevel\(arrows\)\)/);
+    expect(appSource).toContain('speedMultiplier = 2');
+    expect(NORMAL_MOVE_SPEED).toBe(21);
+    expect(RETURN_MOVE_SPEED).toBeGreaterThan(NORMAL_MOVE_SPEED);
+    expect(movementDuration(42, NORMAL_MOVE_SPEED)).toBe(1500);
+    expect(movementDuration(42, NORMAL_MOVE_SPEED, true)).toBeLessThanOrEqual(140);
+    expect(appSource).toContain('if (completeLevel(arrows))');
   });
 
-  it('does not persist temporary QA settings or game progress', () => {
-    expect(appSource).not.toMatch(/localStorage|sessionStorage/);
+  it('persists player appearance, audio, and stable progress but not QA settings', () => {
+    expect(appSource).toContain('window.localStorage');
+    expect(appSource).toContain('saveGame(storage, next, storageKeys)');
+    expect(appSource).toContain('saveSettings(storage, settings, storageKeys)');
+    expect(appSource).toContain('Animation frames are never persisted');
     expect(qaSource).not.toMatch(/localStorage|sessionStorage/);
   });
 

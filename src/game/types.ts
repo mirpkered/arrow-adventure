@@ -24,4 +24,4 @@ export type CuratedLevel = {
 
 export type MoveResult =
   | { ok: true; frames: Point[][]; travelDistance: number }
-  | { ok: false; blockedBy: string };
+  | { ok: false; blockedBy: string; travelDistance: number };

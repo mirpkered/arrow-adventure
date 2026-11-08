@@ -1,31 +1,29 @@
-# Arrow Adventure Redesign Roadmap
+# Arrow Adventure Roadmap
 
-This roadmap tracks the reset prototype on `redesign/shared-board-prototype`. The prior 40-level catalog, generation system, and save migration were intentionally removed from this branch. Feature candidates deploy to independent QA only; production remains on `main` and has not been modified by this round.
+This roadmap describes the reset, shared-board game now targeted for production. The original 40-level game, progress records, and old puzzle system are retired; they are not imported.
 
-## Current QA prototype
+## Current release foundation
 
-- Six fixed, solver-verified shared-board puzzles, Levels 1–6.
-- Replacement geometry reviewed against the three user-supplied visual references: a small tangle, dense mini-maze, nested paths, broad interwoven board, canopy-and-trunk shaped puzzle, and dense challenge.
-- Half-cell coordinate placement for close route packing; cardinal and diagonal one-unit segments remain supported.
-- Repeated route interleaving, meaningful escape blockers and varied arrow counts, path lengths and turns. Exact definitions are fingerprinted in the test suite.
-- Full-screen safe-area-aware mobile layout, single-tap path selection, and continuous path-following animation at 2× default speed.
-- Thin, Medium and Bold line presets; the 0.18-cell collision model remains fixed across visual settings.
-- Three hearts, restart and temporary in-session progression. No save or old-save migration.
-- QA-only two-second HUD long press with speed, stroke, diagnostics, level navigation and candidate SHA. Production builds omit this feature.
-- Approved logo, icons, PWA metadata and independent QA Pages deployment remain in place.
+- Six fixed, solver-verified puzzles: Small Tangle, Dense Mini-Maze, Nested Paths, Interwoven Board, Shaped Puzzle, and Dense Challenge.
+- Board-wide path composition with half-cell placement, close parallel routes, nested bends, varied path lengths, cardinal and diagonal segments, and meaningful exit dependencies.
+- Full-viewport mobile interface with title, gameplay, pause, settings and credits screens; safe-area handling, fit-to-board scaling, pinch zoom, pan and view reset.
+- Continuous distance-based arrow animation. A blocked arrow travels to its deterministic collision point, turns red, reverses faster and remains red until it is removed. Each attempt costs one heart.
+- Three-heart system, restart, level progression and device-local stable-state saving.
+- Light, Dark and Automatic appearance; independent optional synthesized music and sound effects.
+- One-time Merpworks splash adapted from Word Search Adventure.
+- QA and production have separate Pages sites, candidate commits and local-storage namespaces. Production `main` is directly authorized for this release; experimental future changes can still be evaluated independently in QA.
 
-## Review gates
+## Validation and playtest gates
 
-1. Play the six QA boards and review readability, directional clarity, path-body motion, close-path hit testing, blocked first taps and difficulty.
-2. Perform physical iPhone Safari testing for touch behavior, safe areas and frame pacing. It was not available during the current implementation round.
-3. Keep catalog validation, frozen fingerprints, solver/gameplay agreement, typecheck and both production/QA-base builds passing.
-4. Keep all redesign work off production until gameplay and content are explicitly approved.
+1. Keep catalog integrity, frozen level fingerprints, collision/solver agreement, save validation, input, viewport and splash tests passing.
+2. Run tests, TypeScript validation, the production build, and a QA-base build for every release candidate.
+3. Physically test iPhone Safari touch selection, pinch/pan, safe areas, reduced motion, splash lifecycle, audio behavior and frame pacing before public announcement. Physical device testing was not performed in the current work session.
+4. Preserve a recoverable production checkpoint before broad future content or architecture changes.
 
-The local geometry contact sheet is [round-4-levels.png](previews/round-4-levels.png). It shows board geometry only and is not a browser/device capture. QA host and release flow are in [QA_ENVIRONMENT.md](QA_ENVIRONMENT.md).
+## Next recommended work
 
-## Later work after review
-
-- Refine the six boards using user playtest feedback; preserve the current IDs and update fingerprints deliberately when a layout is approved to change.
-- Add more curated levels only when they add a useful teaching or decision pattern.
-- Design future mechanics—black holes, switches, directional gates and portals—with explicit movement, collision and solver rules before implementation.
-- Reconsider tutorial, persistent progression and Free Play after the foundational geometry has been reviewed.
+- Playtest all six levels on a physical iPhone and tune board scale, touch precision, speed, blocked collision feel, and level difficulty.
+- Refine or replace individual puzzles based on observed solves; update their frozen fingerprints deliberately and re-run the solver and geometry review.
+- Add a modest next batch of curated puzzles only after the current collection is reviewed.
+- Add tutorials or level selection after playtesting establishes onboarding needs.
+- Design future black holes, switches, directional gates, portals, and Free Play as separate, reviewed mechanics. Do not add them until their movement, collision, solver, save, and tutorial rules are specified.
