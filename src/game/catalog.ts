@@ -1,154 +1,2955 @@
-import catalogData from './catalog/adventure-v1.json';
-import catalogV2Data from './catalog/adventure-v2.json';
-import catalogV3Data from './catalog/adventure-v3.json';
-import { LEGACY_GENERATOR_ID, LEGACY_GENERATOR_VERSION, reproduceLegacyLevel } from './levels';
-import { solveLevel, validateLevel } from './rules';
-import type { Level } from './types';
+import { analyzeLevel, solveLevel, validateLevel } from './rules';
+import type { CuratedLevel } from './types';
 
-export const MECHANIC_IDS = ['standard-arrow', 'diagonal-arrow', 'black-hole', 'switch', 'directional-gate', 'portal'] as const;
-export type MechanicId = typeof MECHANIC_IDS[number];
-export type Difficulty = 'gentle' | 'easy' | 'medium' | 'hard' | 'expert';
-
-export const ADVENTURE_CHAPTERS = [
-  { id: 'first-flight', title: 'First Flight', provisional: true },
-  { id: 'into-the-void', title: 'Into the Void', provisional: true },
-  { id: 'changing-paths', title: 'Changing Paths', provisional: true },
-  { id: 'through-the-looking-glass', title: 'Through the Looking Glass', provisional: true },
-  { id: 'worlds-collide', title: 'Worlds Collide', provisional: true },
-] as const;
-
-/** Provisional Adventure introduction targets; these are metadata, not rule activation. */
-export const MECHANIC_INTRODUCTIONS: Record<MechanicId, { chapterId: string; targetSequence: number; provisional: boolean }> = {
-  'standard-arrow': { chapterId: 'first-flight', targetSequence: 1, provisional: false },
-  'diagonal-arrow': { chapterId: 'first-flight', targetSequence: 21, provisional: false },
-  'black-hole': { chapterId: 'into-the-void', targetSequence: 41, provisional: true },
-  switch: { chapterId: 'changing-paths', targetSequence: 61, provisional: true },
-  'directional-gate': { chapterId: 'changing-paths', targetSequence: 61, provisional: true },
-  portal: { chapterId: 'through-the-looking-glass', targetSequence: 86, provisional: true },
-};
-
-export type LevelProvenance =
-  | { kind: 'generated'; generatorId: string; generatorVersion: number; seed: number }
-  | { kind: 'authored'; authoringSource?: string };
-
-export type AdventureLevel = {
-  id: string;
-  displayNumber: number;
-  /** Progression ordering, kept independent from stable identity and UI numbering. */
-  sequence: number;
-  chapterId: string;
-  contentVersion: number;
-  difficulty: Difficulty;
-  mechanicIds: MechanicId[];
-  tutorialRef?: string;
-  authoringNotes?: string;
-  provenance: LevelProvenance;
-  puzzle: Level;
-};
-
-type CatalogFile = { catalogVersion: number; entries: AdventureLevel[] };
-const data = catalogData as unknown as CatalogFile;
-const dataV2 = catalogV2Data as unknown as CatalogFile;
-const dataV3 = catalogV3Data as unknown as CatalogFile;
-export const ADVENTURE_LEVELS: readonly AdventureLevel[] = [...data.entries, ...dataV2.entries, ...dataV3.entries];
-export const ADVENTURE_CATALOG_VERSION = dataV3.catalogVersion;
-export const TUTORIAL_REFERENCES: readonly string[] = ['diagonal-movement'];
-
-const byId = new Map(ADVENTURE_LEVELS.map((entry) => [entry.id, entry]));
-const byNumber = new Map(ADVENTURE_LEVELS.map((entry) => [entry.displayNumber, entry]));
-const bySequence = new Map(ADVENTURE_LEVELS.map((entry) => [entry.sequence, entry]));
-const chapterIds = new Set<string>(ADVENTURE_CHAPTERS.map((chapter) => chapter.id));
-const mechanicIds = new Set<string>(MECHANIC_IDS);
-const difficultyIds = new Set<string>(['gentle', 'easy', 'medium', 'hard', 'expert']);
-
-for (const [mechanicId, introduction] of Object.entries(MECHANIC_INTRODUCTIONS)) {
-  if (!mechanicIds.has(mechanicId) || !chapterIds.has(introduction.chapterId) || !Number.isInteger(introduction.targetSequence) || introduction.targetSequence < 1) {
-    throw new Error(`Invalid introduction metadata for mechanic ${mechanicId}`);
+/** Six fixed, solver-screened prototype boards. The authored definitions below are the source of truth. */
+export const CURATED_LEVELS: readonly CuratedLevel[] = [
+  {
+    "id": "shared-board-001",
+    "number": 1,
+    "title": "Small Tangle",
+    "difficulty": "intro",
+    "designNote": "Seven short and medium paths close the board into a compact tangle. One early clear opens the route chain.",
+    "puzzle": {
+      "number": 1,
+      "width": 9,
+      "height": 9,
+      "arrows": [
+        {
+          "id": "a01",
+          "path": [
+            {
+              "x": 5,
+              "y": 2.5
+            },
+            {
+              "x": 5,
+              "y": 3.5
+            },
+            {
+              "x": 5,
+              "y": 4.5
+            },
+            {
+              "x": 5,
+              "y": 5.5
+            },
+            {
+              "x": 4,
+              "y": 5.5
+            },
+            {
+              "x": 3,
+              "y": 5.5
+            },
+            {
+              "x": 2,
+              "y": 5.5
+            },
+            {
+              "x": 1,
+              "y": 5.5
+            },
+            {
+              "x": 1,
+              "y": 4.5
+            },
+            {
+              "x": 2,
+              "y": 4.5
+            },
+            {
+              "x": 3,
+              "y": 4.5
+            },
+            {
+              "x": 4,
+              "y": 4.5
+            },
+            {
+              "x": 4,
+              "y": 3.5
+            },
+            {
+              "x": 4,
+              "y": 2.5
+            },
+            {
+              "x": 4,
+              "y": 1.5
+            },
+            {
+              "x": 4,
+              "y": 0.5
+            },
+            {
+              "x": 5,
+              "y": 0.5
+            },
+            {
+              "x": 6,
+              "y": 0.5
+            },
+            {
+              "x": 7,
+              "y": 0.5
+            }
+          ]
+        },
+        {
+          "id": "a02",
+          "path": [
+            {
+              "x": 7.5,
+              "y": 2
+            },
+            {
+              "x": 7.5,
+              "y": 3
+            },
+            {
+              "x": 7.5,
+              "y": 4
+            },
+            {
+              "x": 6.5,
+              "y": 4
+            },
+            {
+              "x": 5.5,
+              "y": 4
+            },
+            {
+              "x": 5.5,
+              "y": 5
+            },
+            {
+              "x": 5.5,
+              "y": 6
+            },
+            {
+              "x": 4.5,
+              "y": 6
+            },
+            {
+              "x": 3.5,
+              "y": 6
+            },
+            {
+              "x": 2.5,
+              "y": 6
+            },
+            {
+              "x": 1.5,
+              "y": 6
+            },
+            {
+              "x": 1.5,
+              "y": 7
+            }
+          ]
+        },
+        {
+          "id": "a03",
+          "path": [
+            {
+              "x": 6.5,
+              "y": 8
+            },
+            {
+              "x": 6.5,
+              "y": 7
+            },
+            {
+              "x": 5.5,
+              "y": 7
+            },
+            {
+              "x": 4.5,
+              "y": 7
+            },
+            {
+              "x": 4.5,
+              "y": 8
+            },
+            {
+              "x": 3.5,
+              "y": 8
+            },
+            {
+              "x": 2.5,
+              "y": 8
+            },
+            {
+              "x": 1.5,
+              "y": 8
+            }
+          ]
+        },
+        {
+          "id": "a04",
+          "path": [
+            {
+              "x": 8,
+              "y": 0.5
+            },
+            {
+              "x": 8,
+              "y": 1.5
+            },
+            {
+              "x": 7,
+              "y": 1.5
+            },
+            {
+              "x": 6,
+              "y": 1.5
+            },
+            {
+              "x": 6,
+              "y": 2.5
+            }
+          ]
+        },
+        {
+          "id": "a05",
+          "path": [
+            {
+              "x": 8,
+              "y": 8.5
+            },
+            {
+              "x": 8,
+              "y": 7.5
+            },
+            {
+              "x": 7,
+              "y": 7.5
+            },
+            {
+              "x": 7,
+              "y": 6.5
+            },
+            {
+              "x": 7,
+              "y": 5.5
+            }
+          ]
+        },
+        {
+          "id": "a06",
+          "path": [
+            {
+              "x": 0,
+              "y": 6.5
+            },
+            {
+              "x": 0,
+              "y": 5.5
+            },
+            {
+              "x": 0,
+              "y": 4.5
+            },
+            {
+              "x": 0,
+              "y": 3.5
+            },
+            {
+              "x": 0,
+              "y": 2.5
+            },
+            {
+              "x": 1,
+              "y": 2.5
+            },
+            {
+              "x": 2,
+              "y": 2.5
+            },
+            {
+              "x": 3,
+              "y": 2.5
+            }
+          ]
+        },
+        {
+          "id": "a07",
+          "path": [
+            {
+              "x": 3.5,
+              "y": 0
+            },
+            {
+              "x": 3.5,
+              "y": 1
+            },
+            {
+              "x": 3.5,
+              "y": 2
+            },
+            {
+              "x": 2.5,
+              "y": 2
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "shared-board-002",
+    "number": 2,
+    "title": "Dense Mini-Maze",
+    "difficulty": "steady",
+    "designNote": "A broad rectangular braid combines a dozen paths, including long outer hooks and short inner blockers.",
+    "puzzle": {
+      "number": 2,
+      "width": 12,
+      "height": 11,
+      "arrows": [
+        {
+          "id": "a01",
+          "path": [
+            {
+              "x": 11.5,
+              "y": 5.5
+            },
+            {
+              "x": 11.5,
+              "y": 6.5
+            },
+            {
+              "x": 11.5,
+              "y": 7.5
+            },
+            {
+              "x": 11.5,
+              "y": 8.5
+            },
+            {
+              "x": 10.5,
+              "y": 8.5
+            },
+            {
+              "x": 10.5,
+              "y": 7.5
+            },
+            {
+              "x": 10.5,
+              "y": 6.5
+            },
+            {
+              "x": 9.5,
+              "y": 6.5
+            },
+            {
+              "x": 8.5,
+              "y": 6.5
+            },
+            {
+              "x": 8.5,
+              "y": 7.5
+            },
+            {
+              "x": 8.5,
+              "y": 8.5
+            },
+            {
+              "x": 9.5,
+              "y": 8.5
+            },
+            {
+              "x": 9.5,
+              "y": 9.5
+            },
+            {
+              "x": 9.5,
+              "y": 10.5
+            }
+          ]
+        },
+        {
+          "id": "a02",
+          "path": [
+            {
+              "x": 8.5,
+              "y": 9.5
+            },
+            {
+              "x": 7.5,
+              "y": 9.5
+            },
+            {
+              "x": 6.5,
+              "y": 9.5
+            },
+            {
+              "x": 5.5,
+              "y": 9.5
+            },
+            {
+              "x": 4.5,
+              "y": 9.5
+            },
+            {
+              "x": 4.5,
+              "y": 8.5
+            },
+            {
+              "x": 4.5,
+              "y": 7.5
+            },
+            {
+              "x": 4.5,
+              "y": 6.5
+            },
+            {
+              "x": 5.5,
+              "y": 6.5
+            },
+            {
+              "x": 5.5,
+              "y": 5.5
+            },
+            {
+              "x": 4.5,
+              "y": 5.5
+            },
+            {
+              "x": 3.5,
+              "y": 5.5
+            },
+            {
+              "x": 2.5,
+              "y": 5.5
+            },
+            {
+              "x": 1.5,
+              "y": 5.5
+            },
+            {
+              "x": 1.5,
+              "y": 4.5
+            },
+            {
+              "x": 1.5,
+              "y": 3.5
+            },
+            {
+              "x": 1.5,
+              "y": 2.5
+            }
+          ]
+        },
+        {
+          "id": "a03",
+          "path": [
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 11,
+              "y": 0
+            },
+            {
+              "x": 11,
+              "y": 1
+            },
+            {
+              "x": 10,
+              "y": 1
+            },
+            {
+              "x": 10,
+              "y": 2
+            },
+            {
+              "x": 10,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 4
+            },
+            {
+              "x": 7,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "id": "a04",
+          "path": [
+            {
+              "x": 5.5,
+              "y": 0.5
+            },
+            {
+              "x": 6.5,
+              "y": 0.5
+            },
+            {
+              "x": 7.5,
+              "y": 0.5
+            },
+            {
+              "x": 8.5,
+              "y": 0.5
+            },
+            {
+              "x": 9.5,
+              "y": 0.5
+            },
+            {
+              "x": 9.5,
+              "y": 1.5
+            },
+            {
+              "x": 9.5,
+              "y": 2.5
+            },
+            {
+              "x": 8.5,
+              "y": 2.5
+            },
+            {
+              "x": 7.5,
+              "y": 2.5
+            },
+            {
+              "x": 6.5,
+              "y": 2.5
+            },
+            {
+              "x": 6.5,
+              "y": 3.5
+            },
+            {
+              "x": 5.5,
+              "y": 3.5
+            },
+            {
+              "x": 4.5,
+              "y": 3.5
+            },
+            {
+              "x": 3.5,
+              "y": 3.5
+            }
+          ]
+        },
+        {
+          "id": "a05",
+          "path": [
+            {
+              "x": 3.5,
+              "y": 10.5
+            },
+            {
+              "x": 3.5,
+              "y": 9.5
+            },
+            {
+              "x": 3.5,
+              "y": 8.5
+            },
+            {
+              "x": 2.5,
+              "y": 8.5
+            },
+            {
+              "x": 1.5,
+              "y": 8.5
+            },
+            {
+              "x": 1.5,
+              "y": 7.5
+            },
+            {
+              "x": 0.5,
+              "y": 7.5
+            },
+            {
+              "x": 0.5,
+              "y": 6.5
+            },
+            {
+              "x": 0.5,
+              "y": 5.5
+            }
+          ]
+        },
+        {
+          "id": "a06",
+          "path": [
+            {
+              "x": 2,
+              "y": 1
+            },
+            {
+              "x": 2,
+              "y": 2
+            },
+            {
+              "x": 2,
+              "y": 3
+            },
+            {
+              "x": 2,
+              "y": 4
+            },
+            {
+              "x": 3,
+              "y": 4
+            },
+            {
+              "x": 4,
+              "y": 4
+            },
+            {
+              "x": 5,
+              "y": 4
+            },
+            {
+              "x": 5,
+              "y": 5
+            },
+            {
+              "x": 4,
+              "y": 5
+            },
+            {
+              "x": 3,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "id": "a07",
+          "path": [
+            {
+              "x": 5,
+              "y": 9
+            },
+            {
+              "x": 6,
+              "y": 9
+            },
+            {
+              "x": 7,
+              "y": 9
+            },
+            {
+              "x": 7,
+              "y": 8
+            },
+            {
+              "x": 7,
+              "y": 7
+            },
+            {
+              "x": 6,
+              "y": 7
+            },
+            {
+              "x": 6,
+              "y": 6
+            },
+            {
+              "x": 6,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "id": "a08",
+          "path": [
+            {
+              "x": 11,
+              "y": 10
+            },
+            {
+              "x": 10,
+              "y": 10
+            },
+            {
+              "x": 10,
+              "y": 9
+            },
+            {
+              "x": 11,
+              "y": 9
+            }
+          ]
+        },
+        {
+          "id": "a09",
+          "path": [
+            {
+              "x": 6.5,
+              "y": 1.5
+            },
+            {
+              "x": 5.5,
+              "y": 1.5
+            },
+            {
+              "x": 4.5,
+              "y": 1.5
+            },
+            {
+              "x": 3.5,
+              "y": 1.5
+            },
+            {
+              "x": 3.5,
+              "y": 0.5
+            },
+            {
+              "x": 2.5,
+              "y": 0.5
+            },
+            {
+              "x": 1.5,
+              "y": 0.5
+            },
+            {
+              "x": 0.5,
+              "y": 0.5
+            }
+          ]
+        },
+        {
+          "id": "a10",
+          "path": [
+            {
+              "x": 7.5,
+              "y": 4
+            },
+            {
+              "x": 7.5,
+              "y": 5
+            },
+            {
+              "x": 8.5,
+              "y": 5
+            },
+            {
+              "x": 9.5,
+              "y": 5
+            },
+            {
+              "x": 9.5,
+              "y": 4
+            }
+          ]
+        },
+        {
+          "id": "a11",
+          "path": [
+            {
+              "x": 0,
+              "y": 8
+            },
+            {
+              "x": 0,
+              "y": 9
+            },
+            {
+              "x": 1,
+              "y": 9
+            }
+          ]
+        },
+        {
+          "id": "a12",
+          "path": [
+            {
+              "x": 2,
+              "y": 9
+            },
+            {
+              "x": 2,
+              "y": 10
+            },
+            {
+              "x": 1,
+              "y": 10
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "shared-board-003",
+    "number": 3,
+    "title": "Nested Paths",
+    "difficulty": "steady",
+    "designNote": "Long nested routes frame shorter interior arrows; removing a small blocker opens deeper exits.",
+    "puzzle": {
+      "number": 3,
+      "width": 12,
+      "height": 12,
+      "arrows": [
+        {
+          "id": "a01",
+          "path": [
+            {
+              "x": 6.5,
+              "y": 8
+            },
+            {
+              "x": 6.5,
+              "y": 7
+            },
+            {
+              "x": 6.5,
+              "y": 6
+            },
+            {
+              "x": 5.5,
+              "y": 6
+            },
+            {
+              "x": 5.5,
+              "y": 5
+            },
+            {
+              "x": 5.5,
+              "y": 4
+            },
+            {
+              "x": 5.5,
+              "y": 3
+            },
+            {
+              "x": 5.5,
+              "y": 2
+            },
+            {
+              "x": 4.5,
+              "y": 2
+            },
+            {
+              "x": 3.5,
+              "y": 2
+            },
+            {
+              "x": 2.5,
+              "y": 2
+            },
+            {
+              "x": 2.5,
+              "y": 3
+            },
+            {
+              "x": 2.5,
+              "y": 4
+            },
+            {
+              "x": 1.5,
+              "y": 4
+            },
+            {
+              "x": 0.5,
+              "y": 4
+            },
+            {
+              "x": 0.5,
+              "y": 5
+            },
+            {
+              "x": 0.5,
+              "y": 6
+            },
+            {
+              "x": 0.5,
+              "y": 7
+            }
+          ]
+        },
+        {
+          "id": "a02",
+          "path": [
+            {
+              "x": 10.5,
+              "y": 8.5
+            },
+            {
+              "x": 9.5,
+              "y": 8.5
+            },
+            {
+              "x": 8.5,
+              "y": 8.5
+            },
+            {
+              "x": 7.5,
+              "y": 8.5
+            },
+            {
+              "x": 6.5,
+              "y": 8.5
+            },
+            {
+              "x": 6.5,
+              "y": 9.5
+            },
+            {
+              "x": 6.5,
+              "y": 10.5
+            },
+            {
+              "x": 7.5,
+              "y": 10.5
+            },
+            {
+              "x": 7.5,
+              "y": 9.5
+            },
+            {
+              "x": 8.5,
+              "y": 9.5
+            },
+            {
+              "x": 9.5,
+              "y": 9.5
+            },
+            {
+              "x": 10.5,
+              "y": 9.5
+            },
+            {
+              "x": 11.5,
+              "y": 9.5
+            },
+            {
+              "x": 11.5,
+              "y": 8.5
+            },
+            {
+              "x": 11.5,
+              "y": 7.5
+            },
+            {
+              "x": 11.5,
+              "y": 6.5
+            },
+            {
+              "x": 11.5,
+              "y": 5.5
+            }
+          ]
+        },
+        {
+          "id": "a03",
+          "path": [
+            {
+              "x": 0.5,
+              "y": 10.5
+            },
+            {
+              "x": 0.5,
+              "y": 9.5
+            },
+            {
+              "x": 0.5,
+              "y": 8.5
+            },
+            {
+              "x": 1.5,
+              "y": 8.5
+            },
+            {
+              "x": 2.5,
+              "y": 8.5
+            },
+            {
+              "x": 3.5,
+              "y": 8.5
+            },
+            {
+              "x": 4.5,
+              "y": 8.5
+            },
+            {
+              "x": 4.5,
+              "y": 7.5
+            },
+            {
+              "x": 4.5,
+              "y": 6.5
+            },
+            {
+              "x": 4.5,
+              "y": 5.5
+            },
+            {
+              "x": 4.5,
+              "y": 4.5
+            },
+            {
+              "x": 3.5,
+              "y": 4.5
+            },
+            {
+              "x": 3.5,
+              "y": 5.5
+            },
+            {
+              "x": 3.5,
+              "y": 6.5
+            },
+            {
+              "x": 3.5,
+              "y": 7.5
+            }
+          ]
+        },
+        {
+          "id": "a04",
+          "path": [
+            {
+              "x": 1,
+              "y": 10
+            },
+            {
+              "x": 1,
+              "y": 9
+            },
+            {
+              "x": 2,
+              "y": 9
+            },
+            {
+              "x": 3,
+              "y": 9
+            },
+            {
+              "x": 4,
+              "y": 9
+            },
+            {
+              "x": 4,
+              "y": 10
+            },
+            {
+              "x": 5,
+              "y": 10
+            }
+          ]
+        },
+        {
+          "id": "a05",
+          "path": [
+            {
+              "x": 9,
+              "y": 2.5
+            },
+            {
+              "x": 8,
+              "y": 2.5
+            },
+            {
+              "x": 8,
+              "y": 3.5
+            },
+            {
+              "x": 8,
+              "y": 4.5
+            },
+            {
+              "x": 7,
+              "y": 4.5
+            },
+            {
+              "x": 6,
+              "y": 4.5
+            },
+            {
+              "x": 6,
+              "y": 3.5
+            },
+            {
+              "x": 6,
+              "y": 2.5
+            },
+            {
+              "x": 6,
+              "y": 1.5
+            },
+            {
+              "x": 6,
+              "y": 0.5
+            }
+          ]
+        },
+        {
+          "id": "a06",
+          "path": [
+            {
+              "x": 10.5,
+              "y": 3.5
+            },
+            {
+              "x": 10.5,
+              "y": 2.5
+            },
+            {
+              "x": 10.5,
+              "y": 1.5
+            },
+            {
+              "x": 9.5,
+              "y": 1.5
+            },
+            {
+              "x": 8.5,
+              "y": 1.5
+            },
+            {
+              "x": 7.5,
+              "y": 1.5
+            },
+            {
+              "x": 6.5,
+              "y": 1.5
+            },
+            {
+              "x": 6.5,
+              "y": 0.5
+            }
+          ]
+        },
+        {
+          "id": "a07",
+          "path": [
+            {
+              "x": 7,
+              "y": 7
+            },
+            {
+              "x": 7,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 9,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 7
+            },
+            {
+              "x": 10,
+              "y": 6
+            },
+            {
+              "x": 10,
+              "y": 5
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "shared-board-004",
+    "number": 4,
+    "title": "Interwoven Board",
+    "difficulty": "challenging",
+    "designNote": "Ten irregular routes cross the same broad field, with overlapping corridors and a long dependency chain.",
+    "puzzle": {
+      "number": 4,
+      "width": 14,
+      "height": 12,
+      "arrows": [
+        {
+          "id": "a01",
+          "path": [
+            {
+              "x": 6,
+              "y": 6
+            },
+            {
+              "x": 6,
+              "y": 7
+            },
+            {
+              "x": 6,
+              "y": 8
+            },
+            {
+              "x": 6,
+              "y": 9
+            },
+            {
+              "x": 6,
+              "y": 10
+            },
+            {
+              "x": 7,
+              "y": 10
+            },
+            {
+              "x": 8,
+              "y": 10
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 9,
+              "y": 11
+            },
+            {
+              "x": 9,
+              "y": 10
+            },
+            {
+              "x": 10,
+              "y": 10
+            },
+            {
+              "x": 11,
+              "y": 10
+            },
+            {
+              "x": 12,
+              "y": 10
+            },
+            {
+              "x": 12,
+              "y": 9
+            },
+            {
+              "x": 12,
+              "y": 8
+            },
+            {
+              "x": 12,
+              "y": 7
+            }
+          ]
+        },
+        {
+          "id": "a02",
+          "path": [
+            {
+              "x": 4,
+              "y": 6
+            },
+            {
+              "x": 4,
+              "y": 7
+            },
+            {
+              "x": 4,
+              "y": 8
+            },
+            {
+              "x": 4,
+              "y": 9
+            },
+            {
+              "x": 3,
+              "y": 9
+            },
+            {
+              "x": 2,
+              "y": 9
+            },
+            {
+              "x": 2,
+              "y": 8
+            },
+            {
+              "x": 2,
+              "y": 7
+            },
+            {
+              "x": 3,
+              "y": 7
+            },
+            {
+              "x": 3,
+              "y": 6
+            },
+            {
+              "x": 3,
+              "y": 5
+            },
+            {
+              "x": 3,
+              "y": 4
+            },
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 2,
+              "y": 3
+            },
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 1,
+              "y": 4
+            }
+          ]
+        },
+        {
+          "id": "a03",
+          "path": [
+            {
+              "x": 2,
+              "y": 4
+            },
+            {
+              "x": 2,
+              "y": 5
+            },
+            {
+              "x": 2,
+              "y": 6
+            },
+            {
+              "x": 1,
+              "y": 6
+            },
+            {
+              "x": 0,
+              "y": 6
+            },
+            {
+              "x": 0,
+              "y": 5
+            },
+            {
+              "x": 0,
+              "y": 4
+            },
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 0,
+              "y": 2
+            },
+            {
+              "x": 1,
+              "y": 2
+            },
+            {
+              "x": 2,
+              "y": 2
+            },
+            {
+              "x": 3,
+              "y": 2
+            },
+            {
+              "x": 4,
+              "y": 2
+            },
+            {
+              "x": 4,
+              "y": 3
+            },
+            {
+              "x": 4,
+              "y": 4
+            },
+            {
+              "x": 4,
+              "y": 5
+            },
+            {
+              "x": 5,
+              "y": 5
+            },
+            {
+              "x": 6,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "id": "a04",
+          "path": [
+            {
+              "x": 10,
+              "y": 6
+            },
+            {
+              "x": 10,
+              "y": 7
+            },
+            {
+              "x": 10,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 9
+            },
+            {
+              "x": 11,
+              "y": 9
+            },
+            {
+              "x": 11,
+              "y": 8
+            },
+            {
+              "x": 11,
+              "y": 7
+            },
+            {
+              "x": 11,
+              "y": 6
+            },
+            {
+              "x": 11,
+              "y": 5
+            },
+            {
+              "x": 10,
+              "y": 5
+            },
+            {
+              "x": 9,
+              "y": 5
+            },
+            {
+              "x": 8,
+              "y": 5
+            },
+            {
+              "x": 7,
+              "y": 5
+            },
+            {
+              "x": 7,
+              "y": 6
+            },
+            {
+              "x": 7,
+              "y": 7
+            },
+            {
+              "x": 7,
+              "y": 8
+            },
+            {
+              "x": 7,
+              "y": 9
+            },
+            {
+              "x": 8,
+              "y": 9
+            }
+          ]
+        },
+        {
+          "id": "a05",
+          "path": [
+            {
+              "x": 7,
+              "y": 1
+            },
+            {
+              "x": 7,
+              "y": 0
+            },
+            {
+              "x": 8,
+              "y": 0
+            },
+            {
+              "x": 8,
+              "y": 1
+            },
+            {
+              "x": 8,
+              "y": 2
+            },
+            {
+              "x": 7,
+              "y": 2
+            },
+            {
+              "x": 6,
+              "y": 2
+            },
+            {
+              "x": 5,
+              "y": 2
+            },
+            {
+              "x": 5,
+              "y": 1
+            },
+            {
+              "x": 5,
+              "y": 0
+            }
+          ]
+        },
+        {
+          "id": "a06",
+          "path": [
+            {
+              "x": 12,
+              "y": 3
+            },
+            {
+              "x": 11,
+              "y": 3
+            },
+            {
+              "x": 11,
+              "y": 4
+            },
+            {
+              "x": 10,
+              "y": 4
+            },
+            {
+              "x": 9,
+              "y": 4
+            },
+            {
+              "x": 8,
+              "y": 4
+            },
+            {
+              "x": 7,
+              "y": 4
+            },
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "id": "a07",
+          "path": [
+            {
+              "x": 1,
+              "y": 1
+            },
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 2,
+              "y": 0
+            },
+            {
+              "x": 3,
+              "y": 0
+            },
+            {
+              "x": 4,
+              "y": 0
+            },
+            {
+              "x": 4,
+              "y": 1
+            },
+            {
+              "x": 3,
+              "y": 1
+            },
+            {
+              "x": 2,
+              "y": 1
+            }
+          ]
+        },
+        {
+          "id": "a08",
+          "path": [
+            {
+              "x": 13,
+              "y": 4
+            },
+            {
+              "x": 13,
+              "y": 3
+            },
+            {
+              "x": 13,
+              "y": 2
+            },
+            {
+              "x": 12,
+              "y": 2
+            },
+            {
+              "x": 12,
+              "y": 1
+            },
+            {
+              "x": 11,
+              "y": 1
+            },
+            {
+              "x": 10,
+              "y": 1
+            }
+          ]
+        },
+        {
+          "id": "a09",
+          "path": [
+            {
+              "x": 0,
+              "y": 9
+            },
+            {
+              "x": 0,
+              "y": 10
+            },
+            {
+              "x": 0,
+              "y": 11
+            },
+            {
+              "x": 1,
+              "y": 11
+            },
+            {
+              "x": 2,
+              "y": 11
+            },
+            {
+              "x": 2,
+              "y": 10
+            },
+            {
+              "x": 3,
+              "y": 10
+            }
+          ]
+        },
+        {
+          "id": "a10",
+          "path": [
+            {
+              "x": 13,
+              "y": 10
+            },
+            {
+              "x": 13,
+              "y": 9
+            },
+            {
+              "x": 13,
+              "y": 8
+            },
+            {
+              "x": 13,
+              "y": 7
+            },
+            {
+              "x": 13,
+              "y": 6
+            },
+            {
+              "x": 12,
+              "y": 6
+            },
+            {
+              "x": 12,
+              "y": 5
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "shared-board-005",
+    "number": 5,
+    "title": "Shaped Puzzle",
+    "difficulty": "challenging",
+    "designNote": "Paths form an original canopy-and-trunk silhouette; diagonal turns are threaded through the crown.",
+    "puzzle": {
+      "number": 5,
+      "width": 13,
+      "height": 14,
+      "arrows": [
+        {
+          "id": "a01",
+          "path": [
+            {
+              "x": 4,
+              "y": 0
+            },
+            {
+              "x": 5,
+              "y": 0
+            },
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 7,
+              "y": 0
+            },
+            {
+              "x": 8,
+              "y": 0
+            },
+            {
+              "x": 8,
+              "y": 1
+            },
+            {
+              "x": 7,
+              "y": 1
+            },
+            {
+              "x": 6,
+              "y": 1
+            },
+            {
+              "x": 5,
+              "y": 1
+            },
+            {
+              "x": 4,
+              "y": 1
+            },
+            {
+              "x": 4,
+              "y": 2
+            },
+            {
+              "x": 5,
+              "y": 2
+            },
+            {
+              "x": 6,
+              "y": 2
+            },
+            {
+              "x": 7,
+              "y": 2
+            },
+            {
+              "x": 8,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "a02",
+          "path": [
+            {
+              "x": 2,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 4,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 4
+            },
+            {
+              "x": 9,
+              "y": 4
+            },
+            {
+              "x": 8,
+              "y": 4
+            },
+            {
+              "x": 7,
+              "y": 4
+            },
+            {
+              "x": 6,
+              "y": 4
+            },
+            {
+              "x": 5,
+              "y": 4
+            },
+            {
+              "x": 4,
+              "y": 4
+            },
+            {
+              "x": 3,
+              "y": 4
+            },
+            {
+              "x": 2,
+              "y": 4
+            },
+            {
+              "x": 2,
+              "y": 5
+            },
+            {
+              "x": 3,
+              "y": 5
+            },
+            {
+              "x": 4,
+              "y": 5
+            },
+            {
+              "x": 5,
+              "y": 5
+            },
+            {
+              "x": 6,
+              "y": 5
+            },
+            {
+              "x": 7,
+              "y": 5
+            },
+            {
+              "x": 8,
+              "y": 5
+            },
+            {
+              "x": 9,
+              "y": 5
+            },
+            {
+              "x": 10,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "id": "a03",
+          "path": [
+            {
+              "x": 9,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 7,
+              "y": 6
+            },
+            {
+              "x": 6,
+              "y": 6
+            },
+            {
+              "x": 5,
+              "y": 6
+            },
+            {
+              "x": 4,
+              "y": 6
+            },
+            {
+              "x": 3,
+              "y": 6
+            },
+            {
+              "x": 3,
+              "y": 7
+            },
+            {
+              "x": 4,
+              "y": 7
+            },
+            {
+              "x": 5,
+              "y": 7
+            },
+            {
+              "x": 6,
+              "y": 7
+            },
+            {
+              "x": 7,
+              "y": 7
+            },
+            {
+              "x": 8,
+              "y": 7
+            },
+            {
+              "x": 9,
+              "y": 7
+            },
+            {
+              "x": 9,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 7,
+              "y": 8
+            },
+            {
+              "x": 6,
+              "y": 8
+            },
+            {
+              "x": 5,
+              "y": 8
+            },
+            {
+              "x": 4,
+              "y": 8
+            },
+            {
+              "x": 3,
+              "y": 8
+            }
+          ]
+        },
+        {
+          "id": "a04",
+          "path": [
+            {
+              "x": 10,
+              "y": 2
+            },
+            {
+              "x": 11,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "a05",
+          "path": [
+            {
+              "x": 5,
+              "y": 13
+            },
+            {
+              "x": 5,
+              "y": 12
+            },
+            {
+              "x": 5,
+              "y": 11
+            },
+            {
+              "x": 5,
+              "y": 10
+            },
+            {
+              "x": 5,
+              "y": 9
+            }
+          ]
+        },
+        {
+          "id": "a06",
+          "path": [
+            {
+              "x": 7,
+              "y": 13
+            },
+            {
+              "x": 7,
+              "y": 12
+            },
+            {
+              "x": 7,
+              "y": 11
+            },
+            {
+              "x": 7,
+              "y": 10
+            },
+            {
+              "x": 7,
+              "y": 9
+            }
+          ]
+        },
+        {
+          "id": "a07",
+          "path": [
+            {
+              "x": 6,
+              "y": 13
+            },
+            {
+              "x": 6,
+              "y": 12
+            },
+            {
+              "x": 6,
+              "y": 11
+            },
+            {
+              "x": 6,
+              "y": 10
+            },
+            {
+              "x": 6,
+              "y": 9
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "shared-board-006",
+    "number": 6,
+    "title": "Dense Challenge",
+    "difficulty": "challenging",
+    "designNote": "Sixteen varied paths pack a large maze with long nested corridors, short inner arrows, and mixed diagonals.",
+    "puzzle": {
+      "number": 6,
+      "width": 16,
+      "height": 16,
+      "arrows": [
+        {
+          "id": "a01",
+          "path": [
+            {
+              "x": 0,
+              "y": 12.5
+            },
+            {
+              "x": 1,
+              "y": 11.5
+            },
+            {
+              "x": 1,
+              "y": 10.5
+            },
+            {
+              "x": 1,
+              "y": 9.5
+            },
+            {
+              "x": 2,
+              "y": 9.5
+            },
+            {
+              "x": 3,
+              "y": 9.5
+            },
+            {
+              "x": 3,
+              "y": 10.5
+            },
+            {
+              "x": 3,
+              "y": 11.5
+            },
+            {
+              "x": 3,
+              "y": 12.5
+            },
+            {
+              "x": 4,
+              "y": 12.5
+            },
+            {
+              "x": 4,
+              "y": 11.5
+            },
+            {
+              "x": 4,
+              "y": 10.5
+            },
+            {
+              "x": 4,
+              "y": 9.5
+            },
+            {
+              "x": 4,
+              "y": 8.5
+            },
+            {
+              "x": 3,
+              "y": 8.5
+            },
+            {
+              "x": 2,
+              "y": 8.5
+            },
+            {
+              "x": 1,
+              "y": 8.5
+            },
+            {
+              "x": 0,
+              "y": 8.5
+            },
+            {
+              "x": 0,
+              "y": 7.5
+            },
+            {
+              "x": 0,
+              "y": 6.5
+            },
+            {
+              "x": 0,
+              "y": 5.5
+            }
+          ]
+        },
+        {
+          "id": "a02",
+          "path": [
+            {
+              "x": 14.5,
+              "y": 6.5
+            },
+            {
+              "x": 13.5,
+              "y": 6.5
+            },
+            {
+              "x": 12.5,
+              "y": 6.5
+            },
+            {
+              "x": 11.5,
+              "y": 6.5
+            },
+            {
+              "x": 11.5,
+              "y": 7.5
+            },
+            {
+              "x": 10.5,
+              "y": 7.5
+            },
+            {
+              "x": 9.5,
+              "y": 7.5
+            },
+            {
+              "x": 8.5,
+              "y": 7.5
+            },
+            {
+              "x": 7.5,
+              "y": 7.5
+            },
+            {
+              "x": 7.5,
+              "y": 8.5
+            },
+            {
+              "x": 7.5,
+              "y": 9.5
+            },
+            {
+              "x": 7.5,
+              "y": 10.5
+            },
+            {
+              "x": 6.5,
+              "y": 10.5
+            },
+            {
+              "x": 5.5,
+              "y": 10.5
+            },
+            {
+              "x": 4.5,
+              "y": 10.5
+            },
+            {
+              "x": 4.5,
+              "y": 11.5
+            },
+            {
+              "x": 4.5,
+              "y": 12.5
+            },
+            {
+              "x": 4.5,
+              "y": 13.5
+            },
+            {
+              "x": 3.5,
+              "y": 13.5
+            },
+            {
+              "x": 2.5,
+              "y": 13.5
+            },
+            {
+              "x": 2.5,
+              "y": 14.5
+            }
+          ]
+        },
+        {
+          "id": "a03",
+          "path": [
+            {
+              "x": 11.5,
+              "y": 0.5
+            },
+            {
+              "x": 11.5,
+              "y": 1.5
+            },
+            {
+              "x": 11.5,
+              "y": 2.5
+            },
+            {
+              "x": 10.5,
+              "y": 2.5
+            },
+            {
+              "x": 10.5,
+              "y": 3.5
+            },
+            {
+              "x": 10.5,
+              "y": 4.5
+            },
+            {
+              "x": 9.5,
+              "y": 4.5
+            },
+            {
+              "x": 8.5,
+              "y": 4.5
+            },
+            {
+              "x": 7.5,
+              "y": 4.5
+            },
+            {
+              "x": 6.5,
+              "y": 4.5
+            },
+            {
+              "x": 6.5,
+              "y": 3.5
+            },
+            {
+              "x": 7.5,
+              "y": 3.5
+            },
+            {
+              "x": 7.5,
+              "y": 2.5
+            },
+            {
+              "x": 6.5,
+              "y": 2.5
+            },
+            {
+              "x": 5.5,
+              "y": 2.5
+            }
+          ]
+        },
+        {
+          "id": "a04",
+          "path": [
+            {
+              "x": 5.5,
+              "y": 1.5
+            },
+            {
+              "x": 4.5,
+              "y": 1.5
+            },
+            {
+              "x": 3.5,
+              "y": 1.5
+            },
+            {
+              "x": 2.5,
+              "y": 1.5
+            },
+            {
+              "x": 1.5,
+              "y": 1.5
+            },
+            {
+              "x": 1.5,
+              "y": 2.5
+            },
+            {
+              "x": 1.5,
+              "y": 3.5
+            },
+            {
+              "x": 1.5,
+              "y": 4.5
+            },
+            {
+              "x": 1.5,
+              "y": 5.5
+            },
+            {
+              "x": 2.5,
+              "y": 5.5
+            },
+            {
+              "x": 3.5,
+              "y": 5.5
+            },
+            {
+              "x": 4.5,
+              "y": 5.5
+            },
+            {
+              "x": 5.5,
+              "y": 5.5
+            },
+            {
+              "x": 5.5,
+              "y": 6.5
+            },
+            {
+              "x": 5.5,
+              "y": 7.5
+            },
+            {
+              "x": 4.5,
+              "y": 7.5
+            },
+            {
+              "x": 3.5,
+              "y": 7.5
+            },
+            {
+              "x": 2.5,
+              "y": 7.5
+            },
+            {
+              "x": 2.5,
+              "y": 6.5
+            },
+            {
+              "x": 1.5,
+              "y": 6.5
+            }
+          ]
+        },
+        {
+          "id": "a05",
+          "path": [
+            {
+              "x": 7.5,
+              "y": 15
+            },
+            {
+              "x": 6.5,
+              "y": 15
+            },
+            {
+              "x": 6.5,
+              "y": 14
+            },
+            {
+              "x": 6.5,
+              "y": 13
+            },
+            {
+              "x": 6.5,
+              "y": 12
+            },
+            {
+              "x": 7.5,
+              "y": 12
+            },
+            {
+              "x": 8.5,
+              "y": 12
+            },
+            {
+              "x": 8.5,
+              "y": 13
+            },
+            {
+              "x": 8.5,
+              "y": 14
+            },
+            {
+              "x": 9.5,
+              "y": 14
+            },
+            {
+              "x": 9.5,
+              "y": 13
+            },
+            {
+              "x": 9.5,
+              "y": 12
+            },
+            {
+              "x": 10.5,
+              "y": 12
+            },
+            {
+              "x": 11.5,
+              "y": 12
+            },
+            {
+              "x": 12.5,
+              "y": 12
+            }
+          ]
+        },
+        {
+          "id": "a06",
+          "path": [
+            {
+              "x": 13.5,
+              "y": 9.5
+            },
+            {
+              "x": 12.5,
+              "y": 9.5
+            },
+            {
+              "x": 11.5,
+              "y": 9.5
+            },
+            {
+              "x": 10.5,
+              "y": 9.5
+            },
+            {
+              "x": 10.5,
+              "y": 10.5
+            },
+            {
+              "x": 10.5,
+              "y": 11.5
+            },
+            {
+              "x": 11.5,
+              "y": 11.5
+            },
+            {
+              "x": 12.5,
+              "y": 11.5
+            },
+            {
+              "x": 13.5,
+              "y": 11.5
+            },
+            {
+              "x": 13.5,
+              "y": 12.5
+            },
+            {
+              "x": 13.5,
+              "y": 13.5
+            },
+            {
+              "x": 13.5,
+              "y": 14.5
+            },
+            {
+              "x": 13.5,
+              "y": 15.5
+            },
+            {
+              "x": 14.5,
+              "y": 15.5
+            },
+            {
+              "x": 15.5,
+              "y": 15.5
+            },
+            {
+              "x": 15.5,
+              "y": 14.5
+            },
+            {
+              "x": 15.5,
+              "y": 13.5
+            },
+            {
+              "x": 15.5,
+              "y": 12.5
+            }
+          ]
+        },
+        {
+          "id": "a07",
+          "path": [
+            {
+              "x": 6,
+              "y": 9
+            },
+            {
+              "x": 6,
+              "y": 8
+            },
+            {
+              "x": 6,
+              "y": 7
+            },
+            {
+              "x": 7,
+              "y": 7
+            },
+            {
+              "x": 8,
+              "y": 7
+            },
+            {
+              "x": 9,
+              "y": 7
+            },
+            {
+              "x": 10,
+              "y": 7
+            },
+            {
+              "x": 10,
+              "y": 6
+            },
+            {
+              "x": 10,
+              "y": 5
+            },
+            {
+              "x": 9,
+              "y": 5
+            },
+            {
+              "x": 8,
+              "y": 5
+            },
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 7,
+              "y": 6
+            }
+          ]
+        },
+        {
+          "id": "a08",
+          "path": [
+            {
+              "x": 8,
+              "y": 0.5
+            },
+            {
+              "x": 9,
+              "y": 0.5
+            },
+            {
+              "x": 10,
+              "y": 0.5
+            },
+            {
+              "x": 10,
+              "y": 1.5
+            },
+            {
+              "x": 9,
+              "y": 1.5
+            },
+            {
+              "x": 8,
+              "y": 1.5
+            },
+            {
+              "x": 7,
+              "y": 1.5
+            },
+            {
+              "x": 6,
+              "y": 1.5
+            },
+            {
+              "x": 6,
+              "y": 0.5
+            },
+            {
+              "x": 5,
+              "y": 0.5
+            },
+            {
+              "x": 4,
+              "y": 0.5
+            },
+            {
+              "x": 3,
+              "y": 0.5
+            },
+            {
+              "x": 2,
+              "y": 0.5
+            }
+          ]
+        },
+        {
+          "id": "a09",
+          "path": [
+            {
+              "x": 15.5,
+              "y": 2.5
+            },
+            {
+              "x": 14.5,
+              "y": 2.5
+            },
+            {
+              "x": 14.5,
+              "y": 3.5
+            },
+            {
+              "x": 15.5,
+              "y": 3.5
+            },
+            {
+              "x": 15.5,
+              "y": 4.5
+            },
+            {
+              "x": 15.5,
+              "y": 5.5
+            },
+            {
+              "x": 14.5,
+              "y": 5.5
+            },
+            {
+              "x": 13.5,
+              "y": 5.5
+            },
+            {
+              "x": 12.5,
+              "y": 5.5
+            },
+            {
+              "x": 11.5,
+              "y": 5.5
+            }
+          ]
+        },
+        {
+          "id": "a10",
+          "path": [
+            {
+              "x": 9,
+              "y": 14.5
+            },
+            {
+              "x": 10,
+              "y": 14.5
+            },
+            {
+              "x": 11,
+              "y": 14.5
+            },
+            {
+              "x": 12,
+              "y": 14.5
+            },
+            {
+              "x": 12,
+              "y": 13.5
+            },
+            {
+              "x": 12,
+              "y": 12.5
+            },
+            {
+              "x": 11,
+              "y": 12.5
+            },
+            {
+              "x": 11,
+              "y": 13.5
+            }
+          ]
+        },
+        {
+          "id": "a11",
+          "path": [
+            {
+              "x": 4.5,
+              "y": 5
+            },
+            {
+              "x": 5.5,
+              "y": 5
+            },
+            {
+              "x": 5.5,
+              "y": 4
+            },
+            {
+              "x": 4.5,
+              "y": 4
+            },
+            {
+              "x": 3.5,
+              "y": 4
+            },
+            {
+              "x": 3.5,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "id": "a12",
+          "path": [
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 1
+            },
+            {
+              "x": 15,
+              "y": 2
+            },
+            {
+              "x": 14,
+              "y": 2
+            },
+            {
+              "x": 14,
+              "y": 1
+            },
+            {
+              "x": 14,
+              "y": 0
+            },
+            {
+              "x": 13,
+              "y": 0
+            }
+          ]
+        },
+        {
+          "id": "a13",
+          "path": [
+            {
+              "x": 0,
+              "y": 13.5
+            },
+            {
+              "x": 0,
+              "y": 14.5
+            },
+            {
+              "x": 1,
+              "y": 14.5
+            },
+            {
+              "x": 1,
+              "y": 13.5
+            },
+            {
+              "x": 1,
+              "y": 12.5
+            }
+          ]
+        },
+        {
+          "id": "a14",
+          "path": [
+            {
+              "x": 4.5,
+              "y": 9
+            },
+            {
+              "x": 4.5,
+              "y": 10
+            },
+            {
+              "x": 5.5,
+              "y": 10
+            },
+            {
+              "x": 6.5,
+              "y": 10
+            },
+            {
+              "x": 6.5,
+              "y": 9
+            },
+            {
+              "x": 6.5,
+              "y": 8
+            }
+          ]
+        },
+        {
+          "id": "a15",
+          "path": [
+            {
+              "x": 15,
+              "y": 9
+            },
+            {
+              "x": 14,
+              "y": 9
+            },
+            {
+              "x": 14,
+              "y": 10
+            },
+            {
+              "x": 14,
+              "y": 11
+            },
+            {
+              "x": 15,
+              "y": 11
+            }
+          ]
+        },
+        {
+          "id": "a16",
+          "path": [
+            {
+              "x": 10.5,
+              "y": 2
+            },
+            {
+              "x": 9.5,
+              "y": 2
+            },
+            {
+              "x": 9.5,
+              "y": 3
+            }
+          ]
+        }
+      ]
+    }
   }
-}
+];
 
-export function getAdventureLevelById(id: string): AdventureLevel | undefined { return byId.get(id); }
-export function getAdventureLevelByDisplayNumber(number: number): AdventureLevel | undefined { return byNumber.get(number); }
-export function getAdventureLevelBySequence(sequence: number): AdventureLevel | undefined { return bySequence.get(sequence); }
-export function getAdventureLevelsInProgressionOrder(): AdventureLevel[] {
-  return [...ADVENTURE_LEVELS].sort((left, right) => left.sequence - right.sequence);
-}
-export function getFirstAdventureLevel(): AdventureLevel | undefined {
-  return ADVENTURE_LEVELS.reduce<AdventureLevel | undefined>((first, entry) => !first || entry.sequence < first.sequence ? entry : first, undefined);
-}
-export function getHighestUnlockedSequence(levelId: string): number {
-  return getAdventureLevelById(levelId)?.sequence ?? getFirstAdventureLevel()?.sequence ?? 1;
-}
-export function isAdventureLevelUnlocked(entry: AdventureLevel, highestUnlockedLevelId: string): boolean {
-  return entry.sequence <= getHighestUnlockedSequence(highestUnlockedLevelId);
-}
-export function getNextAdventureLevel(entry: AdventureLevel): AdventureLevel | undefined {
-  return getAdventureLevelBySequence(entry.sequence + 1);
-}
+const levelByNumber = new Map(CURATED_LEVELS.map((entry) => [entry.number, entry]));
+const validDifficulties = new Set(['intro', 'steady', 'challenging']);
 
-export function reproduceAdventureLevel(entry: AdventureLevel): Level {
-  if (entry.provenance.kind === 'authored') return structuredClone(entry.puzzle);
-  if (entry.provenance.generatorId !== LEGACY_GENERATOR_ID || entry.provenance.generatorVersion !== LEGACY_GENERATOR_VERSION) {
-    throw new Error(`Unsupported generator for ${entry.id}`);
-  }
-  return reproduceLegacyLevel(entry.provenance.seed, entry.displayNumber, entry.puzzle.arrows.length);
-}
+export function getCuratedLevel(number: number): CuratedLevel | undefined { return levelByNumber.get(number); }
+export function getNextCuratedLevel(level: CuratedLevel): CuratedLevel | undefined { return levelByNumber.get(level.number + 1); }
 
-export function validateCatalog(
-  entries: readonly AdventureLevel[],
-  options: { chapterIds?: ReadonlySet<string>; tutorialRefs?: ReadonlySet<string> } = {},
-): void {
-  if (entries.length === 0) throw new Error('Catalog cannot be empty');
-  if (!Number.isInteger(ADVENTURE_CATALOG_VERSION) || ADVENTURE_CATALOG_VERSION < 1) throw new Error('Invalid catalog version');
-  const chapters = options.chapterIds ?? chapterIds;
-  const tutorials = options.tutorialRefs ?? new Set(TUTORIAL_REFERENCES);
+export function validateCuratedLevels(entries: readonly CuratedLevel[] = CURATED_LEVELS): void {
+  if (entries.length !== 6) throw new Error('QA catalog must contain exactly six prototype levels');
   const ids = new Set<string>();
   const numbers = new Set<number>();
-  const sequences = new Set<number>();
   for (const entry of entries) {
-    if (!entry || typeof entry !== 'object') throw new Error('Catalog entry must be an object');
-    if (typeof entry.id !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(entry.id)) throw new Error(`Invalid stable level ID: ${entry.id}`);
-    if (ids.has(entry.id)) throw new Error(`Duplicate level ID: ${entry.id}`);
-    ids.add(entry.id);
-    if (!Number.isInteger(entry.displayNumber) || entry.displayNumber < 1) throw new Error(`${entry.id} has an invalid display number`);
-    if (numbers.has(entry.displayNumber)) throw new Error(`Duplicate display number: ${entry.displayNumber}`);
-    numbers.add(entry.displayNumber);
-    if (!Number.isInteger(entry.sequence) || entry.sequence < 1) throw new Error(`${entry.id} has an invalid progression sequence`);
-    if (sequences.has(entry.sequence)) throw new Error(`Duplicate progression sequence: ${entry.sequence}`);
-    sequences.add(entry.sequence);
-    if (typeof entry.chapterId !== 'string' || !chapters.has(entry.chapterId)) throw new Error(`${entry.id} references unknown chapter ${entry.chapterId}`);
-    if (!Number.isInteger(entry.contentVersion) || entry.contentVersion < 1) throw new Error(`${entry.id} has an invalid content version`);
-    if (!difficultyIds.has(entry.difficulty)) throw new Error(`${entry.id} has unsupported difficulty ${entry.difficulty}`);
-    if (!Array.isArray(entry.mechanicIds) || entry.mechanicIds.length === 0) throw new Error(`${entry.id} needs at least one mechanic tag`);
-    const seenMechanics = new Set<string>();
-    for (const mechanic of entry.mechanicIds) {
-      if (!mechanicIds.has(mechanic)) throw new Error(`${entry.id} references unsupported mechanic ${mechanic}`);
-      if (seenMechanics.has(mechanic)) throw new Error(`${entry.id} repeats mechanic ${mechanic}`);
-      const introduction = MECHANIC_INTRODUCTIONS[mechanic as MechanicId];
-      if (!introduction || entry.sequence < introduction.targetSequence) throw new Error(`${entry.id} uses ${mechanic} before its introduction target`);
-      seenMechanics.add(mechanic);
-    }
-    if (entry.tutorialRef !== undefined && !tutorials.has(entry.tutorialRef)) throw new Error(`${entry.id} references unknown tutorial ${entry.tutorialRef}`);
-    if (!entry.provenance || typeof entry.provenance !== 'object' || !['authored', 'generated'].includes(entry.provenance.kind)) throw new Error(`${entry.id} has invalid provenance metadata`);
-    if (!entry.puzzle || typeof entry.puzzle !== 'object') throw new Error(`${entry.id} has no puzzle definition`);
-    if (!Number.isInteger(entry.puzzle.width) || entry.puzzle.width < 1 || !Number.isInteger(entry.puzzle.height) || entry.puzzle.height < 1) throw new Error(`${entry.id} has invalid puzzle dimensions`);
-    if (entry.puzzle.number !== entry.displayNumber) throw new Error(`${entry.id} puzzle number does not match its display number`);
-    if (entry.provenance.kind === 'generated') {
-      if (typeof entry.provenance.generatorId !== 'string' || !Number.isInteger(entry.provenance.seed) || !Number.isInteger(entry.provenance.generatorVersion) || entry.provenance.generatorVersion < 1) throw new Error(`${entry.id} has invalid generation metadata`);
-      if (!Number.isInteger(entry.puzzle.seed)) throw new Error(`${entry.id} has an invalid puzzle seed`);
-      if (entry.puzzle.seed !== entry.provenance.seed) throw new Error(`${entry.id} puzzle seed does not match its generation metadata`);
-    } else if (entry.puzzle.seed !== undefined && !Number.isInteger(entry.puzzle.seed)) {
-      throw new Error(`${entry.id} has an invalid optional puzzle seed`);
-    }
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(entry.id) || ids.has(entry.id)) throw new Error('Invalid or duplicate level ID: ' + entry.id);
+    if (!Number.isInteger(entry.number) || numbers.has(entry.number)) throw new Error('Invalid or duplicate display number: ' + entry.number);
+    if (!validDifficulties.has(entry.difficulty)) throw new Error(entry.id + ' has invalid difficulty');
+    if (typeof entry.title !== 'string' || !entry.title.trim() || typeof entry.designNote !== 'string' || !entry.designNote.trim()) throw new Error(entry.id + ' is missing authoring metadata');
+    if (entry.puzzle.number !== entry.number) throw new Error(entry.id + ' puzzle number does not match its catalog entry');
+    ids.add(entry.id); numbers.add(entry.number);
     validateLevel(entry.puzzle);
-    const reproduced = reproduceAdventureLevel(entry);
-    if (JSON.stringify(reproduced) !== JSON.stringify(entry.puzzle)) throw new Error(`${entry.id} differs from its recorded deterministic definition`);
-    if (!solveLevel(entry.puzzle)) throw new Error(`${entry.id} has no verified solution`);
+    const metrics = analyzeLevel(entry.puzzle);
+    if (metrics.interleavedPairs < Math.max(2, Math.ceil(entry.puzzle.arrows.length * 0.35))
+      || metrics.closeSegmentContacts < entry.puzzle.arrows.length * 5
+      || metrics.occupancyRatio < 0.25) throw new Error(entry.id + ' is too spatially separated to publish');
+    if (metrics.dependencyDepth < 3 || metrics.initiallyRemovable === 0
+      || metrics.initiallyRemovable > Math.ceil(entry.puzzle.arrows.length * 0.4)) throw new Error(entry.id + ' has weak escape dependencies');
+    if (Math.max(...metrics.pathLengths) - Math.min(...metrics.pathLengths) < 2
+      || Math.max(...metrics.turnCounts) - Math.min(...metrics.turnCounts) < 1) throw new Error(entry.id + ' lacks path variety');
+    if (!solveLevel(entry.puzzle)) throw new Error(entry.id + ' has no complete solution');
   }
-  if (sequences.size > 0) {
-    const ordered = [...sequences].sort((left, right) => left - right);
-    if (ordered[0] !== 1 || ordered.some((sequence, index) => sequence !== index + 1)) throw new Error('Catalog progression sequences must be contiguous and start at 1');
-  }
+  const ordered = [...entries].sort((left, right) => left.number - right.number);
+  ordered.forEach((entry, index) => { if (entry.number !== index + 1) throw new Error('Prototype levels must be numbered contiguously from Level 1'); });
 }
 
-validateCatalog(ADVENTURE_LEVELS);
+validateCuratedLevels();

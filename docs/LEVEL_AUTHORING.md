@@ -1,134 +1,52 @@
-# Adventure Level Authoring and Review
+# Prototype Level Authoring
 
-Adventure Mode levels are curated published content. Generators may help designers find candidates, but the version-controlled puzzle definition is the published source of truth.
+## Current catalog contract
 
-## Catalog location and record
+The QA prototype is intentionally fixed at six boards. Do not add levels until the current gameplay has been reviewed. The catalog in `src/game/catalog.ts` stores exact definitions under stable IDs `shared-board-001` through `shared-board-006`; the display number is separate metadata and remains contiguous from 1.
 
-The live catalog snapshots are `src/game/catalog/adventure-v1.json`, `adventure-v2.json`, and `adventure-v3.json`; runtime schema and validation live in `src/game/catalog.ts`. These files preserve levels 1–10, 11–20, and 21–40 respectively. Published puzzle definitions are static snapshots; later releases append a versioned file instead of regenerating earlier content.
+Each entry contains a title, difficulty, authoring note, and puzzle dimensions and arrows. Arrow paths are ordered tail-to-head. Coordinates may use integer or half-integer values inside the board, but every point must lie on a half-cell lattice. Each path step must be exactly one cardinal or 45-degree diagonal board unit. This sub-cell alignment allows neighboring routes to interleave more closely while retaining unambiguous eight-direction movement. Paths may not repeat a point, cross themselves, leave the board, or overlap another stationary arrow's collision envelope.
 
-| Display / sequence | Stable ID | Original seed | Arrows |
-| ---: | --- | ---: | ---: |
-| 1 | `first-flight-001` | `10632945` | 2 |
-| 2 | `first-flight-002` | `10640865` | 3 |
-| 3 | `first-flight-003` | `10648785` | 4 |
-| 4 | `first-flight-004` | `10656705` | 5 |
-| 5 | `first-flight-005` | `10664625` | 6 |
-| 6 | `first-flight-006` | `10672545` | 7 |
-| 7 | `first-flight-007` | `10680465` | 8 |
-| 8 | `first-flight-008` | `10688385` | 9 |
-| 9 | `first-flight-009` | `10696305` | 10 |
-| 10 | `first-flight-010` | `10704226` | 12 |
+## Repeatable authoring process
 
-Levels 11–20 are also in `first-flight`, each at content version 1 and tagged `standard-arrow`. They are authored snapshots and do not depend on runtime generation. Levels 11–14 were hand-authored to introduce up/down exits, then left exits and mixed dependencies. Levels 15–20 were selected from a deterministic candidate search after reviewing direction mix, path length, turn count, solvability, and opening-safe-move constraints; they were then frozen as literal puzzle definitions. This is a selection aid, not an assertion that generated difficulty is calibrated. The regression suite locks the original ten fingerprints and checks the expanded entries' stable IDs, versions, directional coverage, and solver results.
+1. **Sketch the whole silhouette.** Decide if the board is compact, rectangular, nested or shaped. Pack paths into the same area instead of assigning independent lanes.
+2. **Route the long arrows first.** Use hooks, nested U-turns, corridors and alternating headings. Let long routes wrap around shorter interior paths.
+3. **Fill the remaining corridors.** Add short and medium arrows that block meaningful exits or make a safe removal open another option. Preserve enough spacing for touch selection and clear arrowheads.
+4. **Keep positions deliberate.** Half-cell offsets may tighten parallel runs. Do not alter the visible stroke presets to make a board pass collision validation.
+5. **Freeze the chosen definition.** Store the final paths directly in the catalog. Procedural candidate generation is an authoring aid only; it never runs during Adventure Mode or QA play.
+6. **Validate and review.** Run the full solver/catalog tests, inspect the geometry preview, check ownership and hit-target diagnostics, and manually play every board at phone scale.
 
-| Display / sequence | Stable ID | Content version | Difficulty | Arrows | Initial safe moves | Selection note |
-| ---: | --- | ---: | --- | ---: | ---: | --- |
-| 11 | `first-flight-011` | 1 | gentle | 3 | 1 | First up-facing arrow, with clear alternatives after opening |
-| 12 | `first-flight-012` | 1 | easy | 4 | 1 | Up/down path and simple exit dependencies |
-| 13 | `first-flight-013` | 1 | easy | 4 | 3 | First left exit and mixed directions |
-| 14 | `first-flight-014` | 1 | medium | 5 | 1 | Multiple direction dependencies |
-| 15 | `first-flight-015` | 1 | medium | 5 | 3 | Candidate-selected mix of all exits and winding paths |
-| 16 | `first-flight-016` | 1 | medium | 5 | 3 | Candidate-selected mix of all exits and winding paths |
-| 17 | `first-flight-017` | 1 | hard | 6 | 3 | More turns and dependencies |
-| 18 | `first-flight-018` | 1 | hard | 6 | 2 | Constrained opening choices and mixed exits |
-| 19 | `first-flight-019` | 1 | expert | 7 | 1 | Dense mixed-direction dependency puzzle |
-| 20 | `first-flight-020` | 1 | expert | 7 | 3 | Dense combined foundational patterns |
+## Metadata and progression
 
-Levels 21–40 add `diagonal-arrow` alongside `standard-arrow`, with content version 1 and authored provenance. The set was selected from deterministic candidate boards against progression constraints, then frozen as JSON snapshots. Level 21 carries `tutorialRef: diagonal-movement`; later levels do not repeat it. Difficulty labels are provisional and need playtesting.
+Use a new stable ID only for a genuinely new content identity. Keep IDs independent of array indexes. Display numbers are contiguous in this reset prototype and should not be silently renumbered. Difficulty is one of `intro`, `steady` or `challenging`. Write a design note describing the board's intended read or dependency.
 
-| Display / sequence | Stable ID range | Content version | Progression target |
-| ---: | --- | ---: | --- |
-| 21–25 | `first-flight-021`–`first-flight-025` | 1 | Introduce diagonal paths and exits; Level 21 teaches crossings |
-| 26–30 | `first-flight-026`–`first-flight-030` | 1 | Combine cardinal and diagonal route segments |
-| 31–35 | `first-flight-031`–`first-flight-035` | 1 | Add winding mixed-direction paths |
-| 36–40 | `first-flight-036`–`first-flight-040` | 1 | Increase dependencies and cover all eight exit headings as a set |
+There are no chapters or persistent saves in this prototype. If later approved, chapter metadata and tutorial references should be explicit catalog fields, not inferred from a level number. Add a new chapter only through a reviewed roadmap change. Do not implement future mechanics merely by adding tags; their movement/collision semantics require separate design and solver work.
 
-Each entry contains:
+## Geometry, collision and solver validation
 
-```ts
-type AdventureLevel = {
-  id: string; // stable, never reused, e.g. "first-flight-001"
-  displayNumber: number; // player-facing number
-  sequence: number; // progression position; independent from stable identity
-  chapterId: string;
-  contentVersion: number;
-  difficulty: 'gentle' | 'easy' | 'medium' | 'hard' | 'expert';
-  mechanicIds: ('standard-arrow' | 'diagonal-arrow' | 'black-hole' | 'switch' | 'directional-gate' | 'portal')[];
-  tutorialRef?: string;
-  authoringNotes?: string;
-  provenance:
-    | { kind: 'generated'; generatorId: string; generatorVersion: number; seed: number }
-    | { kind: 'authored'; authoringSource?: string };
-  puzzle: Level; // the exact board and arrows used by gameplay
-};
-```
+`validateArrow` rejects malformed coordinates, steps, repeated points and self-intersection. `validateLevel` checks stationary body and head separation at the canonical 0.18-cell collision width. This width matches the Bold art preset and is intentionally independent from Thin, Medium and Bold rendering.
 
-This is the current runtime type. `standard-arrow` and `diagonal-arrow` have gameplay rules. Other mechanic tags remain metadata only. Level 21 uses the registered `diagonal-movement` tutorial, which is shown until dismissed and stored outside save schema v2. Future tutorial keys must be registered in `TUTORIAL_REFERENCES` before validation.
+`simulateMove` follows the arrow's entire route, including its moving body, head and final exit. It samples at 0.05 board cells and applies the sampling interval conservatively to the collision test. Gameplay and the solver use this exact simulator. Never write a second approximate solver rule. The solver caches derived blocker graphs by serialized puzzle definition; changed content produces a new cache key.
 
-## Adding a curated level
+Every published prototype entry must pass:
 
-1. **Choose a stable ID.** Use a readable lowercase chapter slug and permanent ordinal, such as `into-the-void-001`. IDs are save identities: do not derive them from array positions, display numbers, seeds, or mutable titles, and never reuse one for a different puzzle.
-2. **Assign progression metadata.** Give the entry a unique player-facing `displayNumber`, a unique contiguous `sequence`, and a registered `chapterId`. Keep `sequence` separate from `id`; the numbered picker resolves its displayed number through the catalog. Progression unlocks resolve the next sequence through the catalog.
-3. **Write the complete puzzle definition.** Add the arrow paths and board data to the JSON. An authored board uses `provenance: { "kind": "authored" }`. A board selected from a generator records its generator ID, immutable generator version, and seed. Keep the exact generated puzzle in the catalog even when provenance is recorded; gameplay loads the snapshot rather than generating a replacement at runtime.
-4. **Set the content version.** A new ID starts at version 1. Keep the version and puzzle unchanged for non-behavioral metadata edits. If a published puzzle's gameplay definition changes, increment `contentVersion`, document the change, and intentionally update its regression fingerprint. Completion remains credited by stable ID across content versions, so players are not forced to replay a revised puzzle.
-5. **Tag difficulty and mechanics.** Choose difficulty based on observed solution demands, not arrow count alone. Add only mechanics that the puzzle actually contains or uses; use the stable IDs listed in the type. An introduced mechanic remains eligible for later levels but is not required in every level. Add a tutorial reference only after its target exists.
-6. **Add authoring notes if useful.** Keep rationale or review context in `authoringNotes`; do not put runtime behavior in this field.
-7. **Add regression coverage.** Keep all catalog entries covered by structural and solver validation. Add an explicit frozen fingerprint or snapshot check for published content. For generated records, assert the archived generator version and seed reproduce the snapshot. Review any fingerprint change as a content change. A changed puzzle needs a deliberate content-version increment and review note.
+- Unique stable ID and display number, complete metadata and contiguous numbering.
+- Valid board bounds, legal cardinal/diagonal steps, no self-intersections and no stationary overlaps.
+- At least `max(2, ceil(arrow count × 0.35))` interleaved arrow pairs.
+- At least five close segment contacts per arrow and a centerline occupancy ratio of 0.25 or greater. Shaped boards can justify a lower threshold only through explicit review and a corresponding test change.
+- At least three dependency waves, a nonzero safe opening, and no more than 40% of arrows initially removable (rounded up).
+- Varied path lengths and turn counts, plus a solver-found complete removal order.
+- Frozen SHA-256 fingerprints for all six current definitions.
 
-## Eight-direction path and collision rules
+`analyzeLevel` reports close segment contacts (segment pairs within 1.5 cells), repeated interleaving (at least three close segments from each route), blocker links, initially removable arrows, unlock gains, dependency depth, route lengths, turn counts and centerline occupancy. These measurements reject weak layouts but do not replace visual inspection. A high contact count can still come from a visually confusing or poorly composed board.
 
-Paths are arrays of integer grid points stored tail-to-head. Consecutive points may differ by at most one cell in each axis, excluding a zero-length step. This permits cardinal and diagonal segments, including paths that mix both. The final segment is the exit heading; diagonal continuation advances one grid point on both axes each frame.
+## Collision and art separation
 
-Collision matches the rendered arrow geometry. The board renderer draws body paths through cell centers with a 0.46-cell stroke, so two body centerlines collide at distance `<= 0.46` board units. The geometry code adds `1e-8` tolerance for floating-point calculations. It checks segment-to-segment distance, so opposite diagonals crossing inside a cell collide even without a shared grid point. It also includes triangular arrowheads and treats shared endpoints or overlapping heads as collisions. Level validation applies the same visible-body geometry to all initial arrows and rejects nonadjacent self-crossing path segments. Do not author paths whose stroked lines touch or whose arrowheads overlap another arrow.
+The line art widths are 0.12, 0.15 and 0.18 board cells. Collision and solver rules always use the fixed 0.18-cell envelope regardless of the selected appearance. When paths are repositioned, run tests for both body and arrowhead separation; do not assume grid points alone establish legality. Recheck that the visible heads remain distinguishable and closest-path hit testing selects neighboring paths deterministically.
 
-The solver and gameplay both call the same `simulateMove` and `arrowsCollide` functions. Every movement frame compares the moving arrow's complete polyline and head with each stationary arrow. If an apparent exit is blocked at any frame, the solver cannot use that move. New geometry tests cover all eight exit vectors, diagonal/crossing intersections, endpoint contacts, collision tolerance, and an exit that crosses a blocker between grid points.
+## Protecting published QA content
 
-The first diagonal level references `diagonal-movement`. Keep that tutorial concise: explain diagonal travel and exit direction, paths crossing between grid points, and checking the whole body. The UI records acknowledgement under a tutorial-specific local-storage key and does not alter save schema v2. Later levels are not tagged with this reference, so they do not interrupt play.
+Each current puzzle's SHA-256 fingerprint is asserted in `tests/game.test.ts`. Any path edit changes that fingerprint. Update it only with a deliberate content review and a commit that includes a new preview and solver/geometry results. QA candidate deployments are pinned to a full source SHA, so each layout is reproducible. Production remains unchanged until separate review and explicit promotion.
 
-## Validation and publication
+## Session and persistence
 
-`validateCatalog` runs against all catalog entries and rejects:
-
-- Duplicate or malformed stable IDs, display numbers, or progression sequences.
-- Gaps in progression sequences, unknown chapter or tutorial references, and invalid difficulty/content-version metadata.
-- Unsupported or duplicate mechanic tags and invalid generator provenance.
-- Puzzle metadata that disagrees with the catalog, invalid paths, or illegal overlaps.
-- Generated definitions that no longer reproduce exactly from their recorded generator/version/seed.
-- Any puzzle for which the solver cannot find a complete solution.
-
-Run the project checks before publishing catalog changes:
-
-```sh
-npm test
-npm run typecheck
-npm run build
-```
-
-The original ten entries have fixed fingerprints in the regression suite, and the original generator is retained for reproduction. All published catalog files are static snapshots; never regenerate Adventure layouts at app startup. For a new level, review the path map, directions, solver trace, dependencies, and at least one alternate solution if it exists. Do not silently update a published fingerprint: review the board change, increment content version, record why the change is needed, and preserve stable-ID completion credit.
-
-## Difficulty and teaching review
-
-Use several observable dimensions when assigning difficulty:
-
-- Number of viable safe moves and how quickly they are apparent.
-- Dependency depth and branching between valid removal orders.
-- Path length, turns, arrow density, and visual proximity.
-- Number of state changes a player must track.
-- Number and interaction of enabled mechanics.
-- Whether the intended solution requires planning several moves ahead.
-
-The prototype had no difficulty field, so the original ten catalog labels are estimates based on their gradual arrow-count progression. Levels 11–20 also have provisional labels based on their structural complexity and candidate review. Neither set is a playtest rating; calibrate them on devices.
-
-For First Flight directional teaching, introduce new exit directions in low-density examples with a clearly readable arrowhead, then combine directions and dependencies gradually. Confirm that new players recognize arrow direction independent of path orientation, can identify a safe exit by tracing the complete path, and understand why the tail follows the head. Watch for color-only distinctions, ambiguous near-touching paths, repeated blocked taps, and restarts. An automated solver proves only that a legal removal order exists; it does not prove that the intended teaching beat is clear or that difficulty feels fair.
-
-For a new mechanic, begin with a low-complexity puzzle that makes the intended interaction legible, then add one complication at a time. Ask players to explain the rule in their own words. Observe incorrect assumptions, blocked selections, restarts, time to a useful move, and solution diversity. A solver proves solvability, not fairness or teaching quality. Review alternate valid solutions: if a lesson is intended to teach a mechanic, ensure that players cannot consistently bypass it without understanding it, unless that bypass is an intentional part of the lesson.
-
-## Adding a chapter or milestone
-
-Add a stable chapter ID and display title to `ADVENTURE_CHAPTERS` in `src/game/catalog.ts`, then update the provisional ranges and names in `docs/ROADMAP.md`. Add or adjust entries with the chapter ID and contiguous progression sequences. Mechanic introduction targets live in `MECHANIC_INTRODUCTIONS`; they are metadata targets, not numeric level checks in gameplay rules. Mark tentative targets provisional and revise them after playtesting. A chapter may include levels without its newly introduced mechanic, and later levels may use any suitable subset of available mechanics.
-
-## Save and publication compatibility
-
-Schema v2 stores highest-unlocked, selected, and completed state by stable level ID. The v1 numeric save is migrated through a fixed number-to-ID mapping for the original ten levels and kept intact as a recovery source. Do not remove or reuse published IDs. If an ID must be retired, add an explicit migration mapping and preserve its completion record. For later save formats, add an ordered migration from the preceding schema; validate and write the new record successfully before removing any old copy.
-
-Do not reset progress when a puzzle receives a new content version. Because completion is attached to the stable ID, an already-completed level stays completed after a versioned revision. Record the content change and its review decision so its changed solution is not mistaken for the original historical puzzle.
+This reset prototype does not save progress. A fresh load starts at Level 1, completion advances in memory, and restart restores the current board and three hearts. Do not add storage reads or writes until the redesigned content and progression model have been reviewed. Previous release keys may remain in a browser but stay unused.

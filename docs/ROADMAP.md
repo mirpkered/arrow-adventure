@@ -1,68 +1,31 @@
-# Arrow Adventure Roadmap
+# Arrow Adventure Redesign Roadmap
 
-This roadmap records the approved product direction and provisional chapter plan. Chapter ranges and mechanic milestones are planning targets, not release commitments. Playtesting may change the order, length, or teaching pace.
+This roadmap tracks the reset prototype on `redesign/shared-board-prototype`. The prior 40-level catalog, generation system, and save migration were intentionally removed from this branch. Feature candidates deploy to independent QA only; production remains on `main` and has not been modified by this round.
 
-## Status at a glance
+## Current QA prototype
 
-### Implemented
+- Six fixed, solver-verified shared-board puzzles, Levels 1–6.
+- Replacement geometry reviewed against the three user-supplied visual references: a small tangle, dense mini-maze, nested paths, broad interwoven board, canopy-and-trunk shaped puzzle, and dense challenge.
+- Half-cell coordinate placement for close route packing; cardinal and diagonal one-unit segments remain supported.
+- Repeated route interleaving, meaningful escape blockers and varied arrow counts, path lengths and turns. Exact definitions are fingerprinted in the test suite.
+- Full-screen safe-area-aware mobile layout, single-tap path selection, and continuous path-following animation at 2× default speed.
+- Thin, Medium and Bold line presets; the 0.18-cell collision model remains fixed across visual settings.
+- Three hearts, restart and temporary in-session progression. No save or old-save migration.
+- QA-only two-second HUD long press with speed, stroke, diagnostics, level navigation and candidate SHA. Production builds omit this feature.
+- Approved logo, icons, PWA metadata and independent QA Pages deployment remain in place.
 
-- A standalone browser game with forty stable, solver-checked Adventure levels.
-- Winding arrows with all eight compass directions, continuous visible-geometry collision checks, collision failures, three hearts, restart, numbered progression, and browser-local progress saving.
-- A mobile-first SVG interface and a GitHub Pages build/deployment workflow.
-- A curated Adventure catalog for levels 1–40, with stable IDs, display numbers, progression sequences, chapter IDs, content versions, difficulty tags, mechanic tags, and generated/authored provenance.
-- A one-time diagonal movement tutorial at Level 21, with acknowledgement saved separately from progression save schema v2.
-- Save schema v2 keyed by stable level IDs, with a non-destructive migration from the prototype's numeric schema.
-- Approved official logo on the welcome screen, proportional browser/install icon derivatives, and a base-path-safe standalone web app manifest.
+## Review gates
 
-These are the current release's actual capabilities. The future modes and mechanics below are not implemented.
+1. Play the six QA boards and review readability, directional clarity, path-body motion, close-path hit testing, blocked first taps and difficulty.
+2. Perform physical iPhone Safari testing for touch behavior, safe areas and frame pacing. It was not available during the current implementation round.
+3. Keep catalog validation, frozen fingerprints, solver/gameplay agreement, typecheck and both production/QA-base builds passing.
+4. Keep all redesign work off production until gameplay and content are explicitly approved.
 
-### Approved direction
+The local geometry contact sheet is [round-4-levels.png](previews/round-4-levels.png). It shows board geometry only and is not a browser/device capture. QA host and release flow are in [QA_ENVIRONMENT.md](QA_ENVIRONMENT.md).
 
-- Keep Arrow Adventure a calm, mobile-first Mirpworks puzzle game.
-- Develop two distinct modes: a curated, stable Adventure Mode and a separate solver-verified Free Play mode.
-- Introduce mechanics deliberately: teach one in approachable puzzles, deepen it, and later combine it with previously introduced mechanics.
-- Keep a mechanic eligible for later puzzles after its introduction; do not make it mandatory in every subsequent puzzle.
-- Keep every published Adventure puzzle reproducible, reviewed, and protected from silent content changes.
-- Do not implement a planned mechanic until its player-facing behavior and solver rules have been decided.
+## Later work after review
 
-### Provisional Adventure chapters
-
-| Target levels | Chapter | Planned focus |
-| --- | --- | --- |
-| 1–40 | First Flight | Standard and diagonal arrows; foundational path-reading puzzles |
-| 41–60 | Into the Void | Introduce and develop black holes |
-| 61–85 | Changing Paths | Introduce switches and directional gates |
-| 86–110 | Through the Looking Glass | Introduce portals |
-| 111–140 | Worlds Collide | Optional combinations of unlocked mechanics |
-
-The chapter names, ranges, and introduction points are provisional. A chapter may contain puzzles that do not use its newly introduced mechanic, and later chapters may use any suitable subset of previously introduced mechanics.
-
-## Development sequence
-
-1. **Complete — Protect the prototype.** Preserve the first ten playable levels, snapshot their definitions, and retain the original numeric save as a migration source.
-2. **Complete — Establish the catalog.** Register levels 1–20 with stable IDs and content metadata. The original ten retain their generated snapshots and seeds; the expansion is frozen authored content.
-3. **Next — Review First Flight on devices.** Playtest the 40 levels on iPhone Safari and desktop, calibrate difficulty, confirm diagonal crossing feedback and path legibility, and revise only through explicit content-version changes.
-4. **Define the stateful rules boundary.** Move future solver and movement decisions toward pure state transitions over arrows and board objects. Do this alongside the first designed interactive mechanic, with tests for current standard-arrow behavior.
-5. **Design and playtest one mechanic at a time.** Resolve its rules, implement it behind a mechanic-specific rule module, author a small teaching sequence, and review player understanding before adding another mechanic.
-6. **Build Free Play as a separate mode.** Add difficulty, mechanic toggles, generation metadata, and seed replay without changing Adventure completion or unlock progression.
-7. **Combine mechanics after individual rules are stable.** Use authored review and the stateful solver to verify combinations before publication.
-
-These are sequencing recommendations, not a schedule. Eight-direction movement and its shared geometry solver are in place; future gameplay mechanics should wait for explicit design decisions and First Flight playtesting.
-
-## Future Free Play
-
-Free Play is planned as a separate route from Adventure Mode. Its eventual setup should offer:
-
-- A difficulty choice that maps to documented generation constraints.
-- Per-mechanic toggles, including standard arrows as the baseline.
-- A reproducible puzzle seed, generator version, and configuration record.
-- Solver verification before a generated puzzle is shown.
-- Tutorial or rules access for each enabled mechanic.
-- Generation that excludes disabled mechanics and whose solution does not depend on one.
-- Separate completion/session state; Free Play results must not unlock or rewrite Adventure levels.
-
-No Free Play interface or generator is included in the current prototype.
-
-## Release gates for future mechanics
-
-Before a mechanic enters an Adventure release, its rule sheet should define entry/activation conditions, complete-body movement, collision priority, resulting board state, solver representation, animation endpoints, and edge cases. The design should have unit tests, curated teaching levels, reviewed solution traces, and a migration plan for saved progression and level content.
+- Refine the six boards using user playtest feedback; preserve the current IDs and update fingerprints deliberately when a layout is approved to change.
+- Add more curated levels only when they add a useful teaching or decision pattern.
+- Design future mechanics—black holes, switches, directional gates and portals—with explicit movement, collision and solver rules before implementation.
+- Reconsider tutorial, persistent progression and Free Play after the foundational geometry has been reviewed.
