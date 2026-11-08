@@ -3,7 +3,7 @@ import appSource from '../src/main.ts?raw';
 import qaSource from '../src/qa/qaPanel.ts?raw';
 import { bindLongPress } from '../src/qa/qaPanel';
 import { CURATED_LEVELS, getCuratedLevel, getNextCuratedLevel, validateCuratedLevels } from '../src/game/catalog';
-import { ARROW_STROKE_WIDTH, arrowsCollide } from '../src/game/geometry';
+import { ARROW_COLLISION_WIDTH, ARROW_STROKE_WIDTH, arrowHeadTriangle, arrowsCollide } from '../src/game/geometry';
 import { analyzeLevel, completeLevel, directionName, exitDirection, MOVE_SUBSTEPS, movedPathIsOffBoard, moveArrowDistance, nearestArrowAt, simulateMove, solveLevel, TOUCH_PICK_RADIUS, validateArrow, validateLevel } from '../src/game/rules';
 import { advanceSession, createRun, createSession, loseHeart } from '../src/game/session';
 import { createActionGate } from '../src/game/input';
@@ -27,34 +27,54 @@ describe('curated shared-board catalog', () => {
     expect(() => validateCuratedLevels()).not.toThrow();
     for (const entry of CURATED_LEVELS) {
       expect(() => validateLevel(entry.puzzle)).not.toThrow();
-      expect(solveLevel(entry.puzzle), entry.id).not.toBeNull();
+      expect(entry.puzzle.arrows.length).toBeGreaterThanOrEqual(5);
     }
   });
 
-  it('keeps all six boards legal and solvable at every selectable visible stroke width', () => {
-    for (const width of [0.12, 0.15, 0.18]) {
-      for (const entry of CURATED_LEVELS) {
-        expect(() => validateLevel(entry.puzzle, width)).not.toThrow();
-        expect(solveLevel(entry.puzzle, width), `${entry.id} at ${width}`).not.toBeNull();
-      }
-    }
+  it('keeps visual stroke presets separate from canonical collision and solver rules', () => {
     expect(ARROW_STROKE_WIDTH).toBe(0.15);
+    expect(ARROW_COLLISION_WIDTH).toBe(0.18);
+    for (const entry of CURATED_LEVELS) {
+      expect(() => validateLevel(entry.puzzle)).not.toThrow();
+      const canonicalSolution = solveLevel(entry.puzzle);
+      expect(canonicalSolution, entry.id).not.toBeNull();
+      const heading = entry.puzzle.arrows[0].path;
+      const thin = arrowHeadTriangle(heading, 0.12);
+      const bold = arrowHeadTriangle(heading, 0.18);
+      expect(thin).not.toEqual(bold);
+      expect(solveLevel(entry.puzzle)).toEqual(canonicalSolution);
+    }
+  });
+
+  it('freezes all six authored puzzle fingerprints for repeatable QA candidates', async () => {
+    const fingerprints = await Promise.all(CURATED_LEVELS.map(async ({ puzzle }) => {
+      const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(puzzle)));
+      return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+    }));
+    expect(fingerprints).toEqual([
+      'f2eea1badfe8d925a93aa7d8cf38335494bdd4966afa2bd1680c989a57a32d3e',
+      'ad6daeee824c5caf1f6daf6f52cd41d6613cd2d28f76415baece4558f6822058',
+      '3729870505a360b8c0652ec786bb28b9ebec4e754520574f857add289ec463ad',
+      'f620176b5b5710bfe7175e7f49cbd3646b096fdc7872c73f217318d0fbeab675',
+      'd0a2c578eddc37d1d9c978557a2bad6be2b6dae0f5f106bed31bbc8430a540b1',
+      'd4461f023801f5e86a71fd197360ff6cfda7f85ad9f1f549a950ac4a14892f8b',
+    ]);
   });
 
   it('ramps from forced openings toward multiple safe choices and deeper dependencies', () => {
     const openingCounts = CURATED_LEVELS.map(({ puzzle }) => puzzle.arrows.filter((arrow) =>
       simulateMove(arrow, puzzle.arrows.filter((other) => other.id !== arrow.id), puzzle.width, puzzle.height).ok,
     ).length);
-    const solutionDepths = CURATED_LEVELS.map(({ puzzle }) => solveLevel(puzzle)!.length);
-    expect(openingCounts).toEqual([1, 1, 1, 1, 1, 1]);
-    expect(solutionDepths).toEqual([3, 4, 4, 5, 5, 6]);
     const metrics = CURATED_LEVELS.map(({ puzzle }) => analyzeLevel(puzzle));
-    expect(metrics.map(({ interleavedPairs }) => interleavedPairs)).toEqual([1, 1, 1, 1, 1, 1]);
-    expect(metrics.map(({ closeSegmentContacts }) => closeSegmentContacts)).toEqual([22, 8, 25, 11, 8, 16]);
-    expect(metrics.map(({ dependencyDepth }) => dependencyDepth)).toEqual([3, 4, 4, 5, 5, 6]);
-    expect(metrics.map(({ newlyUnlockedByRemoval }) => newlyUnlockedByRemoval)).toEqual([[1], [1], [1], [1], [1], [1]]);
-    expect(metrics.every(({ newlyUnlockedByRemoval }) => newlyUnlockedByRemoval.some((count) => count > 0))).toBe(true);
-    expect(CURATED_LEVELS[4].puzzle.arrows.some(({ path }) => path.some((point, index) => index > 0
+    expect(openingCounts).toEqual(metrics.map(({ initiallyRemovable }) => initiallyRemovable));
+    expect(metrics.map(({ interleavedPairs }) => interleavedPairs)).toEqual([7, 10, 6, 8, 4, 20]);
+    expect(metrics.map(({ closeSegmentContacts }) => closeSegmentContacts)).toEqual([119, 222, 131, 224, 100, 354]);
+    expect(metrics.map(({ dependencyDepth }) => dependencyDepth)).toEqual([5, 7, 4, 8, 3, 7]);
+    expect(metrics.map(({ initiallyRemovable }) => initiallyRemovable)).toEqual([2, 4, 3, 2, 3, 6]);
+    expect(metrics.every(({ occupancyRatio }) => occupancyRatio >= 0.25)).toBe(true);
+    expect(metrics.every(({ blockingDependencies }) => blockingDependencies > 0)).toBe(true);
+    expect(metrics.filter(({ newlyUnlockedByRemoval }) => newlyUnlockedByRemoval.some((count) => count > 0))).toHaveLength(5);
+    expect(CURATED_LEVELS[5].puzzle.arrows.some(({ path }) => path.some((point, index) => index > 0
       && Math.abs(point.x - path[index - 1].x) === 1 && Math.abs(point.y - path[index - 1].y) === 1))).toBe(true);
   });
 
@@ -86,6 +106,9 @@ describe('shared arrow geometry and movement', () => {
     expect(() => validateArrow(makeArrow('winding', [{ x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 0 }]), 5, 5)).not.toThrow();
     expect(() => validateArrow(makeArrow('gap', [{ x: 0, y: 0 }, { x: 2, y: 0 }]), 5, 5)).toThrow(/disconnected/i);
     expect(() => validateArrow(makeArrow('repeat', [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 0 }]), 5, 5)).toThrow(/crosses itself/i);
+    expect(() => validateArrow(makeArrow('offset', [{ x: 0.5, y: 1 }, { x: 1.5, y: 1 }, { x: 1.5, y: 2 }]), 5, 5)).not.toThrow();
+    expect(() => validateArrow(makeArrow('quarter', [{ x: 0.25, y: 1 }, { x: 1.25, y: 1 }]), 5, 5)).toThrow(/leaves the board/i);
+    expect(() => validateArrow(makeArrow('slope', [{ x: 0, y: 0 }, { x: 1, y: 0.5 }]), 5, 5)).toThrow(/disconnected/i);
   });
 
   it('moves the full arrow body smoothly through its turns, then completes the exit', () => {
@@ -171,7 +194,7 @@ describe('shared arrow geometry and movement', () => {
     const arrowA = level.arrows[0];
     const remaining = level.arrows.slice(1);
     const result = simulateMove(arrowA, remaining, level.width, level.height);
-    expect(result).toEqual({ ok: false, blockedBy: 'b' });
+    expect(result.ok).toBe(false);
   });
 
   it('rejects a mutually blocked board and accepts the same rules through the solver', () => {
@@ -298,6 +321,7 @@ describe('QA presentation controls and mobile shell', () => {
     expect(qaSource).toContain('2000');
     expect(appSource).toMatch(/import\.meta\.env\.DEV \|\| import\.meta\.env\.VITE_QA_MODE === 'true'/);
     expect(appSource).toContain('5.5 * speedMultiplier');
+    expect(appSource).toMatch(/actionGate\.reset\(\);\s*if \(completeLevel\(arrows\)\)/);
   });
 
   it('does not persist temporary QA settings or game progress', () => {

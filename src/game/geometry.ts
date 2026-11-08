@@ -2,9 +2,12 @@ import type { Arrow, Point } from './types';
 
 /** Default visible SVG body stroke width in board-cell units. */
 export const ARROW_STROKE_WIDTH = 0.15;
+/** Gameplay collision geometry is fixed to the widest approved art preset. */
+export const ARROW_COLLISION_WIDTH = 0.18;
+export const ARROW_MAX_RENDERED_WIDTH = 0.18;
 /** Floating point slack used at exact contacts; it is far smaller than a pixel at board scale. */
 export const GEOMETRY_EPSILON = 1e-8;
-const HEAD_STROKE_WIDTH = 0.03;
+const HEAD_STROKE_WIDTH = 0.036;
 
 type Segment = { a: Point; b: Point };
 
@@ -104,8 +107,8 @@ function pointInPolygon(point: Point, polygon: Point[]): boolean {
   return inside;
 }
 
-function polylineHitsPolygon(path: Point[], polygon: Point[], strokeWidth: number): boolean {
-  const tolerance = strokeWidth / 2 + HEAD_STROKE_WIDTH / 2;
+function polylineHitsPolygon(path: Point[], polygon: Point[]): boolean {
+  const tolerance = ARROW_COLLISION_WIDTH / 2 + HEAD_STROKE_WIDTH / 2;
   const polygonEdges = segments([...polygon, polygon[0]]);
   return segments(cellCenters(path)).some((line) => pointInPolygon(line.a, polygon)
     || pointInPolygon(line.b, polygon)
@@ -121,26 +124,26 @@ function polygonsCollide(left: Point[], right: Point[], clearance = 0): boolean 
 }
 
 /** Matches visible arrow bodies and triangular heads, not just occupied grid points. */
-export function arrowsCollide(left: Arrow, right: Arrow, extraClearance = 0, strokeWidth = ARROW_STROKE_WIDTH): boolean {
-  if (polylinesCollide(left.path, right.path, strokeWidth + extraClearance)) return true;
-  const leftHead = arrowHeadTriangle(left.path, strokeWidth);
-  const rightHead = arrowHeadTriangle(right.path, strokeWidth);
+export function arrowsCollide(left: Arrow, right: Arrow, extraClearance = 0): boolean {
+  if (polylinesCollide(left.path, right.path, ARROW_COLLISION_WIDTH + extraClearance)) return true;
+  const leftHead = arrowHeadTriangle(left.path, ARROW_MAX_RENDERED_WIDTH);
+  const rightHead = arrowHeadTriangle(right.path, ARROW_MAX_RENDERED_WIDTH);
   if (extraClearance > 0) {
     // Expand the body/head contact tolerances by the maximum travel between
     // collision samples. This makes the sampled sweep conservative.
-    return polylinesCollide(left.path, right.path, strokeWidth + extraClearance)
-      || sweptHeadBodyContact(left.path, rightHead, extraClearance, strokeWidth)
-      || sweptHeadBodyContact(right.path, leftHead, extraClearance, strokeWidth)
+    return polylinesCollide(left.path, right.path, ARROW_COLLISION_WIDTH + extraClearance)
+      || sweptHeadBodyContact(left.path, rightHead, extraClearance)
+      || sweptHeadBodyContact(right.path, leftHead, extraClearance)
       || polygonsCollide(leftHead, rightHead, extraClearance);
   }
-  return polylineHitsPolygon(left.path, rightHead, strokeWidth)
-    || polylineHitsPolygon(right.path, leftHead, strokeWidth)
+  return polylineHitsPolygon(left.path, rightHead)
+    || polylineHitsPolygon(right.path, leftHead)
     || polygonsCollide(leftHead, rightHead);
 }
 
-function sweptHeadBodyContact(path: Point[], polygon: Point[], extraClearance: number, strokeWidth: number): boolean {
+function sweptHeadBodyContact(path: Point[], polygon: Point[], extraClearance: number): boolean {
   const polygonEdges = segments([...polygon, polygon[0]]);
-  const tolerance = strokeWidth / 2 + HEAD_STROKE_WIDTH / 2 + extraClearance;
+  const tolerance = ARROW_COLLISION_WIDTH / 2 + HEAD_STROKE_WIDTH / 2 + extraClearance;
   return segments(cellCenters(path)).some((line) => pointInPolygon(line.a, polygon)
     || pointInPolygon(line.b, polygon)
     || polygonEdges.some((edge) => segmentDistance(line, edge) <= tolerance + GEOMETRY_EPSILON));

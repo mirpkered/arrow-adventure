@@ -117,7 +117,7 @@ function attemptMove(id: string): void {
   if (!arrow) return;
   if (!actionGate.accept(performance.now())) return;
   const moveStrokeWidth = strokeWidth;
-  const result = simulateMove(arrow, arrows.filter((item) => item.id !== id), level.width, level.height, moveStrokeWidth);
+  const result = simulateMove(arrow, arrows.filter((item) => item.id !== id), level.width, level.height);
   if (!result.ok) {
     hearts = loseHeart(hearts);
     notice = 'That arrow is blocked by another one.';
@@ -158,6 +158,7 @@ function attemptMove(id: string): void {
     arrows = arrows.filter((item) => item.id !== id);
     animatingId = null;
     busy = false;
+    actionGate.reset();
     if (completeLevel(arrows)) {
       const next = advanceSession(session, CURATED_LEVELS.length);
       if (next) session = next;

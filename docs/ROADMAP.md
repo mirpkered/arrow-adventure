@@ -1,33 +1,31 @@
 # Arrow Adventure Redesign Roadmap
 
-This roadmap describes the reset prototype on `redesign/shared-board-prototype`. The earlier Adventure catalog and progress model were deliberately discarded for this redesign. This branch is for review and local playtesting; it is not deployed to production.
+This roadmap tracks the reset prototype on `redesign/shared-board-prototype`. The prior 40-level catalog, generation system, and save migration were intentionally removed from this branch. Feature candidates deploy to independent QA only; production remains on `main` and has not been modified by this round.
 
-## Current redesign prototype
+## Current QA prototype
 
-- Six newly authored shared-board puzzles, numbered 1–6.
-- Winding cardinal and diagonal arrow paths, monochrome rendering, path-following movement, shared collision geometry, and solver verification.
-- Three hearts, restart, and in-memory progression for the current browser session.
-- Every fresh page load starts at Level 1. There is no progression persistence and no compatibility read of old local-storage keys.
-- Official logo, PWA metadata, icons, Vite base path, and GitHub Pages workflow are retained.
-- An independent manual QA Pages site builds and identifies selected feature commits without deploying them to production.
-- This round's independent interface work opens directly into a viewport-filling puzzle screen, uses safe-area and dynamic viewport sizing, defaults to 2× animation speed and 0.15-cell strokes, and provides a two-second HUD long-press QA panel only in explicitly flagged QA/development builds.
-- The requested board-wide geometry replacement is pending: the three primary reference screenshots were not available in the workspace, and the request requires them before puzzle geometry changes. The current six layouts are not approved as the revised visual target.
-
-The old 40 puzzles, versioned catalogs, tile-serpentine generator, save migration, saved progression, and one-time diagonal tutorial were removed from this branch.
-
-QA hosting and release instructions are documented in [QA_ENVIRONMENT.md](QA_ENVIRONMENT.md). The initial QA deployment used the expected prototype commit and left production `main` and its Pages workflow untouched.
+- Six fixed, solver-verified shared-board puzzles, Levels 1–6.
+- Replacement geometry reviewed against the three user-supplied visual references: a small tangle, dense mini-maze, nested paths, broad interwoven board, canopy-and-trunk shaped puzzle, and dense challenge.
+- Half-cell coordinate placement for close route packing; cardinal and diagonal one-unit segments remain supported.
+- Repeated route interleaving, meaningful escape blockers and varied arrow counts, path lengths and turns. Exact definitions are fingerprinted in the test suite.
+- Full-screen safe-area-aware mobile layout, single-tap path selection, and continuous path-following animation at 2× default speed.
+- Thin, Medium and Bold line presets; the 0.18-cell collision model remains fixed across visual settings.
+- Three hearts, restart and temporary in-session progression. No save or old-save migration.
+- QA-only two-second HUD long press with speed, stroke, diagnostics, level navigation and candidate SHA. Production builds omit this feature.
+- Approved logo, icons, PWA metadata and independent QA Pages deployment remain in place.
 
 ## Review gates
 
-1. Supply the three reference screenshots, then author and visually review six board-wide tangled compositions.
-2. Play all six boards on iPhone Safari. Review thinner strokes, close path separation, one-tap hit selection, animation frame pacing, blocked-move heart loss, and dependency order. Physical-device validation remains outstanding.
-3. Keep solver and geometry checks passing, including all three selectable stroke widths.
-4. Agree on a stable content direction before adding further puzzles or restoring persistent progression.
-5. Keep this redesign off the production Pages deployment until the gameplay has been reviewed and approved.
+1. Play the six QA boards and review readability, directional clarity, path-body motion, close-path hit testing, blocked first taps and difficulty.
+2. Perform physical iPhone Safari testing for touch behavior, safe areas and frame pacing. It was not available during the current implementation round.
+3. Keep catalog validation, frozen fingerprints, solver/gameplay agreement, typecheck and both production/QA-base builds passing.
+4. Keep all redesign work off production until gameplay and content are explicitly approved.
 
-## Later work, only after review
+The local geometry contact sheet is [round-4-levels.png](previews/round-4-levels.png). It shows board geometry only and is not a browser/device capture. QA host and release flow are in [QA_ENVIRONMENT.md](QA_ENVIRONMENT.md).
 
-- Decide whether the redesigned board representation needs non-grid coordinates or additional arrow segment semantics.
-- Expand the curated set only when new puzzles add useful teaching or decision variety.
-- Revisit save data and progression only after the level identity and content model are accepted.
-- Design and implement future mechanics separately, with explicit rules and solver support.
+## Later work after review
+
+- Refine the six boards using user playtest feedback; preserve the current IDs and update fingerprints deliberately when a layout is approved to change.
+- Add more curated levels only when they add a useful teaching or decision pattern.
+- Design future mechanics—black holes, switches, directional gates and portals—with explicit movement, collision and solver rules before implementation.
+- Reconsider tutorial, persistent progression and Free Play after the foundational geometry has been reviewed.

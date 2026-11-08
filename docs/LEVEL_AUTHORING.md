@@ -1,52 +1,52 @@
 # Prototype Level Authoring
 
-## Active catalog format
+## Current catalog contract
 
-Add new authored entries to `CURATED_LEVELS` in `src/game/catalog.ts`. A record looks like:
+The QA prototype is intentionally fixed at six boards. Do not add levels until the current gameplay has been reviewed. The catalog in `src/game/catalog.ts` stores exact definitions under stable IDs `shared-board-001` through `shared-board-006`; the display number is separate metadata and remains contiguous from 1.
 
-```ts
-{
-  id: 'shared-board-007',
-  number: 7,
-  title: 'Working title',
-  difficulty: 'steady',
-  designNote: 'What this board teaches or asks the player to notice.',
-  puzzle: {
-    number: 7,
-    width: 10,
-    height: 10,
-    arrows: [
-      { id: 'a', path: [{ x: 1, y: 4 }, { x: 2, y: 4 }, { x: 2, y: 3 }] },
-    ],
-  },
-}
-```
+Each entry contains a title, difficulty, authoring note, and puzzle dimensions and arrows. Arrow paths are ordered tail-to-head. Coordinates may use integer or half-integer values inside the board, but every point must lie on a half-cell lattice. Each path step must be exactly one cardinal or 45-degree diagonal board unit. This sub-cell alignment allows neighboring routes to interleave more closely while retaining unambiguous eight-direction movement. Paths may not repeat a point, cross themselves, leave the board, or overlap another stationary arrow's collision envelope.
 
-Use unique lowercase IDs and contiguous player-facing numbers beginning at 1. Paths are integer board points ordered tail-to-head. Each step must be adjacent in one of eight directions. The last segment determines the heading after the arrow reaches the end of its stored body path. All arrows use the same monochrome style; color does not identify paths.
+## Repeatable authoring process
 
-## Validation rules
+1. **Sketch the whole silhouette.** Decide if the board is compact, rectangular, nested or shaped. Pack paths into the same area instead of assigning independent lanes.
+2. **Route the long arrows first.** Use hooks, nested U-turns, corridors and alternating headings. Let long routes wrap around shorter interior paths.
+3. **Fill the remaining corridors.** Add short and medium arrows that block meaningful exits or make a safe removal open another option. Preserve enough spacing for touch selection and clear arrowheads.
+4. **Keep positions deliberate.** Half-cell offsets may tighten parallel runs. Do not alter the visible stroke presets to make a board pass collision validation.
+5. **Freeze the chosen definition.** Store the final paths directly in the catalog. Procedural candidate generation is an authoring aid only; it never runs during Adventure Mode or QA play.
+6. **Validate and review.** Run the full solver/catalog tests, inspect the geometry preview, check ownership and hit-target diagnostics, and manually play every board at phone scale.
 
-On catalog import and in the automated suite, each entry is checked for valid metadata and board geometry. The validator rejects out-of-bounds or disconnected paths, repeated points, visible self-intersections, duplicate arrow IDs, and overlaps between stationary arrows. It also runs `analyzeLevel`: segment proximity is measured directly (not inferred from overlapping bounding boxes), and each released board must contain at least one pair with three or more close route segments on both arrows plus at least eight close segment contacts overall. It then runs the solver. An unsolvable, weakly interleaved, or malformed entry prevents the catalog from loading.
+## Metadata and progression
 
-The solver searches removal orders by calling `simulateMove`. Gameplay calls that same function before starting a move. Movement vertices are sampled by distance along the complete route, including bends and final exit extension. The visual animation uses the same position function on a `requestAnimationFrame` clock; it is independent of collision sampling. The simulator checks the complete body and arrowhead every 0.05 cells and adds the sample interval to collision clearance, conservatively covering between-sample travel. Avoid paths whose visible strokes or heads nearly touch unless the resulting interaction is intentional and tested.
+Use a new stable ID only for a genuinely new content identity. Keep IDs independent of array indexes. Display numbers are contiguous in this reset prototype and should not be silently renumbered. Difficulty is one of `intro`, `steady` or `challenging`. Write a design note describing the board's intended read or dependency.
 
-## Curation and review
+There are no chapters or persistent saves in this prototype. If later approved, chapter metadata and tutorial references should be explicit catalog fields, not inferred from a level number. Add a new chapter only through a reviewed roadmap change. Do not implement future mechanics merely by adding tags; their movement/collision semantics require separate design and solver work.
 
-Use candidate sketches or scripts only as authoring aids; store the final board as a fixed definition in the catalog. Before adding a level, review:
+## Geometry, collision and solver validation
 
-- Path length, irregularity, turn count, and proportion of diagonal segments.
-- Number of safe first moves, dependency depth, and alternative valid sequences.
-- How closely paths share the board while remaining visually distinct.
-- `analyzeLevel` results: interleaved pair count, close segment contacts, initial safe moves, newly unlocked arrows, dependency depth, path lengths, and turn counts. Reject layouts that pass solvability but miss the catalog's interleaving thresholds.
-- Whether the player can trace each arrow and understand why a blocked move fails.
-- Touch selection and line contrast at a phone-sized viewport.
-- Review the board as one complete composition at phone scale. Reject puzzles whose bounding boxes overlap while their actual paths sit in separate lanes; proximity counts alone do not prove interlocking.
-- Check the board at Thin, Medium, and Bold stroke widths. The solver and stationary validation must agree at each selectable width.
+`validateArrow` rejects malformed coordinates, steps, repeated points and self-intersection. `validateLevel` checks stationary body and head separation at the canonical 0.18-cell collision width. This width matches the Bold art preset and is intentionally independent from Thin, Medium and Bold rendering.
 
-Run the solver and the full test/build checks, then play the board manually. A solution proves solvability but not clarity, fairness, or calibrated difficulty. Check hit selection on close neighboring paths and verify that a blocked first tap deducts exactly one heart. Keep the prototype to the smallest set that communicates the design; do not add levels to meet a quota.
+`simulateMove` follows the arrow's entire route, including its moving body, head and final exit. It samples at 0.05 board cells and applies the sampling interval conservatively to the collision test. Gameplay and the solver use this exact simulator. Never write a second approximate solver rule. The solver caches derived blocker graphs by serialized puzzle definition; changed content produces a new cache key.
 
-For future dense boards, author the intended packed silhouette first, then route each arrow through shared corridors while preserving clearance beyond the body/head collision envelope. Freeze paths as catalog data only after solver validation at all supported line widths. Visually inspect a full-board render and use the QA panel's ownership and hit-target diagnostics to check arrow ownership and adjacent-path selection. The current six boards have not yet been replaced with this denser style; the Round 4 request requires its three reference screenshots before that geometry work proceeds.
+Every published prototype entry must pass:
+
+- Unique stable ID and display number, complete metadata and contiguous numbering.
+- Valid board bounds, legal cardinal/diagonal steps, no self-intersections and no stationary overlaps.
+- At least `max(2, ceil(arrow count × 0.35))` interleaved arrow pairs.
+- At least five close segment contacts per arrow and a centerline occupancy ratio of 0.25 or greater. Shaped boards can justify a lower threshold only through explicit review and a corresponding test change.
+- At least three dependency waves, a nonzero safe opening, and no more than 40% of arrows initially removable (rounded up).
+- Varied path lengths and turn counts, plus a solver-found complete removal order.
+- Frozen SHA-256 fingerprints for all six current definitions.
+
+`analyzeLevel` reports close segment contacts (segment pairs within 1.5 cells), repeated interleaving (at least three close segments from each route), blocker links, initially removable arrows, unlock gains, dependency depth, route lengths, turn counts and centerline occupancy. These measurements reject weak layouts but do not replace visual inspection. A high contact count can still come from a visually confusing or poorly composed board.
+
+## Collision and art separation
+
+The line art widths are 0.12, 0.15 and 0.18 board cells. Collision and solver rules always use the fixed 0.18-cell envelope regardless of the selected appearance. When paths are repositioned, run tests for both body and arrowhead separation; do not assume grid points alone establish legality. Recheck that the visible heads remain distinguishable and closest-path hit testing selects neighboring paths deterministically.
+
+## Protecting published QA content
+
+Each current puzzle's SHA-256 fingerprint is asserted in `tests/game.test.ts`. Any path edit changes that fingerprint. Update it only with a deliberate content review and a commit that includes a new preview and solver/geometry results. QA candidate deployments are pinned to a full source SHA, so each layout is reproducible. Production remains unchanged until separate review and explicit promotion.
 
 ## Session and persistence
 
-This reset prototype does not save progress. The page starts at Level 1, level completion advances in memory, and restart returns to the current definition with three hearts. Do not add storage reads or writes until the redesigned content model has been reviewed. Previous release storage keys may remain in a browser but must stay unused.
+This reset prototype does not save progress. A fresh load starts at Level 1, completion advances in memory, and restart restores the current board and three hearts. Do not add storage reads or writes until the redesigned content and progression model have been reviewed. Previous release keys may remain in a browser but stay unused.

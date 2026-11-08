@@ -1,5 +1,5 @@
 import type { Arrow, Level, MoveResult, Point } from './types';
-import { arrowsCollide, segmentDistance, ARROW_STROKE_WIDTH, pointToPolylineDistance } from './geometry';
+import { arrowsCollide, segmentDistance, ARROW_COLLISION_WIDTH, pointToPolylineDistance } from './geometry';
 
 /** Maximum sweep sampling interval, in board-cell distances. */
 export const COLLISION_STEP = 0.05;
@@ -45,11 +45,13 @@ function fullyExited(points: Point[], width: number, height: number, direction: 
   return beyondX || beyondY;
 }
 
-export function validateArrow(arrow: Arrow, width: number, height: number, strokeWidth = ARROW_STROKE_WIDTH): void {
+export function validateArrow(arrow: Arrow, width: number, height: number): void {
   if (arrow.path.length < 2) throw new Error(`${arrow.id} needs at least two cells`);
   const seen = new Set<string>();
   arrow.path.forEach((point, index) => {
-    if (!Number.isInteger(point.x) || !Number.isInteger(point.y) || point.x < 0 || point.y < 0 || point.x >= width || point.y >= height) {
+    if (!Number.isFinite(point.x) || !Number.isFinite(point.y)
+      || Math.abs(point.x * 2 - Math.round(point.x * 2)) > 1e-8 || Math.abs(point.y * 2 - Math.round(point.y * 2)) > 1e-8
+      || point.x < 0 || point.y < 0 || point.x >= width || point.y >= height) {
       throw new Error(`${arrow.id} leaves the board at ${pointKey(point)}`);
     }
     const key = pointKey(point);
@@ -59,28 +61,28 @@ export function validateArrow(arrow: Arrow, width: number, height: number, strok
       const previous = arrow.path[index - 1];
       const dx = Math.abs(previous.x - point.x);
       const dy = Math.abs(previous.y - point.y);
-      if (Math.max(dx, dy) !== 1) throw new Error(`${arrow.id} has a disconnected path`);
+      if (Math.max(dx, dy) !== 1 || (dx > 0 && dy > 0 && Math.abs(dx - dy) > 1e-8)) throw new Error(`${arrow.id} has a disconnected path`);
     }
   });
   const pathSegments = arrow.path.slice(1).map((point, index) => ({ a: arrow.path[index], b: point }));
   for (let left = 0; left < pathSegments.length; left += 1) {
     for (let right = left + 2; right < pathSegments.length; right += 1) {
-      if (segmentDistance(pathSegments[left], pathSegments[right]) <= strokeWidth) {
+      if (segmentDistance(pathSegments[left], pathSegments[right]) <= ARROW_COLLISION_WIDTH) {
         throw new Error(`${arrow.id} has a visually self-intersecting path`);
       }
     }
   }
 }
 
-export function validateLevel(level: Level, strokeWidth = ARROW_STROKE_WIDTH): void {
+export function validateLevel(level: Level): void {
   if (!Number.isInteger(level.width) || level.width < 1 || !Number.isInteger(level.height) || level.height < 1) throw new Error(`Level ${level.number} has invalid dimensions`);
   if (level.arrows.length === 0) throw new Error(`Level ${level.number} is empty`);
   const ids = new Set<string>();
   for (const [index, arrow] of level.arrows.entries()) {
     if (ids.has(arrow.id)) throw new Error(`Level ${level.number} has duplicate arrow ID ${arrow.id}`);
     ids.add(arrow.id);
-    validateArrow(arrow, level.width, level.height, strokeWidth);
-    for (const other of level.arrows.slice(0, index)) if (arrowsCollide(arrow, other, 0, strokeWidth)) throw new Error(`${arrow.id} visually collides with ${other.id}`);
+    validateArrow(arrow, level.width, level.height);
+    for (const other of level.arrows.slice(0, index)) if (arrowsCollide(arrow, other)) throw new Error(`${arrow.id} visually collides with ${other.id}`);
   }
 }
 
@@ -119,7 +121,7 @@ export function moveArrowDistance(arrow: Arrow, traveled: number): Point[] {
 }
 
 /** Deterministically sample the complete swept body; presentation animation uses an independent rAF clock. */
-export function simulateMove(arrow: Arrow, others: Arrow[], width: number, height: number, strokeWidth = ARROW_STROKE_WIDTH): MoveResult {
+export function simulateMove(arrow: Arrow, others: Arrow[], width: number, height: number): MoveResult {
   const frames: Point[][] = [];
   const direction = exitDirection(arrow);
   if (Math.max(Math.abs(direction.x), Math.abs(direction.y)) !== 1 || (direction.x === 0 && direction.y === 0)) throw new Error(`${arrow.id} has an invalid exit direction`);
@@ -131,7 +133,7 @@ export function simulateMove(arrow: Arrow, others: Arrow[], width: number, heigh
     const traveled = Math.min(maxTravel, index * COLLISION_STEP);
     const frame = moveArrowDistance(arrow, traveled);
     const moving = { ...arrow, path: frame.map((point) => ({ x: point.x - 0.5, y: point.y - 0.5 })) };
-    const blocker = others.find((other) => arrowsCollide(moving, other, COLLISION_STEP, strokeWidth));
+    const blocker = others.find((other) => arrowsCollide(moving, other, COLLISION_STEP));
     if (blocker) return { ok: false, blockedBy: blocker.id };
     frames.push(moving.path);
     if (fullyExited(moving.path, width, height, direction)) return { ok: true, frames, travelDistance: traveled };
@@ -139,28 +141,56 @@ export function simulateMove(arrow: Arrow, others: Arrow[], width: number, heigh
   return { ok: false, blockedBy: 'boundary' };
 }
 
-export function solveLevel(level: Level, strokeWidth = ARROW_STROKE_WIDTH): string[] | null {
-  const initial = level.arrows.map((arrow) => ({ ...arrow, path: arrow.path.map((p) => ({ ...p })) }));
+/** Pairwise exits are sufficient because every other arrow is stationary during a move. */
+const blockerCache = new Map<string, Map<string, Set<string>>>();
+const solutionCache = new Map<string, string[] | null>();
+function puzzleKey(level: Level): string { return JSON.stringify([level.width, level.height, level.arrows]); }
+
+function buildExitBlockers(level: Level): Map<string, Set<string>> {
+  const key = puzzleKey(level);
+  const cached = blockerCache.get(key);
+  if (cached) return cached;
+  const blockers = new Map(level.arrows.map(({ id }) => [id, new Set<string>()]));
+  for (const arrow of level.arrows) for (const other of level.arrows) {
+    if (arrow.id === other.id) continue;
+    if (!simulateMove(arrow, [other], level.width, level.height).ok) blockers.get(arrow.id)!.add(other.id);
+  }
+  if (blockerCache.size >= 64) blockerCache.clear();
+  blockerCache.set(key, blockers);
+  return blockers;
+}
+
+export function solveLevel(level: Level): string[] | null {
+  const cacheKey = puzzleKey(level);
+  if (solutionCache.has(cacheKey)) return solutionCache.get(cacheKey)?.slice() ?? null;
+  const blockers = buildExitBlockers(level);
   const memo = new Set<string>();
-  const search = (remaining: Arrow[]): string[] | null => {
-    if (remaining.length === 0) return [];
-    const key = remaining.map((arrow) => arrow.id).sort().join('|');
+  const search = (remaining: Set<string>): string[] | null => {
+    if (remaining.size === 0) return [];
+    const key = [...remaining].sort().join('|');
     if (memo.has(key)) return null;
     memo.add(key);
-    for (const arrow of remaining) {
-      const move = simulateMove(arrow, remaining.filter((other) => other.id !== arrow.id), level.width, level.height, strokeWidth);
-      if (!move.ok) continue;
-      const tail = search(remaining.filter((other) => other.id !== arrow.id));
-      if (tail) return [arrow.id, ...tail];
+    for (const id of remaining) {
+      if ([...blockers.get(id)!].some((blocker) => remaining.has(blocker))) continue;
+      const next = new Set(remaining);
+      next.delete(id);
+      const tail = search(next);
+      if (tail) return [id, ...tail];
     }
     return null;
   };
-  return search(initial);
+  const solution = search(new Set(level.arrows.map(({ id }) => id)));
+  if (solutionCache.size >= 64) solutionCache.clear();
+  solutionCache.set(cacheKey, solution);
+  return solution?.slice() ?? null;
 }
 
 export type LevelMetrics = {
   interleavedPairs: number;
   closeSegmentContacts: number;
+  occupancyRatio: number;
+  blockingDependencies: number;
+  blockersByArrow: Record<string, number>;
   initiallyRemovable: number;
   newlyUnlockedByRemoval: number[];
   dependencyDepth: number;
@@ -169,7 +199,7 @@ export type LevelMetrics = {
 };
 
 /** Curation metrics: close parallel/weaving runs count; bounding-box overlap does not. */
-export function analyzeLevel(level: Level, strokeWidth = ARROW_STROKE_WIDTH): LevelMetrics {
+export function analyzeLevel(level: Level): LevelMetrics {
   const segmentList = (arrow: Arrow) => arrow.path.slice(1).map((point, index) => ({
     a: { x: arrow.path[index].x + 0.5, y: arrow.path[index].y + 0.5 },
     b: { x: point.x + 0.5, y: point.y + 0.5 },
@@ -189,7 +219,8 @@ export function analyzeLevel(level: Level, strokeWidth = ARROW_STROKE_WIDTH): Le
     }
     if (leftIndices.size >= 3 && rightIndices.size >= 3) interleavedPairs += 1;
   }
-  const safe = (remaining: Arrow[]) => remaining.filter((arrow) => simulateMove(arrow, remaining.filter((other) => other.id !== arrow.id), level.width, level.height, strokeWidth).ok);
+  const blockers = buildExitBlockers(level);
+  const safe = (remaining: Arrow[]) => remaining.filter((arrow) => ![...blockers.get(arrow.id)!].some((id) => remaining.some((other) => other.id === id)));
   const initiallySafe = safe(level.arrows);
   const newlyUnlockedByRemoval = initiallySafe.map((removed) => {
     const remaining = level.arrows.filter((arrow) => arrow.id !== removed.id);
@@ -208,7 +239,10 @@ export function analyzeLevel(level: Level, strokeWidth = ARROW_STROKE_WIDTH): Le
   return {
     interleavedPairs,
     closeSegmentContacts,
-    initiallyRemovable: level.arrows.filter((arrow) => simulateMove(arrow, level.arrows.filter((other) => other.id !== arrow.id), level.width, level.height, strokeWidth).ok).length,
+    occupancyRatio: level.arrows.reduce((sum, { path }) => sum + path.slice(1).reduce((length, point, index) => length + distance(point, path[index]), 0), 0) / (level.width * level.height),
+    blockingDependencies: [...blockers.values()].reduce((sum, ids) => sum + ids.size, 0),
+    blockersByArrow: Object.fromEntries([...blockers].map(([id, ids]) => [id, ids.size])),
+    initiallyRemovable: safe(level.arrows).length,
     newlyUnlockedByRemoval,
     dependencyDepth,
     pathLengths: level.arrows.map(({ path }) => path.slice(1).reduce((sum, point, index) => sum + Math.hypot(point.x - path[index].x, point.y - path[index].y), 0)),
