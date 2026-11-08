@@ -1,15 +1,16 @@
 import { CURATED_LEVELS, getCuratedLevel, getNextCuratedLevel } from './game/catalog';
-import { completeLevel, directionName, exitDirection, moveArrowDistance, nearestArrowAt, simulateMove } from './game/rules';
+import { completeLevel, directionName, exitDirection, moveArrowDistance, nearestArrowAt, simulateMove, solveLevel } from './game/rules';
 import { createActionGate } from './game/input';
 import { advanceSession, createRun, loseHeart, type PrototypeSession } from './game/session';
 import { ARROW_STROKE_WIDTH, arrowHeadTriangle } from './game/geometry';
 import { GameAudio } from './app/audio';
 import { movementDuration, NORMAL_MOVE_SPEED, RETURN_MOVE_SPEED } from './app/motion';
-import { loadGameSave, loadSettings, saveGame, saveSettings, storageKeysFor, type Appearance, type GameSave, type PlayerSettings, type StorageLike } from './app/persistence';
+import { loadGameSave, loadSettings, prefersDarkTheme, saveGame, saveSettings, storageKeysFor, type Appearance, type GameSave, type PlayerSettings, type StorageLike } from './app/persistence';
 import { showLaunchSplash } from './app/launchSplash';
 import { BoardViewport } from './app/viewport';
 import type { Arrow, Level, Point } from './game/types';
-import type { DiagnosticFlags } from './qa/qaPanel';
+import { legalMoves } from './game/stateAudit';
+import type { DiagnosticFlags, QABoardSnapshot } from './qa/qaPanel';
 import './style.css';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -22,7 +23,7 @@ const storage: StorageLike | undefined = (() => { try { return window.localStora
 
 showLaunchSplash(document, window, `${BASE}branding/mirpworks-logo.jpg`);
 
-let settings: PlayerSettings = storage ? loadSettings(storage, storageKeys) : { version: 1, appearance: 'automatic', backgroundMusic: false, soundEffects: true };
+let settings: PlayerSettings = storage ? loadSettings(storage, storageKeys) : { version: 1, appearance: 'light', backgroundMusic: false, soundEffects: true };
 audio.setPreferences(settings.backgroundMusic, settings.soundEffects);
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
   if (settings.appearance === 'automatic') applyAppearance();
@@ -40,6 +41,8 @@ let completedIds = new Set<string>(savedGame?.completedLevelIds ?? []);
 let hearts = 3;
 let redArrowIds = new Set<string>();
 let busy = false;
+let temporaryQARun = false;
+let qaHighlightedArrowId: string | null = null;
 let notice = '';
 let animatingId: string | null = null;
 let animationToken = 0;
@@ -61,8 +64,7 @@ const gameLogo = `${BASE}branding/arrow-adventure-official-logo.png`;
 function applyAppearance(): void {
   if (settings.appearance === 'automatic') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.dataset.theme = settings.appearance;
-  const dark = settings.appearance === 'dark'
-    || (settings.appearance === 'automatic' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const dark = prefersDarkTheme(settings.appearance, window.matchMedia('(prefers-color-scheme: dark)').matches);
   document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', dark ? '#17191D' : '#F7F7F2');
 }
 
@@ -86,16 +88,18 @@ function activeSave(levelComplete = screen === 'complete'): GameSave {
 
 /** Saves only stable board states. Animation frames are never persisted. */
 function persistProgress(levelComplete = screen === 'complete'): void {
-  if (!storage || busy) return;
+  if (!storage || busy || (QA_MODE && temporaryQARun)) return;
   const next = activeSave(levelComplete);
   if (saveGame(storage, next, storageKeys)) savedGame = next;
 }
 
-function startLevel(number: number): void {
+function startLevel(number: number, temporaryQA = false): void {
   animationToken += 1;
   actionGate.reset();
   const entry = getLevel(number);
   if (!entry) return;
+  temporaryQARun = temporaryQA;
+  qaHighlightedArrowId = null;
   session = { levelNumber: entry.number };
   catalogEntry = entry;
   level = entry.puzzle;
@@ -108,7 +112,7 @@ function startLevel(number: number): void {
   animatingId = null;
   screen = 'game';
   viewport.reset(level.width, level.height);
-  persistProgress(false);
+  if (!temporaryQARun) persistProgress(false);
   render();
 }
 
@@ -120,6 +124,7 @@ function startNewGame(): void {
 function continueGame(): void {
   const save = storage ? loadGameSave(storage, CURATED_LEVELS, storageKeys) : savedGame;
   if (!save) { startNewGame(); return; }
+  temporaryQARun = false;
   const entry = CURATED_LEVELS.find(({ id }) => id === save.currentLevelId) ?? CURATED_LEVELS[0];
   catalogEntry = entry;
   level = entry.puzzle;
@@ -141,7 +146,7 @@ function qaArrowColor(id: string): string { let hash = 0; for (const char of id)
 
 function arrowMarkup(arrow: Arrow): string {
   const [tip, wingA, wingB] = arrowHeadTriangle(arrow.path, strokeWidth);
-  const classes = ['arrow', animatingId === arrow.id ? 'moving' : '', redArrowIds.has(arrow.id) ? 'is-red' : ''].filter(Boolean).join(' ');
+  const classes = ['arrow', animatingId === arrow.id ? 'moving' : '', redArrowIds.has(arrow.id) ? 'is-red' : '', qaHighlightedArrowId === arrow.id ? 'qa-safe-highlight' : ''].filter(Boolean).join(' ');
   const points = pointString(arrow.path);
   const tail = arrow.path[0];
   const middle = arrow.path[Math.floor(arrow.path.length / 2)];
@@ -357,20 +362,51 @@ function bindQATrigger(): void {
   if (trigger) unbindHold = qaPanel.bind(trigger, qaPanel.open);
 }
 
+function inspectCurrentBoard(selectedArrowId?: string): QABoardSnapshot {
+  const selected = arrows.find(({ id }) => id === selectedArrowId) ?? arrows[0];
+  if (busy) return {
+    levelNumber: catalogEntry.number,
+    remainingArrowIds: arrows.map(({ id }) => id),
+    legalArrowIds: [],
+    solution: null,
+    selectedArrowId: selected?.id,
+    selectedCanEscape: null,
+    collision: null,
+    animating: true,
+  };
+  const currentLevel: Level = { ...level, arrows };
+  const safe = legalMoves(currentLevel).map(({ arrow }) => arrow.id);
+  const solution = solveLevel(currentLevel);
+  const result = selected ? simulateMove(selected, arrows.filter(({ id }) => id !== selected.id), level.width, level.height) : undefined;
+  return {
+    levelNumber: catalogEntry.number,
+    remainingArrowIds: arrows.map(({ id }) => id),
+    legalArrowIds: safe,
+    solution,
+    selectedArrowId: selected?.id,
+    selectedCanEscape: result ? result.ok : null,
+    collision: result && !result.ok ? { blockedBy: result.blockedBy, travelDistance: result.travelDistance } : null,
+    animating: false,
+  };
+}
+
 function renderTitle(): void {
   const hasSave = !!savedGame;
   const savedLevelNumber = savedGame ? CURATED_LEVELS.find(({ id }) => id === savedGame!.currentLevelId)?.number ?? 1 : 1;
   const continueLevel = savedGame ? savedGame.levelComplete ? Math.min(savedLevelNumber + 1, CURATED_LEVELS.length) : savedLevelNumber : 1;
   app.innerHTML = `<main class="app-screen title-screen">
+    <span class="title-overline">A MERPWORKS PUZZLE ADVENTURE</span>
     <div class="title-art"><img src="${gameLogo}" alt="Arrow Adventure" /></div>
     <p class="title-tagline">Untangle the way out.</p>
     <nav class="title-actions" aria-label="Main menu">
-      <button class="primary-button" data-action="play">PLAY <span>→</span></button>
-      ${hasSave ? `<button class="secondary-button" data-action="continue">CONTINUE <small>LEVEL ${continueLevel}</small></button>` : ''}
-      <button class="quiet-button" data-action="settings">SETTINGS</button>
-      <button class="quiet-button" data-action="credits">CREDITS</button>
+      <button class="primary-button title-play" data-action="play"><span class="title-play-icon" aria-hidden="true">▶</span>PLAY</button>
+      ${hasSave ? `<button class="secondary-button title-continue" data-action="continue"><span>CONTINUE</span><small>LEVEL ${continueLevel} <b aria-hidden="true">→</b></small></button>` : ''}
+      <div class="title-secondary-actions">
+        <button class="secondary-button title-secondary" data-action="settings"><span class="title-action-icon" aria-hidden="true">⚙</span><span>Settings</span></button>
+        <button class="secondary-button title-secondary" data-action="credits"><span class="title-action-icon" aria-hidden="true">✦</span><span>Credits</span></button>
+      </div>
     </nav>
-    <span class="title-signature">A MERPWORKS GAME</span>
+    <span class="title-signature">MERPWORKS</span>
   </main>`;
 }
 
@@ -521,8 +557,11 @@ if (QA_MODE) {
       onSpeed: (value) => { speedMultiplier = value; },
       onStroke: applyStroke,
       onDiagnostics: (value) => { diagnostics = value; if (!busy) render(); },
-      onLevel: startLevel,
-      onRestart: () => startLevel(catalogEntry.number),
+      inspect: inspectCurrentBoard,
+      onHighlightLegal: (id) => { if (arrows.some(({ id: arrowId }) => arrowId === id)) { qaHighlightedArrowId = id; render(); } },
+      onLevel: (number) => startLevel(number, true),
+      onRestart: () => startLevel(catalogEntry.number, true),
+      onResetQAState: () => { qaHighlightedArrowId = null; },
       candidateSha: import.meta.env.VITE_CANDIDATE_SHA,
     });
     if (screen === 'game') render();

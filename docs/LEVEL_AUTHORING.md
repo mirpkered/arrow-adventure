@@ -19,7 +19,7 @@ Each entry contains a title, difficulty, authoring note, and puzzle dimensions a
 
 Use a new stable ID only for a genuinely new content identity. Keep IDs independent of array indexes. Display numbers are contiguous in this reset prototype and should not be silently renumbered. Difficulty is one of `intro`, `steady` or `challenging`. Write a design note describing the board's intended read or dependency.
 
-There are no chapters or persistent saves in this prototype. If later approved, chapter metadata and tutorial references should be explicit catalog fields, not inferred from a level number. Add a new chapter only through a reviewed roadmap change. Do not implement future mechanics merely by adding tags; their movement/collision semantics require separate design and solver work.
+There are no chapters or tutorials in the current release. If later approved, chapter metadata and tutorial references should be explicit catalog fields, not inferred from a level number. Add a new chapter only through a reviewed roadmap change. Do not implement future mechanics merely by adding tags; their movement/collision semantics require separate design and solver work.
 
 ## Geometry, collision and solver validation
 
@@ -36,6 +36,8 @@ Every published prototype entry must pass:
 - At least three dependency waves, a nonzero safe opening, and no more than 40% of arrows initially removable (rounded up).
 - Varied path lengths and turn counts, plus a solver-found complete removal order.
 - Frozen SHA-256 fingerprints for all six current definitions.
+
+The catalog validator also calls `auditReachableStates`. It computes blocker edges with the actual `simulateMove` engine, then exhaustively visits every reachable remaining-arrow subset and verifies that each nonterminal state has a legal exit and reaches the empty state. It reports deadlock arrow IDs, the removal sequence that reached a deadlock, and dependency cycles. The audit is exact up to 20 arrows and `2^20` states; larger boards fail explicitly instead of being treated as validated. Current boards top out at 16 arrows. See [Solvability Audit](SOLVABILITY_AUDIT.md) for the method and Level 4 report.
 
 `analyzeLevel` reports close segment contacts (segment pairs within 1.5 cells), repeated interleaving (at least three close segments from each route), blocker links, initially removable arrows, unlock gains, dependency depth, route lengths, turn counts and centerline occupancy. These measurements reject weak layouts but do not replace visual inspection. A high contact count can still come from a visually confusing or poorly composed board.
 

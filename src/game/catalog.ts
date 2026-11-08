@@ -1,4 +1,5 @@
 import { analyzeLevel, solveLevel, validateLevel } from './rules';
+import { auditReachableStates } from './stateAudit';
 import type { CuratedLevel } from './types';
 
 /** Six fixed, solver-screened prototype boards. The authored definitions below are the source of truth. */
@@ -2947,9 +2948,14 @@ export function validateCuratedLevels(entries: readonly CuratedLevel[] = CURATED
     if (Math.max(...metrics.pathLengths) - Math.min(...metrics.pathLengths) < 2
       || Math.max(...metrics.turnCounts) - Math.min(...metrics.turnCounts) < 1) throw new Error(entry.id + ' lacks path variety');
     if (!solveLevel(entry.puzzle)) throw new Error(entry.id + ' has no complete solution');
+    const stateAudit = auditReachableStates(entry.puzzle);
+    if (stateAudit.deadlocks.length > 0) {
+      const witness = stateAudit.deadlocks[0];
+      throw new Error(`${entry.id} reaches deadlock [${witness.remainingArrowIds.join(', ')}] after [${witness.removalSequence.join(' → ') || 'no removals'}]`);
+    }
+    if (stateAudit.dependencyCycles.length > 0) throw new Error(`${entry.id} has dependency cycle [${stateAudit.dependencyCycles[0].join(' → ')}]`);
+    if (stateAudit.terminalStates !== 1) throw new Error(`${entry.id} does not reach exactly one completed board state`);
   }
   const ordered = [...entries].sort((left, right) => left.number - right.number);
   ordered.forEach((entry, index) => { if (entry.number !== index + 1) throw new Error('Prototype levels must be numbered contiguously from Level 1'); });
 }
-
-validateCuratedLevels();

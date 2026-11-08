@@ -22,9 +22,13 @@ export type Appearance = 'light' | 'dark' | 'automatic';
 export type PlayerSettings = { version: 1; appearance: Appearance; backgroundMusic: boolean; soundEffects: boolean };
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
+export function prefersDarkTheme(appearance: Appearance, systemPrefersDark: boolean): boolean {
+  return appearance === 'dark' || (appearance === 'automatic' && systemPrefersDark);
+}
+
 export const DEFAULT_SETTINGS: PlayerSettings = {
   version: 1,
-  appearance: 'automatic',
+  appearance: 'light',
   backgroundMusic: false,
   soundEffects: true,
 };

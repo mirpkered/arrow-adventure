@@ -10,6 +10,9 @@ This roadmap describes the reset, shared-board game now targeted for production.
 - Continuous distance-based arrow animation. A blocked arrow travels to its deterministic collision point, turns red, reverses faster and remains red until it is removed. Each attempt costs one heart.
 - Three-heart system, restart, level progression and device-local stable-state saving.
 - Light, Dark and Automatic appearance; independent optional synthesized music and sound effects.
+- Light is the first-launch default unless a valid saved preference exists; Automatic follows the device without restarting the current puzzle.
+- Exact, memoized reachable-state solvability audit of all six boards (842 reachable states, 2,948 legal transitions); the Level 4 seven-arrow report is documented in [SOLVABILITY_AUDIT.md](SOLVABILITY_AUDIT.md).
+- QA-only state diagnostics display remaining IDs, legal moves, solver path and selected-arrow collision; the panel can highlight a legal move without mutating gameplay or saves.
 - One-time Merpworks splash adapted from Word Search Adventure.
 - QA and production have separate Pages sites, candidate commits and local-storage namespaces. Production `main` is directly authorized for this release; experimental future changes can still be evaluated independently in QA.
 

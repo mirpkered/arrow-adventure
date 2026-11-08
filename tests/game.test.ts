@@ -10,6 +10,7 @@ import { analyzeLevel, completeLevel, directionName, exitDirection, MOVE_SUBSTEP
 import { advanceSession, createRun, createSession, loseHeart } from '../src/game/session';
 import { createActionGate } from '../src/game/input';
 import { movementDuration, NORMAL_MOVE_SPEED, RETURN_MOVE_SPEED } from '../src/app/motion';
+import { auditReachableStates, legalMoves } from '../src/game/stateAudit';
 import type { Arrow, Level, Point } from '../src/game/types';
 
 const styleSource = readFileSync(fileURLToPath(new URL('../src/style.css', import.meta.url)), 'utf8');
@@ -80,6 +81,63 @@ describe('curated shared-board catalog', () => {
     expect(metrics.filter(({ newlyUnlockedByRemoval }) => newlyUnlockedByRemoval.some((count) => count > 0))).toHaveLength(5);
     expect(CURATED_LEVELS[5].puzzle.arrows.some(({ path }) => path.some((point, index) => index > 0
       && Math.abs(point.x - path[index - 1].x) === 1 && Math.abs(point.y - path[index - 1].y) === 1))).toBe(true);
+  });
+
+  it('exhaustively audits all reachable removal states for every authored level', () => {
+    const reports = CURATED_LEVELS.map((entry) => ({ id: entry.id, ...auditReachableStates(entry.puzzle) }));
+    expect(reports.every(({ exact, deadlocks, dependencyCycles, terminalStates }) => exact && deadlocks.length === 0 && dependencyCycles.length === 0 && terminalStates === 1)).toBe(true);
+    expect(reports.map(({ reachableStates }) => reachableStates)).toEqual([16, 83, 30, 14, 19, 680]);
+    expect(reports.map(({ legalTransitions }) => legalTransitions)).toEqual([24, 205, 59, 16, 32, 2612]);
+  });
+
+  it('reproduces the reported Level 4 seven-arrow state and verifies its remaining route', () => {
+    const entry = CURATED_LEVELS[3];
+    const sequences: string[][] = [];
+    const walk = (remaining: typeof entry.puzzle.arrows, sequence: string[]) => {
+      if (sequence.length === 3) {
+        sequences.push(sequence);
+        return;
+      }
+      for (const arrow of legalMoves({ ...entry.puzzle, arrows: remaining })) {
+        walk(remaining.filter(({ id }) => id !== arrow.arrow.id), [...sequence, arrow.arrow.id]);
+      }
+    };
+    walk(entry.puzzle.arrows, []);
+    expect(sequences).toEqual([['a05', 'a07', 'a08'], ['a07', 'a05', 'a08']]);
+    const remainingIds = ['a01', 'a02', 'a03', 'a04', 'a06', 'a09', 'a10'];
+    const remaining = remainingIds.map((id) => entry.puzzle.arrows.find((arrow) => arrow.id === id)!);
+    expect(entry.puzzle.arrows).toHaveLength(10);
+    expect(legalMoves({ ...entry.puzzle, arrows: remaining }).map(({ arrow }) => arrow.id)).toEqual(['a06']);
+    expect(simulateMove(remaining.find(({ id }) => id === 'a06')!, remaining.filter(({ id }) => id !== 'a06'), entry.puzzle.width, entry.puzzle.height).ok).toBe(true);
+    for (const blocked of remaining.filter(({ id }) => id !== 'a06')) {
+      expect(simulateMove(blocked, remaining.filter(({ id }) => id !== blocked.id), entry.puzzle.width, entry.puzzle.height).ok).toBe(false);
+    }
+    const report = auditReachableStates({ ...entry.puzzle, arrows: remaining });
+    expect(report).toMatchObject({ exact: true, reachableStates: 10, legalTransitions: 11, terminalStates: 1, initialLegalMoves: ['a06'], deadlocks: [], dependencyCycles: [] });
+    const solution = solveLevel({ ...entry.puzzle, arrows: remaining });
+    expect(solution).toEqual(['a06', 'a10', 'a01', 'a04', 'a03', 'a09', 'a02']);
+    let current = remaining;
+    for (const id of solution!) {
+      const arrow = current.find((candidate) => candidate.id === id)!;
+      expect(simulateMove(arrow, current.filter((candidate) => candidate.id !== id), entry.puzzle.width, entry.puzzle.height).ok).toBe(true);
+      current = current.filter((candidate) => candidate.id !== id);
+    }
+    expect(current).toHaveLength(0);
+    expect(loseHeart(loseHeart(3))).toBe(1);
+  });
+
+  it('reports an exact deadlock witness and dependency cycle for a mutually blocked board', () => {
+    const level: Level = {
+      number: 99, width: 8, height: 7,
+      arrows: [makeArrow('east', [{ x: 1, y: 4 }, { x: 2, y: 4 }]), makeArrow('west', [{ x: 6, y: 4 }, { x: 5, y: 4 }])],
+    };
+    const result = auditReachableStates(level);
+    expect(result.reachableStates).toBe(1);
+    expect(result.initialLegalMoves).toEqual([]);
+    expect(result.deadlocks).toEqual([{ remainingArrowIds: ['east', 'west'], removalSequence: [] }]);
+    expect(result.dependencyCycles).toHaveLength(1);
+    expect(result.dependencyCycles[0]).toEqual(expect.arrayContaining(['east', 'west']));
+    expect(solveLevel(level)).toBeNull();
   });
 
   it('rejects catalog identity and numbering mistakes', () => {
@@ -328,10 +386,22 @@ describe('QA presentation controls and mobile shell', () => {
     expect(appSource).toContain("import './style.css'");
   });
 
+  it('presents a composed, touch-friendly title menu without changing level state for appearance updates', () => {
+    for (const label of ['title-overline', 'title-art', 'title-play', 'title-secondary', 'Settings', 'Credits', 'title-signature']) expect(appSource).toContain(label);
+    expect(appSource).toContain('data-action="play"');
+    expect(appSource).toContain('data-action="continue"');
+    expect(appSource).toContain('data-action="settings"');
+    expect(appSource).toContain('data-action="credits"');
+    expect(styleSource).toContain('--accent:#3857a4');
+    expect(styleSource).toContain('.title-secondary-actions');
+    expect(styleSource).toContain(':root[data-theme="dark"]');
+    expect(appSource).toMatch(/if \(element\.dataset\.appearance\) \{[\s\S]*?saveSettingsNow\(\); render\(\); return;/);
+  });
+
   it('defines the requested QA presets, diagnostics, candidate SHA, and level navigation', () => {
     expect(qaSource).toContain('[1, 1.5, 2, 2.5]');
     expect(qaSource).toContain('[0.12, 0.15, 0.18]');
-    for (const label of ['Arrow IDs', 'Path ownership', 'Hit targets', 'Board geometry', 'Candidate', 'Reset QA settings']) expect(qaSource).toContain(label);
+    for (const label of ['Arrow IDs', 'Path ownership', 'Hit targets', 'Board geometry', 'Candidate', 'Reset QA state', 'Remaining IDs', 'Solver route', 'Collision check', 'Highlight one legal arrow', 'No legal moves']) expect(qaSource).toContain(label);
     expect(qaSource).toMatch(/\[1,2,3,4,5,6\]\.map/);
     expect(qaSource).toContain('data-level="${value}"');
     expect(qaSource).toContain('2000');
@@ -342,6 +412,8 @@ describe('QA presentation controls and mobile shell', () => {
     expect(movementDuration(42, NORMAL_MOVE_SPEED)).toBe(1500);
     expect(movementDuration(42, NORMAL_MOVE_SPEED, true)).toBeLessThanOrEqual(140);
     expect(appSource).toContain('if (completeLevel(arrows))');
+    expect(appSource).toContain('onLevel: (number) => startLevel(number, true)');
+    expect(appSource).toContain('if (!storage || busy || (QA_MODE && temporaryQARun)) return');
   });
 
   it('persists player appearance, audio, and stable progress but not QA settings', () => {

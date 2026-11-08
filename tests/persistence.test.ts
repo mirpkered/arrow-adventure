@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CURATED_LEVELS } from '../src/game/catalog';
-import { DEFAULT_SETTINGS, PRODUCTION_STORAGE_KEYS, QA_STORAGE_KEYS, loadGameSave, loadSettings, saveGame, saveSettings, type StorageLike } from '../src/app/persistence';
+import { DEFAULT_SETTINGS, PRODUCTION_STORAGE_KEYS, QA_STORAGE_KEYS, loadGameSave, loadSettings, prefersDarkTheme, saveGame, saveSettings, type StorageLike } from '../src/app/persistence';
 
 function storageFixture(initial: Record<string, string> = {}) {
   const data = new Map(Object.entries(initial));
@@ -61,7 +61,22 @@ describe('local game persistence', () => {
     expect(saveSettings(storage, settings)).toBe(true);
     expect(loadSettings(storage)).toEqual(settings);
     storage.setItem(PRODUCTION_STORAGE_KEYS.settings, JSON.stringify({ version: 1, appearance: 'invalid', backgroundMusic: false, soundEffects: true }));
-    expect(loadSettings(storage).appearance).toBe('automatic');
+    expect(loadSettings(storage).appearance).toBe('light');
+  });
+
+  it('defaults first launches to Light and preserves valid explicit Light, Dark, and Automatic preferences', () => {
+    const { storage } = storageFixture();
+    expect(DEFAULT_SETTINGS.appearance).toBe('light');
+    expect(loadSettings(storage).appearance).toBe('light');
+    for (const appearance of ['light', 'dark', 'automatic'] as const) {
+      const settings = { ...DEFAULT_SETTINGS, appearance };
+      expect(saveSettings(storage, settings)).toBe(true);
+      expect(loadSettings(storage).appearance).toBe(appearance);
+    }
+    expect(prefersDarkTheme('light', true)).toBe(false);
+    expect(prefersDarkTheme('dark', false)).toBe(true);
+    expect(prefersDarkTheme('automatic', true)).toBe(true);
+    expect(prefersDarkTheme('automatic', false)).toBe(false);
   });
 
   it('isolates QA progress and preferences from production on the shared GitHub Pages origin', () => {

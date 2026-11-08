@@ -12,7 +12,7 @@ The Merpworks startup splash leads to the title menu. Choose **Play** to begin a
 
 Tap an arrow to try to clear it. It follows its winding route, then travels in its final heading until its whole body exits. If blocked, the arrow moves to the collision point, turns red, and returns along its path; it stays red until successfully cleared. Each failed attempt costs one of three hearts, including a repeat attempt on a red arrow. Restart resets the level and hearts. There is no undo, timer, advertising, or monetization.
 
-The board fits the available viewport, supports pinch zoom and panning, and has a reset-view control. Touch hit tolerance is independent of visible line thickness. The interface adapts to Light, Dark, or Automatic appearance and respects device safe areas and reduced-motion preferences.
+The board fits the available viewport, supports pinch zoom and panning, and has a reset-view control. Touch hit tolerance is independent of visible line thickness. Light is the default on first launch; saved Light, Dark, or Automatic preferences are respected. The interface follows device appearance when Automatic is selected, respects safe areas, and shortens motion for reduced-motion preferences.
 
 ## Menus and settings
 
@@ -39,7 +39,7 @@ $env:VITE_CANDIDATE_SHA='local-preview'
 npm run build
 ```
 
-The QA panel is available only in development or builds with `VITE_QA_MODE=true`. Hold the level label for two seconds (or use Enter/Space when focused) to open speed, stroke, diagnostics, level navigation, restart, and reset controls. QA values are temporary. QA and production use separate local-storage namespaces because both Pages sites share the same browser origin.
+The QA panel is available only in development or builds with `VITE_QA_MODE=true`. Hold the level label for two seconds (or use Enter/Space when focused) to open speed, stroke, diagnostics, level navigation, restart, and reset controls. It reports the actual legal moves, remaining IDs, a solver route, collision details for a selected arrow, and can highlight one safe move. QA jumps and restarts are temporary. QA and production use separate local-storage namespaces because both Pages sites share the same browser origin.
 
 ## Deployment
 
@@ -57,7 +57,7 @@ The QA panel is available only in development or builds with `VITE_QA_MODE=true`
 - `src/main.ts` — title/menu flow, SVG board, delegated touch handling, rAF movement and save orchestration.
 - `src/qa/qaPanel.ts` — development/QA-only testing controls, dynamically imported.
 
-Puzzle geometry and collision assumptions are documented in [Game Design](docs/GAME_DESIGN.md). The repeatable process for curated content is in [Level Authoring](docs/LEVEL_AUTHORING.md).
+Puzzle geometry and collision assumptions are documented in [Game Design](docs/GAME_DESIGN.md). The exact all-state solvability audit and Level 4 reconstruction are in [Solvability Audit](docs/SOLVABILITY_AUDIT.md). The repeatable process for curated content is in [Level Authoring](docs/LEVEL_AUTHORING.md).
 
 ## Current scope and limitations
 
