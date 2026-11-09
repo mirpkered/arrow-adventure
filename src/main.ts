@@ -5,7 +5,7 @@ import { advanceSession, createRun, loseHeart, type PrototypeSession } from './g
 import { ARROW_STROKE_WIDTH, arrowHeadTriangle, toBoardPoint, toPathPoint } from './game/geometry';
 import { GameAudio } from './app/audio';
 import { movementDuration, NORMAL_MOVE_SPEED, RETURN_MOVE_SPEED } from './app/motion';
-import { loadGameSave, loadSettings, prefersDarkTheme, saveGame, saveSettings, storageKeysFor, type Appearance, type GameSave, type PlayerSettings, type StorageLike } from './app/persistence';
+import { loadGameSave, loadSettings, prefersDarkTheme, retireIncompatibleProgress, saveGame, saveSettings, storageKeysFor, type Appearance, type GameSave, type PlayerSettings, type StorageLike } from './app/persistence';
 import { showLaunchSplash } from './app/launchSplash';
 import { BoardViewport } from './app/viewport';
 import { boardGridMarkup } from './app/boardGrid';
@@ -25,6 +25,7 @@ const storage: StorageLike | undefined = (() => { try { return window.localStora
 showLaunchSplash(document, window, `${BASE}branding/mirpworks-logo.jpg`);
 
 let settings: PlayerSettings = storage ? loadSettings(storage, storageKeys) : { version: 1, appearance: 'light', backgroundMusic: false, soundEffects: true };
+if (storage) retireIncompatibleProgress(storage, storageKeys);
 audio.setPreferences(settings.backgroundMusic, settings.soundEffects);
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
   if (settings.appearance === 'automatic') applyAppearance();
@@ -77,7 +78,8 @@ function getLevel(number: number) { return getCuratedLevel(number); }
 
 function activeSave(levelComplete = screen === 'complete'): GameSave {
   return {
-    version: 1,
+    version: 2,
+    catalogVersion: catalogEntry.catalogVersion,
     currentLevelId: catalogEntry.id,
     completedLevelIds: [...completedIds],
     remainingArrowIds: levelComplete ? [] : arrows.map(({ id }) => id),

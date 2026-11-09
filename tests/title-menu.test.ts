@@ -32,12 +32,12 @@ it('routes title menu controls through Settings, Credits, Play, and saved Contin
   expect(app.querySelector('h1')?.textContent).toBe('Credits');
   activate('back');
   activate('play');
-  expect(app.querySelector('.board')?.getAttribute('aria-label')).toContain('7 arrows remaining');
+  expect(app.querySelector('.board')?.getAttribute('aria-label')).toContain('5 arrows remaining');
   activate('pause');
   activate('title');
   expect(app.querySelector('[data-action="continue"]')?.textContent).toContain('LEVEL 1');
   activate('continue');
-  expect(app.querySelector('.board')?.getAttribute('aria-label')).toContain('7 arrows remaining');
+  expect(app.querySelector('.board')?.getAttribute('aria-label')).toContain('5 arrows remaining');
   vi.runOnlyPendingTimers();
   vi.useRealTimers();
 });

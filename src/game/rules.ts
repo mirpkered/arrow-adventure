@@ -246,7 +246,9 @@ export function solveLevel(level: Level): string[] | null {
 
 export type LevelMetrics = {
   interleavedPairs: number;
+  interleavedPairsByArrow: Record<string, number>;
   closeSegmentContacts: number;
+  closeSegmentContactsByArrow: Record<string, number>;
   occupancyRatio: number;
   blockingDependencies: number;
   blockersByArrow: Record<string, number>;
@@ -264,19 +266,27 @@ export function analyzeLevel(level: Level): LevelMetrics {
     b: toBoardPoint(point),
   }));
   let interleavedPairs = 0;
+  const interleavedPairsByArrow: Record<string, number> = Object.fromEntries(level.arrows.map(({ id }) => [id, 0]));
   let closeSegmentContacts = 0;
+  const closeSegmentContactsByArrow: Record<string, number> = Object.fromEntries(level.arrows.map(({ id }) => [id, 0]));
   for (let i = 0; i < level.arrows.length; i += 1) for (let j = i + 1; j < level.arrows.length; j += 1) {
     const left = segmentList(level.arrows[i]);
     const right = segmentList(level.arrows[j]);
     const contacts = left.flatMap((a) => right.filter((b) => segmentDistance(a, b) <= 1.5).map((b) => ({ a, b })));
     closeSegmentContacts += contacts.length;
+    closeSegmentContactsByArrow[level.arrows[i].id] += contacts.length;
+    closeSegmentContactsByArrow[level.arrows[j].id] += contacts.length;
     // Require multiple contact zones spread along both routes, not just a crossing or exit block.
     const leftIndices = new Set<number>();
     const rightIndices = new Set<number>();
     for (let a = 0; a < left.length; a += 1) for (let b = 0; b < right.length; b += 1) {
       if (segmentDistance(left[a], right[b]) <= 1.5) { leftIndices.add(a); rightIndices.add(b); }
     }
-    if (leftIndices.size >= 3 && rightIndices.size >= 3) interleavedPairs += 1;
+    if (leftIndices.size >= 3 && rightIndices.size >= 3) {
+      interleavedPairs += 1;
+      interleavedPairsByArrow[level.arrows[i].id] += 1;
+      interleavedPairsByArrow[level.arrows[j].id] += 1;
+    }
   }
   const blockers = buildExitBlockers(level);
   const safe = (remaining: Arrow[]) => remaining.filter((arrow) => ![...blockers.get(arrow.id)!].some((id) => remaining.some((other) => other.id === id)));
@@ -297,7 +307,9 @@ export function analyzeLevel(level: Level): LevelMetrics {
   }
   return {
     interleavedPairs,
+    interleavedPairsByArrow,
     closeSegmentContacts,
+    closeSegmentContactsByArrow,
     occupancyRatio: level.arrows.reduce((sum, { path }) => sum + path.slice(1).reduce((length, point, index) => length + distance(point, path[index]), 0), 0) / (level.width * level.height),
     blockingDependencies: [...blockers.values()].reduce((sum, ids) => sum + ids.size, 0),
     blockersByArrow: Object.fromEntries([...blockers].map(([id, ids]) => [id, ids.size])),

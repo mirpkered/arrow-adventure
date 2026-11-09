@@ -1,15 +1,20 @@
 import type { CuratedLevel } from '../game/types';
 
 export type StorageEnvironment = 'production' | 'qa';
-export type StorageKeys = { game: string; settings: string };
+export type StorageKeys = { game: string; retiredGame: string; settings: string };
 export function storageKeysFor(environment: StorageEnvironment): StorageKeys {
-  return { game: `arrow-adventure.${environment}.game.v1`, settings: `arrow-adventure.${environment}.settings.v1` };
+  return {
+    game: `arrow-adventure.${environment}.game.v2`,
+    retiredGame: `arrow-adventure.${environment}.game.v1`,
+    settings: `arrow-adventure.${environment}.settings.v1`,
+  };
 }
 export const PRODUCTION_STORAGE_KEYS = storageKeysFor('production');
 export const QA_STORAGE_KEYS = storageKeysFor('qa');
 
 export type GameSave = {
-  version: 1;
+  version: 2;
+  catalogVersion: string;
   currentLevelId: string;
   completedLevelIds: string[];
   remainingArrowIds: string[];
@@ -44,16 +49,26 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === 'string') && new Set(value).size === value.length;
 }
 
+export function retireIncompatibleProgress(storage: StorageLike, keys = PRODUCTION_STORAGE_KEYS): void {
+  try {
+    storage.removeItem(keys.retiredGame);
+    storage.removeItem('mirpworks.arrow-adventure.save.v1');
+    storage.removeItem('mirpworks.arrow-adventure.save.v2');
+  } catch { /* The catalog versioned key keeps old saves from loading even if removal is blocked. */ }
+}
+
 export function loadGameSave(storage: StorageLike, catalog: readonly CuratedLevel[], keys = PRODUCTION_STORAGE_KEYS): GameSave | null {
   const data = readJson(storage, keys.game);
   if (!data || typeof data !== 'object') return null;
   const candidate = data as Partial<GameSave>;
-  if (candidate.version !== 1 || typeof candidate.currentLevelId !== 'string'
+  if (candidate.version !== 2 || typeof candidate.catalogVersion !== 'string' || !candidate.catalogVersion
+    || typeof candidate.currentLevelId !== 'string'
     || !isStringArray(candidate.completedLevelIds) || !isStringArray(candidate.remainingArrowIds)
     || !isStringArray(candidate.redArrowIds) || !Number.isInteger(candidate.hearts)
     || candidate.hearts! < 0 || candidate.hearts! > 3 || typeof candidate.levelComplete !== 'boolean') return null;
   const level = catalog.find((entry) => entry.id === candidate.currentLevelId);
   if (!level) return null;
+  if (candidate.catalogVersion !== level.catalogVersion) return null;
   const knownLevels = new Set(catalog.map((entry) => entry.id));
   const knownArrows = new Set(level.puzzle.arrows.map((arrow) => arrow.id));
   if (candidate.completedLevelIds.some((id) => !knownLevels.has(id))
@@ -62,7 +77,8 @@ export function loadGameSave(storage: StorageLike, catalog: readonly CuratedLeve
   if (candidate.levelComplete && (candidate.remainingArrowIds.length > 0 || !candidate.completedLevelIds.includes(level.id))) return null;
   if (!candidate.levelComplete && candidate.remainingArrowIds.length === 0) return null;
   return {
-    version: 1,
+    version: 2,
+    catalogVersion: candidate.catalogVersion,
     currentLevelId: level.id,
     completedLevelIds: [...candidate.completedLevelIds],
     remainingArrowIds: [...candidate.remainingArrowIds],

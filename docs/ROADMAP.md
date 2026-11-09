@@ -1,34 +1,29 @@
 # Arrow Adventure Roadmap
 
-This roadmap describes the reset, shared-board game now targeted for production. The original 40-level game, progress records, and old puzzle system are retired; they are not imported.
+## Round 9 development status
 
-## Current release foundation
+Round 9 replaces the active Adventure catalog on its development branch with ten deterministic, versioned candidate levels in `src/game/adventure-catalog.json`. The previous six-level definitions are retained only in `src/game/archive/catalog-round8.ts`. The candidate set passes the current geometry checks, solver, and exact reachable-state audit. Visual review found that several candidate layouts are too dispersed or do not read clearly as their intended silhouettes. They are not approved for QA or production deployment.
 
-- Six fixed, solver-verified puzzles: Small Tangle, Dense Mini-Maze, Nested Paths, Interwoven Board, Shaped Puzzle, and Dense Challenge.
-- Board-wide path composition with half-cell placement, close parallel routes, nested bends, varied path lengths, cardinal and diagonal segments, and meaningful exit dependencies.
-- Full-viewport mobile interface with title, gameplay, pause, settings and credits screens; safe-area handling, fit-to-board scaling, pinch zoom, pan and view reset.
-- Static full-screen portrait title scene with a locally stored purple mountain landscape, warm sunrise, and winding cyan trail; the approved square app icon remains unchanged.
-- Continuous distance-based arrow animation. A blocked arrow travels to its deterministic collision point, turns red, reverses faster and remains red until it is removed. Each attempt costs one heart.
-- Three-heart system, restart, level progression and device-local stable-state saving.
-- Light, Dark and Automatic appearance; independent optional synthesized music and sound effects.
-- Light is the first-launch default unless a valid saved preference exists; Automatic follows the device without restarting the current puzzle.
-- Exact, memoized reachable-state solvability audit of all six boards (555 reachable states, 1,622 legal transitions), plus full self-motion geometry validation of all 60 arrows; details are in [SOLVABILITY_AUDIT.md](SOLVABILITY_AUDIT.md).
-- QA-only state diagnostics display remaining IDs, legal moves, solver path and selected-arrow collision; the panel can highlight a legal move without mutating gameplay or saves.
-- One-time Mirpworks splash adapted from Word Search Adventure.
-- QA and production have separate Pages sites, candidate commits and local-storage namespaces. Production `main` is directly authorized for this release; experimental future changes can still be evaluated independently in QA.
+The source branch is `round-9/adventure-rebuild`. Production `main` and the independent QA site remain unchanged. Round 9 should not be promoted until each of the ten compositions passes unaided visual review at phone scale and the three silhouettes read from arrow paths alone.
 
-## Validation and playtest gates
+## Accepted design direction
 
-1. Keep catalog integrity, frozen level fingerprints, collision/solver agreement, save validation, input, viewport and splash tests passing.
-2. Run tests, TypeScript validation, the production build, and a QA-base build for every release candidate.
-3. Physically test iPhone Safari touch selection, pinch/pan, safe areas, reduced motion, splash lifecycle, audio behavior and frame pacing before public announcement. Physical device testing was not performed in the current work session.
-4. Preserve a recoverable production checkpoint before broad future content or architecture changes.
+- Replace the former six active boards with ten new curated levels: seven abstract arrow weaves and three arrow-built silhouettes.
+- Give every level a stable ID, catalog version, content version, chapter, difficulty, composition tag, design note, intended footprint, and frozen puzzle definition.
+- Keep candidate generation as an offline authoring aid; never generate Adventure Mode content at runtime.
+- Measure path occupancy and large gaps inside each authored footprint, closest-neighbor spacing, repeated interleaving, path and turn diversity, blocker relationships, safe openings, and dependency depth.
+- Reject illegal self-geometry and stationary intersections. Use the actual movement simulator for gameplay, solver, catalog validation, and exact reachable-state auditing.
+- Reset retired catalog progress through the versioned save boundary while preserving independent settings.
 
-## Next recommended work
+## Release gates
 
-- Play all six refined puzzles on a physical iPhone and tune board scale, touch precision, speed, blocked collision feel, and level difficulty. Physical device testing was not performed for Round 8.
-- Playtest all six levels on a physical iPhone and tune board scale, touch precision, speed, blocked collision feel, and level difficulty.
-- Refine or replace individual puzzles based on observed solves; update their frozen fingerprints deliberately and re-run the solver and geometry review.
-- Add a modest next batch of curated puzzles only after the current collection is reviewed.
-- Add tutorials or level selection after playtesting establishes onboarding needs.
-- Design future black holes, switches, directional gates, portals, and Free Play as separate, reviewed mechanics. Do not add them until their movement, collision, solver, save, and tutorial rules are specified.
+1. Manually select and refine all ten layouts; solver validity and density metrics do not substitute for composition quality.
+2. Validate all path geometry and exhaustively audit every reachable state with no truncation.
+3. Inspect complete starting arrangements at representative iPhone portrait viewports and play all ten boards on a physical iPhone.
+4. Verify Round 9 save reset and settings preservation.
+5. Run the full suite, TypeScript validation, production build, and QA-base build.
+6. Deploy the complete catalog to the independent QA site, inspect the candidate there, then update production only after all release gates pass.
+
+## Later work
+
+Do not add levels beyond this ten-level opening set until its design has been playtested. Future roadmap mechanics—Free Play, black holes, switches, directional gates, and portals—remain out of scope until their movement, collision, solver, and tutorial rules have been separately specified.

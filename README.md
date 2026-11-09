@@ -1,6 +1,6 @@
 # Arrow Adventure
 
-Arrow Adventure is a mobile-first, advertisement-free puzzle game from Mirpworks. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. The redesign replaces the former 40-level game with a new six-level shared-board collection.
+Arrow Adventure is a mobile-first, advertisement-free puzzle game from Mirpworks. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. The Round 9 branch develops a new ten-level catalog under review; production remains at the current six-level release until the replacement compositions pass visual QA.
 
 Production: <https://mirpkered.github.io/arrow-adventure/>
 
@@ -47,7 +47,8 @@ The QA panel is available only in development or builds with `VITE_QA_MODE=true`
 
 ## Architecture
 
-- `src/game/catalog.ts` — six fixed, solver-screened shared-board puzzles and integrity checks.
+- `src/game/catalog.ts` and `src/game/adventure-catalog.json` — ten deterministic Round 9 catalog candidates, stable IDs, footprints, metadata, and integrity checks; not yet approved for release.
+- `src/game/archive/catalog-round8.ts` — non-playable archive of the retired six-level reference set.
 - `src/game/geometry.ts`, `src/game/rules.ts`, `src/game/density.ts` — shared board-coordinate transforms, fixed collision envelopes, grid and segment validation, distance-based body movement, solver, and sampled whitespace metrics.
 - `src/app/boardGrid.ts` — fine-grid paths rendered in the same SVG coordinate frame as the arrows.
 - `src/game/session.ts` — heart and run-state helpers.
@@ -64,7 +65,8 @@ The Round 7A historical baseline and Round 8 Level 5 before/after density measur
 
 ## Current scope and limitations
 
-- Six curated prototype levels, Levels 1–6. These replace the earlier 40 levels; their progress is not imported.
-- Puzzle content is solver-verified and fingerprinted. All 60 arrows pass the current geometry validator; exhaustive state auditing covers 555 reachable board states and 1,622 legal removal transitions.
+- Production remains on its six-level catalog. The Round 9 development branch has ten new deterministic candidates; their solver, geometry, fingerprint and exact-state checks pass, but several compositions still need visual redesign before QA or production deployment.
+- Round 9 candidate progress uses catalog-versioned saves. Retired puzzle progress does not carry over, while theme and sound preferences remain separate.
 - Physical iPhone Safari playtesting was not performed in this release. Confirm gestures, safe areas, zoom, splash timing, and frame pacing on a device before public announcement.
+- The ten Round 9 candidates are not a release. QA and production have not been updated; replace weak compositions before promoting this branch.
 - Free Play, tutorials, black holes, switches, gates, portals, and additional chapters are future work.

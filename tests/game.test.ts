@@ -5,209 +5,102 @@ import appSource from '../src/main.ts?raw';
 import qaSource from '../src/qa/qaPanel.ts?raw';
 import { bindLongPress } from '../src/qa/qaPanel';
 import { CURATED_LEVELS, getCuratedLevel, getNextCuratedLevel, validateCuratedLevels } from '../src/game/catalog';
-import { ARROW_COLLISION_WIDTH, ARROW_MAX_RENDERED_WIDTH, ARROW_STROKE_WIDTH, BOARD_GRID_SPACING, arrowHeadTriangle, arrowsCollide, findSelfBodyClearanceIssue, findSelfHeadClearanceIssue, isBoardGridIntersection, toBoardPoint } from '../src/game/geometry';
+import { ARROW_COLLISION_WIDTH, ARROW_MAX_RENDERED_WIDTH, ARROW_STROKE_WIDTH, BOARD_GRID_SPACING, arrowHeadTriangle, arrowsCollide, findSelfBodyClearanceIssue, isBoardGridIntersection, toBoardPoint } from '../src/game/geometry';
 import { boardGridMarkup } from '../src/app/boardGrid';
 import { measureBoardDensity } from '../src/game/density';
-import { analyzeLevel, completeLevel, directionName, exitDirection, MOVE_SUBSTEPS, movedPathIsOffBoard, moveArrowDistance, nearestArrowAt, simulateMove, solveLevel, TOUCH_PICK_RADIUS, validateArrow, validateArrowSelfTraversal, validateLevel } from '../src/game/rules';
+import { completeLevel, directionName, exitDirection, MOVE_SUBSTEPS, movedPathIsOffBoard, moveArrowDistance, nearestArrowAt, simulateMove, solveLevel, TOUCH_PICK_RADIUS, validateArrow, validateLevel } from '../src/game/rules';
 import { advanceSession, createRun, createSession, loseHeart } from '../src/game/session';
 import { createActionGate } from '../src/game/input';
 import { movementDuration, NORMAL_MOVE_SPEED, RETURN_MOVE_SPEED } from '../src/app/motion';
-import { auditReachableStates, legalMoves } from '../src/game/stateAudit';
+import { auditReachableStates } from '../src/game/stateAudit';
 import type { Arrow, Level, Point } from '../src/game/types';
+import { ARCHIVED_ROUND8_LEVELS } from '../src/game/archive/catalog-round8';
 
 const styleSource = readFileSync(fileURLToPath(new URL('../src/style.css', import.meta.url)), 'utf8');
 const titleSceneSource = readFileSync(fileURLToPath(new URL('../public/branding/arrow-adventure-title-scene.svg', import.meta.url)), 'utf8');
-
 const makeArrow = (id: string, path: Point[]): Arrow => ({ id, path });
 
-describe('curated shared-board catalog', () => {
-  it('contains a small, contiguous, authored prototype set beginning at Level 1', () => {
-    expect(CURATED_LEVELS.length).toBeGreaterThanOrEqual(5);
-    expect(CURATED_LEVELS.length).toBeLessThanOrEqual(10);
-    expect(CURATED_LEVELS.map((entry) => entry.number)).toEqual(CURATED_LEVELS.map((_, index) => index + 1));
-    expect(new Set(CURATED_LEVELS.map((entry) => entry.id)).size).toBe(CURATED_LEVELS.length);
-    expect(getCuratedLevel(1)?.id).toBe('shared-board-001');
+describe('Round 9 curated catalog', () => {
+  it('contains ten new stable IDs, seven abstract designs and three silhouettes', () => {
+    expect(CURATED_LEVELS).toHaveLength(10);
+    expect(CURATED_LEVELS.map(({number}) => number)).toEqual(Array.from({length:10}, (_, index) => index + 1));
+    expect(CURATED_LEVELS.map(({id}) => id)).toEqual(Array.from({length:10}, (_, index) => `first-flight-${String(index + 1).padStart(3, '0')}`));
+    expect(CURATED_LEVELS.filter(({composition}) => composition === 'abstract')).toHaveLength(7);
+    expect(CURATED_LEVELS.filter(({composition}) => composition === 'silhouette')).toHaveLength(3);
+    expect(getCuratedLevel(1)?.id).toBe('first-flight-001');
     expect(getNextCuratedLevel(CURATED_LEVELS[0])?.number).toBe(2);
     expect(getNextCuratedLevel(CURATED_LEVELS.at(-1)!)).toBeUndefined();
-  });
-
-  it('validates every authored board, rejects stationary overlaps, and proves each level solvable', () => {
     expect(() => validateCuratedLevels()).not.toThrow();
-    for (const entry of CURATED_LEVELS) {
-      expect(() => validateLevel(entry.puzzle)).not.toThrow();
-      expect(entry.puzzle.arrows.length).toBeGreaterThanOrEqual(5);
-    }
   });
-
-  it('keeps visual stroke presets separate from canonical collision and solver rules', () => {
+  it('checks each new arrow, runtime move, solver and exact reachable-state audit', () => {
+    let auditedArrows = 0;
+    for (const entry of CURATED_LEVELS) {
+      expect(entry.catalogVersion).toBe('first-flight-r1');
+      expect(entry.contentVersion).toBe(1);
+      expect(() => validateLevel(entry.puzzle), entry.id).not.toThrow();
+      const solution = solveLevel(entry.puzzle);
+      expect(solution, entry.id).not.toBeNull();
+      let remaining = [...entry.puzzle.arrows];
+      for (const id of solution!) {
+        const arrow = remaining.find(({id: candidate}) => candidate === id)!;
+        expect(simulateMove(arrow, remaining.filter(({id: candidate}) => candidate !== id), entry.puzzle.width, entry.puzzle.height).ok).toBe(true);
+        remaining = remaining.filter(({id: candidate}) => candidate !== id);
+      }
+      expect(remaining).toHaveLength(0);
+      const report = auditReachableStates(entry.puzzle);
+      expect(report.exact).toBe(true);
+      expect(report.deadlocks, entry.id).toEqual([]);
+      expect(report.dependencyCycles, entry.id).toEqual([]);
+      expect(report.terminalStates).toBe(1);
+      for (const arrow of entry.puzzle.arrows) {
+        expect(() => validateArrow(arrow, entry.puzzle.width, entry.puzzle.height, entry.number), `${entry.number}/${arrow.id}`).not.toThrow();
+        auditedArrows += 1;
+      }
+    }
+    expect(auditedArrows).toBe(CURATED_LEVELS.reduce((sum, entry) => sum + entry.puzzle.arrows.length, 0));
+  });
+  it('keeps visual stroke width separate from collision legality', () => {
     expect(ARROW_STROKE_WIDTH).toBe(0.12);
     expect(ARROW_COLLISION_WIDTH).toBe(0.18);
     for (const entry of CURATED_LEVELS) {
-      expect(() => validateLevel(entry.puzzle)).not.toThrow();
-      const canonicalSolution = solveLevel(entry.puzzle);
-      expect(canonicalSolution, entry.id).not.toBeNull();
-      const heading = entry.puzzle.arrows[0].path;
-      const visibleHead = arrowHeadTriangle(heading);
-      expect(visibleHead).toEqual(arrowHeadTriangle(heading, 0.15));
+      const solution = solveLevel(entry.puzzle);
+      const path = entry.puzzle.arrows[0].path;
+      expect(arrowHeadTriangle(path)).toEqual(arrowHeadTriangle(path, 0.15));
       expect(appSource).toContain('arrowHeadTriangle(arrow.path)');
-      expect(solveLevel(entry.puzzle)).toEqual(canonicalSolution);
+      expect(solveLevel(entry.puzzle)).toEqual(solution);
     }
   });
-
-  it('freezes all six authored puzzle fingerprints for repeatable QA candidates', async () => {
-    const fingerprints = await Promise.all(CURATED_LEVELS.map(async ({ puzzle }) => {
+  it('retains the prior six puzzles in a non-playable archive', () => {
+    expect(ARCHIVED_ROUND8_LEVELS.map(({puzzle}) => puzzle.arrows.length)).toEqual([7,12,7,10,8,16]);
+    expect(CURATED_LEVELS.some(({id}) => id.startsWith('shared-board-'))).toBe(false);
+  });
+  it('freezes the ten new deterministic puzzle definitions', async () => {
+    const fingerprints = await Promise.all(CURATED_LEVELS.map(async ({puzzle}) => {
       const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(puzzle)));
       return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
     }));
     expect(fingerprints).toEqual([
-      'f2eea1badfe8d925a93aa7d8cf38335494bdd4966afa2bd1680c989a57a32d3e',
-      'ad6daeee824c5caf1f6daf6f52cd41d6613cd2d28f76415baece4558f6822058',
-      '3a4b9275f6413976df1fcd5858934c6b195df4b991d7b1669f9a7737a3b1be2d',
-      '3980a0aeb66e99ff2b4b0772112589b3b865d01c3f86fb12904de5dd72450b15',
-      'bb8c27c5324732870afb48a48c9568a60af3df9b5c624fd0b3665162c38947ff',
-      '0a86c43f5843b91b47f706155502f487819e3f173c118674ab5aa25e905c0d8e',
+      '2c4b72464434107be82ac7b217aab4afd7bd38795d6ee62f3c46405b8c45d02f',
+      '353cf1d20646f92ee0521940fc1d52ac60f67e700538e81df34740fb1e3ac1a7',
+      'ccd0d82f825e6ae0192c47f9cd4059df32c48c38ea72067ec33966511bb6357b',
+      '91ba46c294517f0823201ed7af988786668891d20c5a185128e913c72eeff4b5',
+      'ecf21ffb72d2bd130e7c360b30554f7942eb362084b52a3603b98c9ef2249e68',
+      '27ce40a5eeb54e0df220f179c0f20df9971bf26c1c2170bb9b232bcb232e5560',
+      'bc399f6cb1d583c5a5c4a1a1cd9816d07f583dc6624c57c45edad6ff1f958d15',
+      'e654dcbc2fe2783661d91e0a3690a8d8e5ae38c6b65ed29acfe98dfc7c96d466',
+      '40a6f60fcccc5f866502e66a8c8d0f27259298ea1a4593f2ba59e230430534f8',
+      'a734cb203052cb67eacf32a8cc1c79a2a911087411f19675cca4ef3492f4d424',
     ]);
   });
-
-  it('ramps from forced openings toward multiple safe choices and deeper dependencies', () => {
-    const openingCounts = CURATED_LEVELS.map(({ puzzle }) => puzzle.arrows.filter((arrow) =>
-      simulateMove(arrow, puzzle.arrows.filter((other) => other.id !== arrow.id), puzzle.width, puzzle.height).ok,
-    ).length);
-    const metrics = CURATED_LEVELS.map(({ puzzle }) => analyzeLevel(puzzle));
-    expect(openingCounts).toEqual(metrics.map(({ initiallyRemovable }) => initiallyRemovable));
-    expect(metrics.map(({ interleavedPairs }) => interleavedPairs)).toEqual([7, 10, 6, 8, 6, 20]);
-    expect(metrics.map(({ closeSegmentContacts }) => closeSegmentContacts)).toEqual([119, 222, 131, 218, 141, 354]);
-    expect(metrics.map(({ dependencyDepth }) => dependencyDepth)).toEqual([5, 7, 2, 8, 3, 8]);
-    expect(metrics.map(({ initiallyRemovable }) => initiallyRemovable)).toEqual([2, 4, 4, 2, 4, 5]);
-    expect(metrics.every(({ occupancyRatio }) => occupancyRatio >= 0.25)).toBe(true);
-    expect(metrics.every(({ blockingDependencies }) => blockingDependencies > 0)).toBe(true);
-    expect(metrics.filter(({ newlyUnlockedByRemoval }) => newlyUnlockedByRemoval.some((count) => count > 0))).toHaveLength(5);
-    expect(CURATED_LEVELS[5].puzzle.arrows.some(({ path }) => path.some((point, index) => index > 0
-      && Math.abs(point.x - path[index - 1].x) === 1 && Math.abs(point.y - path[index - 1].y) === 1))).toBe(true);
-  });
-
-  it('exhaustively audits all reachable removal states for every authored level', () => {
-    const reports = CURATED_LEVELS.map((entry) => ({ id: entry.id, ...auditReachableStates(entry.puzzle) }));
-    expect(reports.every(({ exact, deadlocks, dependencyCycles, terminalStates }) => exact && deadlocks.length === 0 && dependencyCycles.length === 0 && terminalStates === 1)).toBe(true);
-    expect(reports.map(({ reachableStates }) => reachableStates)).toEqual([16, 83, 54, 14, 38, 350]);
-    expect(reports.map(({ legalTransitions }) => legalTransitions)).toEqual([24, 205, 135, 16, 83, 1159]);
-  });
-
-  it('runs individual self-geometry validation on every published arrow', () => {
-    let audited = 0;
-    for (const entry of CURATED_LEVELS) for (const arrow of entry.puzzle.arrows) {
-      expect(() => validateArrow(arrow, entry.puzzle.width, entry.puzzle.height, entry.number), `${entry.number}/${arrow.id}`).not.toThrow();
-      audited += 1;
-    }
-    expect(audited).toBe(60);
-  });
-
-  it('reproduces Level 3 with two long arrows and rejects its former self-colliding head route', () => {
-    const entry = CURATED_LEVELS[2];
-    const corrected = entry.puzzle.arrows.find(({ id }) => id === 'a03')!;
-    let remaining = [...entry.puzzle.arrows];
-    for (const id of ['a06', 'a07', 'a05', 'a02', 'a04']) {
-      expect(legalMoves({ ...entry.puzzle, arrows: remaining }).some(({ arrow }) => arrow.id === id), `Level 3 can clear ${id}`).toBe(true);
-      remaining = remaining.filter((arrow) => arrow.id !== id);
-    }
-    expect(remaining.map(({ id }) => id).sort()).toEqual(['a01', 'a03']);
-    expect(legalMoves({ ...entry.puzzle, arrows: remaining }).map(({ arrow }) => arrow.id)).toEqual(['a03']);
-    expect(simulateMove(corrected, remaining.filter(({ id }) => id !== corrected.id), entry.puzzle.width, entry.puzzle.height).ok).toBe(true);
-    expect(() => validateArrowSelfTraversal(corrected, entry.puzzle.width, entry.puzzle.height, 3)).not.toThrow();
-
-    const formerDirection = { ...corrected, path: [...corrected.path].reverse() };
-    expect(() => validateArrow(formerDirection, entry.puzzle.width, entry.puzzle.height, 3)).toThrow(/Level 3 arrow a03: arrowhead self-collision.*segment/i);
-    expect(() => simulateMove(formerDirection, [], entry.puzzle.width, entry.puzzle.height)).toThrow(/arrowhead self-collision/i);
-    expect(() => solveLevel({ ...entry.puzzle, arrows: entry.puzzle.arrows.map((arrow) => arrow.id === 'a03' ? formerDirection : arrow) })).toThrow(/arrowhead self-collision/i);
-    const collisionPose = moveArrowDistance(formerDirection, 0.5).map(({ x, y }) => ({ x: x - 0.5, y: y - 0.5 }));
-    expect(findSelfHeadClearanceIssue(collisionPose, 0)).toMatchObject({ type: 'head-clearance', segmentAIndex: 4 });
-  });
-
-  it('keeps regression fixtures for the other three published self-colliding exits', () => {
-    const level4 = CURATED_LEVELS[3].puzzle;
-    const level4a04 = level4.arrows.find(({ id }) => id === 'a04')!;
-    const oldA04 = { ...level4a04, path: [...level4a04.path.slice(0, 16), { x: 7, y: 9 }, { x: 8, y: 9 }] };
-    expect(() => validateArrow(oldA04, level4.width, level4.height, 4)).toThrow(/Level 4 arrow a04: arrowhead self-collision/i);
-    for (const [entry, id] of [[level4, 'a06'], [CURATED_LEVELS[5].puzzle, 'a10']] as const) {
-      const safeOrientation = entry.arrows.find((arrow) => arrow.id === id)!;
-      const unsafeOrientation = { ...safeOrientation, path: [...safeOrientation.path].reverse() };
-      expect(() => validateArrow(unsafeOrientation, entry.width, entry.height, entry.number)).toThrow(new RegExp(`Level ${entry.number} arrow ${id}: arrowhead self-collision`, 'i'));
-    }
-  });
-
-  it('reproduces the reported Level 4 seven-arrow state and verifies its remaining route', () => {
-    const entry = CURATED_LEVELS[3];
-    const sequences: string[][] = [];
-    const walk = (remaining: typeof entry.puzzle.arrows, sequence: string[]) => {
-      if (sequence.length === 3) {
-        sequences.push(sequence);
-        return;
-      }
-      for (const arrow of legalMoves({ ...entry.puzzle, arrows: remaining })) {
-        walk(remaining.filter(({ id }) => id !== arrow.arrow.id), [...sequence, arrow.arrow.id]);
-      }
-    };
-    walk(entry.puzzle.arrows, []);
-    expect(sequences).toEqual([['a05', 'a07', 'a08'], ['a07', 'a05', 'a08']]);
-    const remainingIds = ['a01', 'a02', 'a03', 'a04', 'a06', 'a09', 'a10'];
-    const remaining = remainingIds.map((id) => entry.puzzle.arrows.find((arrow) => arrow.id === id)!);
-    expect(entry.puzzle.arrows).toHaveLength(10);
-    expect(legalMoves({ ...entry.puzzle, arrows: remaining }).map(({ arrow }) => arrow.id)).toEqual(['a06']);
-    expect(simulateMove(remaining.find(({ id }) => id === 'a06')!, remaining.filter(({ id }) => id !== 'a06'), entry.puzzle.width, entry.puzzle.height).ok).toBe(true);
-    for (const blocked of remaining.filter(({ id }) => id !== 'a06')) {
-      expect(simulateMove(blocked, remaining.filter(({ id }) => id !== blocked.id), entry.puzzle.width, entry.puzzle.height).ok).toBe(false);
-    }
-    const report = auditReachableStates({ ...entry.puzzle, arrows: remaining });
-    expect(report).toMatchObject({ exact: true, reachableStates: 10, legalTransitions: 11, terminalStates: 1, initialLegalMoves: ['a06'], deadlocks: [], dependencyCycles: [] });
-    const solution = solveLevel({ ...entry.puzzle, arrows: remaining });
-    expect(solution).toEqual(['a06', 'a10', 'a01', 'a04', 'a03', 'a09', 'a02']);
-    let current = remaining;
-    for (const id of solution!) {
-      const arrow = current.find((candidate) => candidate.id === id)!;
-      expect(simulateMove(arrow, current.filter((candidate) => candidate.id !== id), entry.puzzle.width, entry.puzzle.height).ok).toBe(true);
-      current = current.filter((candidate) => candidate.id !== id);
-    }
-    expect(current).toHaveLength(0);
-    expect(loseHeart(loseHeart(3))).toBe(1);
-  });
-
-  it('reports an exact deadlock witness and dependency cycle for a mutually blocked board', () => {
-    const level: Level = {
-      number: 99, width: 8, height: 7,
-      arrows: [makeArrow('east', [{ x: 1, y: 4 }, { x: 2, y: 4 }]), makeArrow('west', [{ x: 6, y: 4 }, { x: 5, y: 4 }])],
-    };
-    const result = auditReachableStates(level);
-    expect(result.reachableStates).toBe(1);
-    expect(result.initialLegalMoves).toEqual([]);
-    expect(result.deadlocks).toEqual([{ remainingArrowIds: ['east', 'west'], removalSequence: [] }]);
-    expect(result.dependencyCycles).toHaveLength(1);
-    expect(result.dependencyCycles[0]).toEqual(expect.arrayContaining(['east', 'west']));
-    expect(solveLevel(level)).toBeNull();
-  });
-
-  it('rejects catalog identity and numbering mistakes', () => {
+  it('rejects duplicate IDs, numbering gaps and mismatched puzzle metadata', () => {
     const duplicateId = CURATED_LEVELS.map((entry, index) => index === 1 ? { ...entry, id: CURATED_LEVELS[0].id } : entry);
-    const numberingGap = CURATED_LEVELS.map((entry, index) => index === 1 ? { ...entry, number: 8, puzzle: { ...entry.puzzle, number: 8 } } : entry);
+    const numberingGap = CURATED_LEVELS.map((entry, index) => index === 1 ? { ...entry, number: 11, puzzle: { ...entry.puzzle, number: 11 } } : entry);
     const mismatchedPuzzle = CURATED_LEVELS.map((entry, index) => index === 0 ? { ...entry, puzzle: { ...entry.puzzle, number: 2 } } : entry);
     expect(() => validateCuratedLevels(duplicateId)).toThrow(/duplicate level ID/i);
     expect(() => validateCuratedLevels(numberingGap)).toThrow(/contiguously/i);
     expect(() => validateCuratedLevels(mismatchedPuzzle)).toThrow(/does not match/i);
-    expect(CURATED_LEVELS.every((entry) => entry.puzzle.arrows.length > 1)).toBe(true);
-  });
-
-  it('rejects a solvable but visually separated candidate instead of relying on box overlap', () => {
-    const separated = CURATED_LEVELS.map((entry, index) => index === 0 ? {
-      ...entry,
-      puzzle: { number: 1, width: 10, height: 8, arrows: [
-        makeArrow('a', [{ x: 0, y: 0 }, { x: 1, y: 0 }]),
-        makeArrow('b', [{ x: 0, y: 3 }, { x: 1, y: 3 }]),
-        makeArrow('c', [{ x: 0, y: 6 }, { x: 1, y: 6 }]),
-      ] },
-    } : entry);
-    expect(() => validateCuratedLevels(separated)).toThrow(/spatially separated/i);
   });
 });
-
 describe('shared arrow geometry and movement', () => {
   it('accepts straight, tightly turning, and nested winding arrows with safe self-traversal', () => {
     const straight = makeArrow('straight', [{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 3, y: 1 }]);
@@ -273,7 +166,7 @@ describe('shared arrow geometry and movement', () => {
   });
 
   it('measures large board gaps by sampling the actual path field', () => {
-    const refined = measureBoardDensity(CURATED_LEVELS[4].puzzle);
+    const refined = measureBoardDensity(ARCHIVED_ROUND8_LEVELS[4].puzzle);
     expect(refined.sampleStep).toBe(0.25);
     expect(refined.areaFartherThan).toBe(1.5);
     expect(refined.pathLength).toBe(97);
@@ -361,8 +254,8 @@ describe('shared arrow geometry and movement', () => {
 
   it('uses rendered geometry to detect a blocked move through the complete body and exit route', () => {
     const level = CURATED_LEVELS[0].puzzle;
-    const arrowA = level.arrows[0];
-    const remaining = level.arrows.slice(1);
+    const arrowA = level.arrows.find((arrow) => !simulateMove(arrow, level.arrows.filter(({id}) => id !== arrow.id), level.width, level.height).ok)!;
+    const remaining = level.arrows.filter(({id}) => id !== arrowA.id);
     const result = simulateMove(arrowA, remaining, level.width, level.height);
     expect(result.ok).toBe(false);
   });

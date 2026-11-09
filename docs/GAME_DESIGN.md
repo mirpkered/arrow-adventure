@@ -1,5 +1,7 @@
 # Shared-Board Game Design
 
+> **Round 9 status:** This document retains the approved Round 8 interaction and geometry contract. The Round 9 branch has a ten-level candidate catalog, but several layouts did not pass visual composition review. The new catalog is not yet released to QA or production. See [Roadmap](ROADMAP.md) and [Round 9 Level Authoring](LEVEL_AUTHORING.md).
+
 ## Active prototype rules
 
 The reset prototype has one board of winding arrows. Each arrow is an ordered polyline from tail to head. The canonical board grid has a 0.5-unit spacing and origin `(0,0)` in the shared SVG board coordinate system. The existing path-to-board transform adds 0.5 units, so every rendered path vertex remains exactly on this finer grid without moving or rounding published paths. Grid lines, arrow paths, zoom, and pan all use the same SVG and viewBox transform. Segments are exactly one board unit and must be cardinal or 45° diagonal; both diagonal axis displacements are equal. A path cannot revisit a point, leave the board, disconnect, or self-intersect.
@@ -14,7 +16,7 @@ Arrow selection uses one delegated `pointerdown` handler. Pointer coordinates ar
 
 The app opens with the Mirpworks launch splash, then presents a composed title menu. Play, Continue, Settings, and Credits use responsive touch-sized controls. The gameplay shell fills the dynamic viewport, respects safe-area insets, and prevents page scrolling. The board is fitted initially, supports pinch zoom and panning, and can be reset to fit. In development and explicitly flagged QA builds, holding the compact level label for two seconds opens temporary settings; release, cancellation or pointer drift over ten CSS pixels cancels the hold. Enter or Space opens it for keyboard testing. The panel adjusts speed and stroke width, toggles diagnostics, jumps among six levels, restarts, displays solver-backed board state, and highlights a safe arrow. QA navigation runs temporarily and does not persist progress. Production builds omit the dynamically imported QA panel chunk.
 
-## Curated QA set
+## Round 8 catalog baseline (historical)
 
 The catalog contains exactly six fixed puzzle definitions, with stable local IDs `shared-board-001` through `shared-board-006`. Each entry includes a title, difficulty and design note. The JSON puzzle definitions are frozen in tests by SHA-256 fingerprints. Automated validation checks structure, geometry, variety, dependencies, the normal solver, and every state reachable through successful removals. This audit runs in tests/deployment validation, not during app startup.
 

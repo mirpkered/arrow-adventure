@@ -16,9 +16,15 @@ export type Level = {
 export type CuratedLevel = {
   id: string;
   number: number;
+  catalogVersion: string;
+  contentVersion: number;
+  chapterId: string;
   title: string;
-  difficulty: 'intro' | 'steady' | 'challenging';
+  difficulty: 'intro' | 'easy' | 'easy-medium' | 'medium' | 'medium-hard' | 'hard';
   designNote: string;
+  composition: 'abstract' | 'silhouette';
+  /** One or more simple polygons in path-local board coordinates; authored, never inferred from arrow bounds. */
+  footprint: Point[][];
   puzzle: Level;
 };
 
