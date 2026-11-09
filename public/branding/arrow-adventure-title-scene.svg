@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1170 2532" fill="none">
+  <defs>
+    <linearGradient id="sky" x1="585" y1="0" x2="585" y2="2532" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#17183F"/><stop offset=".38" stop-color="#38245E"/><stop offset=".67" stop-color="#9A4774"/><stop offset=".84" stop-color="#F19A64"/><stop offset="1" stop-color="#392C61"/>
+    </linearGradient>
+    <radialGradient id="sunGlow" cx="0" cy="0" r="1" gradientTransform="matrix(0 596 -596 0 585 1127)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD98A" stop-opacity=".82"/><stop offset=".34" stop-color="#FFB978" stop-opacity=".25"/><stop offset="1" stop-color="#FFB978" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sun" x1="500" y1="923" x2="670" y2="1164" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF0B6"/><stop offset="1" stop-color="#F9A45F"/></linearGradient>
+    <linearGradient id="farMountains" x1="585" y1="1049" x2="585" y2="1981" gradientUnits="userSpaceOnUse"><stop stop-color="#7370A5"/><stop offset="1" stop-color="#373666"/></linearGradient>
+    <linearGradient id="midMountains" x1="585" y1="1305" x2="585" y2="2268" gradientUnits="userSpaceOnUse"><stop stop-color="#4E4E88"/><stop offset="1" stop-color="#26284F"/></linearGradient>
+    <linearGradient id="foreground" x1="585" y1="1660" x2="585" y2="2532" gradientUnits="userSpaceOnUse"><stop stop-color="#28234E"/><stop offset="1" stop-color="#151735"/></linearGradient>
+    <linearGradient id="trail" x1="245" y1="2306" x2="872" y2="1479" gradientUnits="userSpaceOnUse"><stop stop-color="#6DF7EB"/><stop offset=".48" stop-color="#38D9E9"/><stop offset="1" stop-color="#91FFF2"/></linearGradient>
+    <filter id="trailGlow" x="-40%" y="-20%" width="180%" height="140%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="24"/></filter>
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="42"/></filter>
+  </defs>
+  <path fill="url(#sky)" d="M0 0h1170v2532H0z"/>
+  <path fill="url(#sunGlow)" d="M0 450h1170v1300H0z"/>
+  <g fill="#FFF2DA" opacity=".72">
+    <circle cx="117" cy="257" r="2.5"/><circle cx="263" cy="384" r="2"/><circle cx="399" cy="211" r="2.5"/><circle cx="793" cy="241" r="2"/><circle cx="1007" cy="364" r="2.5"/><circle cx="928" cy="186" r="1.8"/><circle cx="163" cy="523" r="1.7"/><circle cx="1062" cy="581" r="1.8"/><circle cx="653" cy="317" r="1.6"/><circle cx="529" cy="498" r="2"/><circle cx="862" cy="464" r="1.7"/>
+  </g>
+  <path fill="#F8BD79" opacity=".12" filter="url(#softGlow)" d="M350 1110a235 235 0 1 0 470 0 235 235 0 1 0-470 0"/>
+  <circle cx="585" cy="1110" r="119" fill="url(#sun)"/>
+  <path fill="#FBE7B3" opacity=".52" d="M0 1328 131 1182l120 85 172-244 149 215 120-168 150 224 113-142 215 192v490H0z"/>
+  <path fill="url(#farMountains)" d="m0 1456 162-175 100 91 151-210 123 182 142-201 147 200 104-132 126 126 115-100v550H0z"/>
+  <path fill="#A8A2C3" opacity=".35" d="m413 1172 38 56-42-11-29 35-11-19zm265-29 45 61-45-13-38 35-13-17z"/>
+  <path fill="url(#midMountains)" d="m0 1600 168-147 142 153 143-237 126 169 133-184 175 221 104-155 108 108 71-62v580H0z"/>
+  <path fill="#D18A83" opacity=".38" d="m310 1606 143-237 126 169-75-43-48 28-38-37-38 89-70 31zm402-252 175 221-87-47-54 33-43-35-31 32-47-51z"/>
+  <path fill="url(#foreground)" d="m0 1839 151-163 129 126 106-83 143 136 106-113 130 91 153-133 117 99 91-76 44 49v760H0z"/>
+  <g fill="#1B1B3D" opacity=".9">
+    <path d="m0 1775 62-107 62 107H0zm26-66-26 48v-69l26 21zm31 27 5 39H52l5-39zm49 39 7-39 27 39h-34z"/>
+    <path d="m100 1875 76-133 76 133h-42l-34-51-34 51h-42zm50-80-25 43h50l-25-43z"/>
+    <path d="m914 1829 83-144 83 144h-50l-33-52-34 52h-49zm59-89-28 49h56l-28-49z"/>
+    <path d="m1020 1912 75-130 75 130h-44l-31-48-31 48h-44zm50-77-25 43h50l-25-43z"/>
+  </g>
+  <path fill="#FFD57F" opacity=".16" d="M0 1640c202 44 329 102 480 223 60 49 115 91 184 133-153-62-258-103-398-175C168 1761 77 1739 0 1724v-84Zm1170 41c-125 28-247 93-391 220l-60 54c158-76 286-131 451-165v-109Z"/>
+  <path fill="url(#foreground)" d="M0 2110c142-107 275-183 415-200 148-18 202 110 343 100 129-9 218-108 412-122v644H0z"/>
+  <path stroke="#36DDE9" stroke-width="80" stroke-linecap="round" stroke-linejoin="round" opacity=".4" filter="url(#trailGlow)" d="M229 2473c148-118 302-82 337-192 34-108-249-138-212-262 35-115 350-10 373-128 22-111-188-173-147-270 32-77 196-88 275-192"/>
+  <path stroke="url(#trail)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" d="M229 2473c148-118 302-82 337-192 34-108-249-138-212-262 35-115 350-10 373-128 22-111-188-173-147-270 32-77 196-88 275-192"/>
+  <path d="m825 1395 79 24-57 61" stroke="#8CFFF2" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <path fill="#FFD992" opacity=".72" d="M0 0h1170v18H0z"/>
+</svg>

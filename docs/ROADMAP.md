@@ -7,6 +7,7 @@ This roadmap describes the reset, shared-board game now targeted for production.
 - Six fixed, solver-verified puzzles: Small Tangle, Dense Mini-Maze, Nested Paths, Interwoven Board, Shaped Puzzle, and Dense Challenge.
 - Board-wide path composition with half-cell placement, close parallel routes, nested bends, varied path lengths, cardinal and diagonal segments, and meaningful exit dependencies.
 - Full-viewport mobile interface with title, gameplay, pause, settings and credits screens; safe-area handling, fit-to-board scaling, pinch zoom, pan and view reset.
+- Static full-screen portrait title scene with a locally stored purple mountain landscape, warm sunrise, and winding cyan trail; the approved square app icon remains unchanged.
 - Continuous distance-based arrow animation. A blocked arrow travels to its deterministic collision point, turns red, reverses faster and remains red until it is removed. Each attempt costs one heart.
 - Three-heart system, restart, level progression and device-local stable-state saving.
 - Light, Dark and Automatic appearance; independent optional synthesized music and sound effects.
@@ -25,6 +26,7 @@ This roadmap describes the reset, shared-board game now targeted for production.
 
 ## Next recommended work
 
+- Prepare a separate density redesign beginning with Levels 5 and 3, following the sampled whitespace baselines and geometry gates in [ROUND_7A_DENSITY_PLAN.md](ROUND_7A_DENSITY_PLAN.md). The current catalog is unchanged by that assessment.
 - Playtest all six levels on a physical iPhone and tune board scale, touch precision, speed, blocked collision feel, and level difficulty.
 - Refine or replace individual puzzles based on observed solves; update their frozen fingerprints deliberately and re-run the solver and geometry review.
 - Add a modest next batch of curated puzzles only after the current collection is reviewed.

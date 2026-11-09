@@ -16,7 +16,7 @@ The board fits the available viewport, supports pinch zoom and panning, and has 
 
 ## Menus and settings
 
-The title screen has Play, Continue, Settings, and Credits. The in-game menu offers resume, restart, settings, and return to title. Settings save Light/Dark/Automatic appearance, optional background music, and independently optional sound effects. Background music is a quiet synthesized original loop; it is off by default. The game does not pause or replace music from Apple Music, Spotify, or other services.
+The full-screen title scene uses an original static portrait landscape at `public/branding/arrow-adventure-title-scene.svg`; the approved square logo remains unchanged for icons and credits. It presents Play, Continue, Settings, and Credits. The in-game menu offers resume, restart, settings, and return to title. Settings save Light/Dark/Automatic appearance, optional background music, and independently optional sound effects. Background music is a quiet synthesized original loop; it is off by default. The game does not pause or replace music from Apple Music, Spotify, or other services.
 
 ## Local development and validation
 
@@ -58,6 +58,8 @@ The QA panel is available only in development or builds with `VITE_QA_MODE=true`
 - `src/qa/qaPanel.ts` — development/QA-only testing controls, dynamically imported.
 
 Puzzle geometry and collision assumptions are documented in [Game Design](docs/GAME_DESIGN.md). The exact all-state solvability audit and Level 4 reconstruction are in [Solvability Audit](docs/SOLVABILITY_AUDIT.md). The repeatable process for curated content is in [Level Authoring](docs/LEVEL_AUTHORING.md).
+
+The baseline measurements and recommended method for the separate future puzzle-density redesign are in [Round 7A Density Plan](docs/ROUND_7A_DENSITY_PLAN.md). That plan does not change the current levels or gameplay rules.
 
 ## Current scope and limitations
 

@@ -14,6 +14,7 @@ import { auditReachableStates, legalMoves } from '../src/game/stateAudit';
 import type { Arrow, Level, Point } from '../src/game/types';
 
 const styleSource = readFileSync(fileURLToPath(new URL('../src/style.css', import.meta.url)), 'utf8');
+const titleSceneSource = readFileSync(fileURLToPath(new URL('../public/branding/arrow-adventure-title-scene.svg', import.meta.url)), 'utf8');
 
 const makeArrow = (id: string, path: Point[]): Arrow => ({ id, path });
 
@@ -462,18 +463,35 @@ describe('QA presentation controls and mobile shell', () => {
   it('shows the Merpworks splash and title menu before gameplay in a viewport-fitted shell', () => {
     expect(appSource).toContain('showLaunchSplash(document, window');
     expect(appSource).toContain("let screen: Screen = 'title'");
-    expect(appSource).toContain('title-art');
+    expect(appSource).toContain('title-landscape');
+    expect(titleSceneSource).toContain('viewBox="0 0 1170 2532"');
+    expect(titleSceneSource).toContain('linearGradient id="trail"');
     expect(appSource).toContain('function startNewGame()');
     expect(styleSource).toContain('100dvh');
     expect(appSource).toContain("import './style.css'");
   });
 
-  it('presents a composed, touch-friendly title menu without changing level state for appearance updates', () => {
-    for (const label of ['title-overline', 'title-art', 'title-play', 'title-secondary', 'Settings', 'Credits', 'title-signature']) expect(appSource).toContain(label);
-    expect(appSource).toContain('data-action="play"');
-    expect(appSource).toContain('data-action="continue"');
-    expect(appSource).toContain('data-action="settings"');
-    expect(appSource).toContain('data-action="credits"');
+  it('presents a portrait landscape title scene while keeping the square app icon for other branding only', () => {
+    const titleTemplate = appSource.slice(appSource.indexOf('function renderTitle()'), appSource.indexOf('function renderSettings()'));
+    for (const label of ['title-overline', 'title-wordmark', 'title-landscape', 'title-play', 'title-secondary', 'Settings', 'Credits', 'title-signature']) expect(titleTemplate).toContain(label);
+    expect(titleTemplate).toContain('data-action="play"');
+    expect(titleTemplate).toContain('data-action="continue"');
+    expect(titleTemplate).toContain('data-action="settings"');
+    expect(titleTemplate).toContain('data-action="credits"');
+    expect(titleTemplate).not.toContain('gameLogo');
+    expect(titleTemplate).not.toContain('title-art');
+    expect(titleSceneSource).toContain('#17183F');
+    expect(titleSceneSource).toContain('#FFD992');
+    expect(titleSceneSource).toContain('#36DDE9');
+    expect(styleSource).toContain('env(safe-area-inset-top');
+    expect(styleSource).toContain('env(safe-area-inset-bottom');
+    expect(styleSource).toContain('@media(orientation:landscape) and (min-width:700px)');
+    expect(styleSource).toContain('@media(max-height:700px) and (orientation:portrait)');
+    expect(styleSource).toContain('overflow:hidden');
+    expect(appSource).toMatch(/if \(action === 'play'\) startNewGame\(\)/);
+    expect(appSource).toMatch(/if \(action === 'continue'\) continueGame\(\)/);
+    expect(appSource).toMatch(/if \(action === 'settings'\) openSettings\(\)/);
+    expect(appSource).toMatch(/if \(action === 'credits'\).*screen = 'credits'/);
     expect(styleSource).toContain('--accent:#3857a4');
     expect(styleSource).toContain('.title-secondary-actions');
     expect(styleSource).toContain(':root[data-theme="dark"]');

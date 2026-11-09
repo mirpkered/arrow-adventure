@@ -395,18 +395,22 @@ function renderTitle(): void {
   const savedLevelNumber = savedGame ? CURATED_LEVELS.find(({ id }) => id === savedGame!.currentLevelId)?.number ?? 1 : 1;
   const continueLevel = savedGame ? savedGame.levelComplete ? Math.min(savedLevelNumber + 1, CURATED_LEVELS.length) : savedLevelNumber : 1;
   app.innerHTML = `<main class="app-screen title-screen">
-    <span class="title-overline">A MERPWORKS PUZZLE ADVENTURE</span>
-    <div class="title-art"><img src="${gameLogo}" alt="Arrow Adventure" /></div>
-    <p class="title-tagline">Untangle the way out.</p>
+    <img class="title-landscape" src="${BASE}branding/arrow-adventure-title-scene.svg" alt="" aria-hidden="true" />
+    <div class="title-atmosphere" aria-hidden="true"></div>
+    <header class="title-brand">
+      <span class="title-overline">A MERPWORKS GAME</span>
+      <h1 class="title-wordmark"><span>ARROW</span><em>ADVENTURE</em></h1>
+      <p class="title-tagline">Untangle the way out.</p>
+    </header>
     <nav class="title-actions" aria-label="Main menu">
-      <button class="primary-button title-play" data-action="play"><span class="title-play-icon" aria-hidden="true">▶</span>PLAY</button>
+      <button class="primary-button title-play" data-action="play"><span class="title-play-icon" aria-hidden="true">➜</span>PLAY</button>
       ${hasSave ? `<button class="secondary-button title-continue" data-action="continue"><span>CONTINUE</span><small>LEVEL ${continueLevel} <b aria-hidden="true">→</b></small></button>` : ''}
       <div class="title-secondary-actions">
         <button class="secondary-button title-secondary" data-action="settings"><span class="title-action-icon" aria-hidden="true">⚙</span><span>Settings</span></button>
         <button class="secondary-button title-secondary" data-action="credits"><span class="title-action-icon" aria-hidden="true">✦</span><span>Credits</span></button>
       </div>
+      <span class="title-signature">MERPWORKS · LET’S PLAY A GAME</span>
     </nav>
-    <span class="title-signature">MERPWORKS</span>
   </main>`;
 }
 
