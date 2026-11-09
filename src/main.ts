@@ -2,12 +2,13 @@ import { CURATED_LEVELS, getCuratedLevel, getNextCuratedLevel } from './game/cat
 import { completeLevel, directionName, exitDirection, moveArrowDistance, nearestArrowAt, simulateMove, solveLevel } from './game/rules';
 import { createActionGate } from './game/input';
 import { advanceSession, createRun, loseHeart, type PrototypeSession } from './game/session';
-import { ARROW_STROKE_WIDTH, arrowHeadTriangle } from './game/geometry';
+import { ARROW_STROKE_WIDTH, arrowHeadTriangle, toBoardPoint, toPathPoint } from './game/geometry';
 import { GameAudio } from './app/audio';
 import { movementDuration, NORMAL_MOVE_SPEED, RETURN_MOVE_SPEED } from './app/motion';
 import { loadGameSave, loadSettings, prefersDarkTheme, saveGame, saveSettings, storageKeysFor, type Appearance, type GameSave, type PlayerSettings, type StorageLike } from './app/persistence';
 import { showLaunchSplash } from './app/launchSplash';
 import { BoardViewport } from './app/viewport';
+import { boardGridMarkup } from './app/boardGrid';
 import type { Arrow, Level, Point } from './game/types';
 import { legalMoves } from './game/stateAudit';
 import type { DiagnosticFlags, QABoardSnapshot } from './qa/qaPanel';
@@ -141,34 +142,29 @@ function continueGame(): void {
   render();
 }
 
-function pointString(points: Point[]): string { return points.map(({ x, y }) => `${x + 0.5},${y + 0.5}`).join(' '); }
+function pointString(points: Point[]): string { return points.map((point) => { const board = toBoardPoint(point); return `${board.x},${board.y}`; }).join(' '); }
 function qaArrowColor(id: string): string { let hash = 0; for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) >>> 0; return `hsl(${hash % 360} 65% 48%)`; }
 
 function arrowMarkup(arrow: Arrow): string {
-  const [tip, wingA, wingB] = arrowHeadTriangle(arrow.path, strokeWidth);
+  const [tip, wingA, wingB] = arrowHeadTriangle(arrow.path);
   const classes = ['arrow', animatingId === arrow.id ? 'moving' : '', redArrowIds.has(arrow.id) ? 'is-red' : '', qaHighlightedArrowId === arrow.id ? 'qa-safe-highlight' : ''].filter(Boolean).join(' ');
   const points = pointString(arrow.path);
-  const tail = arrow.path[0];
+  const tail = toBoardPoint(arrow.path[0]);
   const middle = arrow.path[Math.floor(arrow.path.length / 2)];
   const color = redArrowIds.has(arrow.id) ? 'var(--danger)' : diagnostics.ownership ? qaArrowColor(arrow.id) : 'var(--arrow-ink)';
   return `<g class="${classes}" data-arrow="${escapeHtml(arrow.id)}" role="button" tabindex="0" aria-label="Arrow facing ${directionName(exitDirection(arrow))}, ${Math.round(arrow.path.length - 1)} path points" style="--arrow-current-color:${color}">
     ${diagnostics.hitTargets ? `<polyline class="debug-hit" points="${points}" />` : ''}
     <polyline class="arrow-line" points="${points}" />
-    <circle class="tail-dot" cx="${tail.x + 0.5}" cy="${tail.y + 0.5}" r=".09" />
+    <circle class="tail-dot" cx="${tail.x}" cy="${tail.y}" r=".09" />
     <path class="arrow-head" d="M ${tip.x} ${tip.y} L ${wingA.x} ${wingA.y} L ${wingB.x} ${wingB.y} Z" />
-    ${diagnostics.ids ? `<text class="debug-id" x="${middle.x + 0.5}" y="${middle.y + 0.5}">${escapeHtml(arrow.id)}</text>` : ''}
+    ${diagnostics.ids ? `<text class="debug-id" x="${toBoardPoint(middle).x}" y="${toBoardPoint(middle).y}">${escapeHtml(arrow.id)}</text>` : ''}
   </g>`;
 }
 
 function boardMarkup(): string {
   const box = viewport.viewBox;
-  const guides: string[] = [];
-  if (diagnostics.geometry) {
-    for (let x = 1; x < level.width; x += 1) guides.push(`<path d="M ${x} 0 V ${level.height}" />`);
-    for (let y = 1; y < level.height; y += 1) guides.push(`<path d="M 0 ${y} H ${level.width}" />`);
-  }
   return `<div class="board-wrap"><svg class="board" width="100%" height="100%" viewBox="${box.x} ${box.y} ${box.width} ${box.height}" role="group" aria-label="Puzzle board, ${arrows.length} arrows remaining" aria-roledescription="zoomable puzzle board">
-    <g class="grid-lines">${guides.join('')}</g>${arrows.map(arrowMarkup).join('')}
+    ${boardGridMarkup(level.width, level.height, diagnostics.geometry)}${arrows.map(arrowMarkup).join('')}
   </svg></div>`;
 }
 
@@ -179,17 +175,17 @@ function updateHearts(): void {
   holder.innerHTML = [0, 1, 2].map((index) => `<span class="heart ${index < hearts ? 'live' : 'lost'}" aria-hidden="true">♥</span>`).join('');
 }
 
-function updateAnimatedArrow(group: SVGGElement, arrow: Arrow, path: Point[], visibleWidth: number): void {
+function updateAnimatedArrow(group: SVGGElement, arrow: Arrow, path: Point[]): void {
   arrow.path = path;
   const line = group.querySelector<SVGPolylineElement>('.arrow-line');
   const tailDot = group.querySelector<SVGCircleElement>('.tail-dot');
   const head = group.querySelector<SVGPathElement>('.arrow-head');
   if (!line || !tailDot || !head) return;
   line.setAttribute('points', pointString(path));
-  const tail = path[0];
-  tailDot.setAttribute('cx', `${tail.x + 0.5}`);
-  tailDot.setAttribute('cy', `${tail.y + 0.5}`);
-  const [tip, wingA, wingB] = arrowHeadTriangle(path, visibleWidth);
+  const tail = toBoardPoint(path[0]);
+  tailDot.setAttribute('cx', `${tail.x}`);
+  tailDot.setAttribute('cy', `${tail.y}`);
+  const [tip, wingA, wingB] = arrowHeadTriangle(path);
   head.setAttribute('d', `M ${tip.x} ${tip.y} L ${wingA.x} ${wingA.y} L ${wingB.x} ${wingB.y} Z`);
 }
 
@@ -201,8 +197,8 @@ function animateDistance(arrow: Arrow, group: SVGGElement, startDistance: number
     if (token !== animationToken) return;
     const progress = Math.min(1, (now - startedAt) / duration);
     const traveled = startDistance + (endDistance - startDistance) * progress;
-    const path = moveArrowDistance({ ...arrow, path: original }, traveled).map(({ x, y }) => ({ x: x - 0.5, y: y - 0.5 }));
-    updateAnimatedArrow(group, arrow, path, strokeWidth);
+    const path = moveArrowDistance({ ...arrow, path: original }, traveled).map(toPathPoint);
+    updateAnimatedArrow(group, arrow, path);
     if (progress < 1) requestAnimationFrame(tick);
     else done();
   };
@@ -398,7 +394,7 @@ function renderTitle(): void {
     <img class="title-landscape" src="${BASE}branding/arrow-adventure-title-scene.svg" alt="" aria-hidden="true" />
     <div class="title-atmosphere" aria-hidden="true"></div>
     <header class="title-brand">
-      <span class="title-overline">A MERPWORKS GAME</span>
+      <span class="title-overline">A MIRPWORKS GAME</span>
       <h1 class="title-wordmark"><span>ARROW</span><em>ADVENTURE</em></h1>
       <p class="title-tagline">Untangle the way out.</p>
     </header>
@@ -409,7 +405,7 @@ function renderTitle(): void {
         <button class="secondary-button title-secondary" data-action="settings"><span class="title-action-icon" aria-hidden="true">⚙</span><span>Settings</span></button>
         <button class="secondary-button title-secondary" data-action="credits"><span class="title-action-icon" aria-hidden="true">✦</span><span>Credits</span></button>
       </div>
-      <span class="title-signature">MERPWORKS · LET’S PLAY A GAME</span>
+      <span class="title-signature">MIRPWORKS · LET’S PLAY A GAME</span>
     </nav>
   </main>`;
 }
@@ -431,7 +427,7 @@ function renderSettings(): void {
 function renderCredits(): void {
   app.innerHTML = `<main class="app-screen sub-screen credits-screen">
     <header class="sub-header"><button class="icon-button" data-action="back" aria-label="Back">‹</button><div><span class="eyebrow">THE PEOPLE BEHIND THE PUZZLE</span><h1>Credits</h1></div><span class="header-spacer"></span></header>
-    <section class="credits-mark"><img src="${gameLogo}" alt="Arrow Adventure" /><h2>ARROW ADVENTURE</h2><p>A Merpworks Game</p></section>
+    <section class="credits-mark"><img src="${gameLogo}" alt="Arrow Adventure" /><h2>ARROW ADVENTURE</h2><p>A Mirpworks Game</p></section>
     <div class="credits-spacer"></div><button class="primary-button" data-action="back">BACK TO MENU</button>
   </main>`;
 }
@@ -543,14 +539,6 @@ app.addEventListener('keydown', (event) => {
 function applyStroke(width: number): void {
   strokeWidth = width;
   applyStrokeWidth();
-  for (const arrow of arrows) {
-    if (arrow.id === animatingId) continue;
-    const group = [...app.querySelectorAll<SVGGElement>('[data-arrow]')].find((item) => item.dataset.arrow === arrow.id);
-    const head = group?.querySelector<SVGPathElement>('.arrow-head');
-    if (!head) continue;
-    const [tip, wingA, wingB] = arrowHeadTriangle(arrow.path, width);
-    head.setAttribute('d', `M ${tip.x} ${tip.y} L ${wingA.x} ${wingA.y} L ${wingB.x} ${wingB.y} Z`);
-  }
 }
 
 render();

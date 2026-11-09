@@ -1,4 +1,6 @@
-# Round 7A — Puzzle Density Preparation
+# Round 7A — Puzzle Density Baseline (Historical)
+
+This document preserves the measurements taken before the Round 8 Level 5 redesign. The final section records the resulting comparison; the original baseline table is retained for traceability.
 
 This is a planning document only. The six catalog definitions, collision rules, solver, and touch-selection behavior were not changed for this phase.
 
@@ -39,3 +41,9 @@ These numbers are reference measurements for the next design pass, not evidence 
 7. Play every accepted board with ownership and hit-target diagnostics at portrait phone scale, test adjacent-path taps and zoom, then freeze its fingerprint and document the intended dependency pattern.
 
 Do not trade away the introductory read of Level 1, Level 3’s already-approved puzzle quality, or legal arrow motion just to satisfy a density threshold. If tight paths make touch selection ambiguous, improve composition or zoom guidance rather than widening the visible strokes.
+
+## Round 8 result — Level 5
+
+Level 5 was re-authored as a 12×14 canopy-and-hooked-trunk silhouette. It now has 8 arrows and 97 units of total path length (previously 7 arrows and 73 units on 13×14). Using the same 0.25-unit sample grid and 1.5-unit distance threshold, area farther from all paths changed from 35.4% to 18.75%, a 16.65 percentage-point reduction (about 47% relative). Path occupancy changed from 0.401 to 0.577. The puzzle has 6 interleaved arrow pairs, 141 near segment-pair contacts, dependency depth 3, and 4 initially safe moves. It has 38 exact reachable states, 83 legal transitions, and no deadlocks. Level 6's definition and fingerprint were unchanged.
+
+These are composition measurements, not proof of quality; physical iPhone review remains necessary for legibility and tap separation.

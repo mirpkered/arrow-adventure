@@ -4,14 +4,14 @@
 
 The current release contains exactly six boards. Do not add levels until the current gameplay has been reviewed. The catalog in `src/game/catalog.ts` stores exact definitions under stable IDs `shared-board-001` through `shared-board-006`; the display number is separate metadata and remains contiguous from 1.
 
-Each entry contains a title, difficulty, authoring note, and puzzle dimensions and arrows. Arrow paths are ordered tail-to-head. Coordinates may use integer or half-integer values inside the board, but every point must lie on a half-cell lattice. Each path step must be exactly one cardinal or 45-degree diagonal board unit. This sub-cell alignment allows neighboring routes to interleave more closely while retaining unambiguous eight-direction movement. Paths may not repeat a point, cross themselves, leave the board, or overlap another stationary arrow's collision envelope.
+Each entry contains a title, difficulty, authoring note, and puzzle dimensions and arrows. Arrow paths are ordered tail-to-head. The canonical grid spacing is 0.5 board units, with origin `(0,0)` in the board SVG. Authored coordinates may be integer or half-integer, but all must lie on this lattice after the shared `toBoardPoint` transform. The existing `+0.5` path-to-board offset preserves every published path while placing its displayed vertices on exact grid intersections; do not round or translate old points. Each path step is exactly one board unit: cardinal segments have one zero axis displacement, and diagonals have equal 1-unit horizontal and vertical displacements. No other angles or lengths are allowed. Paths may not repeat a point, cross themselves, leave the board, or overlap another stationary arrow's collision envelope.
 
 ## Repeatable authoring process
 
 1. **Sketch the whole silhouette.** Decide if the board is compact, rectangular, nested or shaped. Pack paths into the same area instead of assigning independent lanes.
 2. **Route the long arrows first.** Use hooks, nested U-turns, corridors and alternating headings. Let long routes wrap around shorter interior paths.
 3. **Fill the remaining corridors.** Add short and medium arrows that block meaningful exits or make a safe removal open another option. Preserve enough spacing for touch selection and clear arrowheads.
-4. **Keep positions deliberate.** Half-cell offsets may tighten parallel runs. Do not alter the visible stroke presets to make a board pass collision validation.
+4. **Keep positions deliberate.** Use intersections on the canonical 0.5-unit lattice and close parallel runs only when the full fixed collision envelope remains legal. Do not invent an offset grid or alter visible stroke presets to make a board pass collision validation.
 5. **Freeze the chosen definition.** Store the final paths directly in the catalog. Procedural candidate generation is an authoring aid only; it never runs during Adventure Mode or QA play.
 6. **Validate and review.** Run the full solver/catalog tests, inspect the geometry preview, check ownership and hit-target diagnostics, and manually play every board at phone scale.
 
@@ -23,7 +23,7 @@ There are no chapters or tutorials in the current release. If later approved, ch
 
 ## Geometry, collision and solver validation
 
-`validateArrow` rejects malformed coordinates and steps, repeated/overlapping segments, nonadjacent self-contact, insufficient self-clearance, and arrowhead collisions with the moving arrow's unretracted body. It uses the same `moveArrowDistance` primitive as animation and checks the complete route plus exit sweep. `validateLevel` then checks separation between stationary arrows. Body clearance is at least 0.18 cells (the canonical Bold width); the sweep conservatively uses 0.23 cells for the 0.05-cell sample interval. Head/body clearance uses the maximum arrowhead triangle and is expanded by the same sample interval. This geometry is independent from Thin, Medium and Bold rendering.
+`validateArrow` rejects off-grid coordinates, malformed segment lengths or angles, repeated/overlapping segments, nonadjacent self-contact, insufficient self-clearance, and arrowhead collisions with the moving arrow's unretracted body. It uses the same `moveArrowDistance` primitive as animation and checks the complete route plus exit sweep. `validateLevel` then checks separation between stationary arrows. Body clearance is at least 0.18 board units; the sweep conservatively uses 0.23 units for the 0.05-unit sample interval. Head/body clearance uses the conservative maximum arrowhead triangle and is expanded by the same sample interval. The visible head remains fixed at its 0.15-unit reference size. Body presets (default 0.12; QA 0.12, 0.15, 0.18) do not change validation or collision geometry.
 
 `simulateMove` follows the arrow's entire route, including its moving body, head and final exit. It samples at 0.05 board cells and applies the sampling interval conservatively to the collision test. Gameplay and the solver use this exact simulator. Never write a second approximate solver rule. The solver caches derived blocker graphs by serialized puzzle definition; changed content produces a new cache key.
 
@@ -43,7 +43,7 @@ The catalog validator also calls `auditReachableStates`. It computes blocker edg
 
 ## Collision and art separation
 
-The line art widths are 0.12, 0.15 and 0.18 board cells. Collision and solver rules always use the fixed 0.18-cell envelope regardless of the selected appearance. When paths are repositioned, run tests for both body and arrowhead separation; do not assume grid points alone establish legality. Recheck that the visible heads remain distinguishable and closest-path hit testing selects neighboring paths deterministically.
+The gameplay grid is emitted inside the same SVG as arrows at 0.5-unit intervals, so it automatically follows the exact fitted, zoomed, and panned board transform. The fine grid is low-contrast; integer-coordinate lines are emphasized only by QA geometry diagnostics. Each path centerline and arrowhead renders in that same coordinate frame. Collision and solver rules always use the fixed 0.18-unit body envelope regardless of visible thickness. When paths are repositioned, run tests for body and arrowhead separation; grid-point alignment alone does not establish legality. Recheck nearest-path hit selection for adjacent arrows at normal scale and zoom.
 
 ## Protecting published QA content
 

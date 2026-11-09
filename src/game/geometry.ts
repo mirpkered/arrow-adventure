@@ -1,17 +1,36 @@
 import type { Arrow, Point } from './types';
 
 /** Default visible SVG body stroke width in board-cell units. */
-export const ARROW_STROKE_WIDTH = 0.15;
+export const ARROW_STROKE_WIDTH = 0.12;
 /** Gameplay collision geometry is fixed to the widest approved art preset. */
 export const ARROW_COLLISION_WIDTH = 0.18;
+/** Existing head size is independent from the new thinner body width. */
+export const ARROW_HEAD_WIDTH = 0.15;
+/** Kept as a conservative collision bound for the widest former head preset. */
 export const ARROW_MAX_RENDERED_WIDTH = 0.18;
+/** Existing half-unit coordinates define a real, globally aligned fine grid. */
+export const BOARD_GRID_SPACING = 0.5;
+export const PATH_POINT_OFFSET = 0.5;
 /** Floating point slack used at exact contacts; it is far smaller than a pixel at board scale. */
 export const GEOMETRY_EPSILON = 1e-8;
 const HEAD_STROKE_WIDTH = 0.036;
 
 type Segment = { a: Point; b: Point };
 
-export function arrowHeadTriangle(path: Point[], strokeWidth = ARROW_STROKE_WIDTH): [Point, Point, Point] {
+export function toBoardPoint(point: Point): Point {
+  return { x: point.x + PATH_POINT_OFFSET, y: point.y + PATH_POINT_OFFSET };
+}
+
+export function toPathPoint(point: Point): Point {
+  return { x: point.x - PATH_POINT_OFFSET, y: point.y - PATH_POINT_OFFSET };
+}
+
+export function isBoardGridIntersection(point: Point): boolean {
+  return Math.abs(point.x / BOARD_GRID_SPACING - Math.round(point.x / BOARD_GRID_SPACING)) <= GEOMETRY_EPSILON
+    && Math.abs(point.y / BOARD_GRID_SPACING - Math.round(point.y / BOARD_GRID_SPACING)) <= GEOMETRY_EPSILON;
+}
+
+export function arrowHeadTriangle(path: Point[], headSizeWidth = ARROW_HEAD_WIDTH): [Point, Point, Point] {
   const head = path.at(-1);
   const previous = path.at(-2);
   if (!head || !previous) throw new Error('An arrow head needs a preceding path point');
@@ -21,8 +40,8 @@ export function arrowHeadTriangle(path: Point[], strokeWidth = ARROW_STROKE_WIDT
   if (!length) throw new Error('An arrow head needs a nonzero direction');
   const direction = { x: dx / length, y: dy / length };
   const perpendicular = { x: -direction.y, y: direction.x };
-  const center = { x: head.x + 0.5, y: head.y + 0.5 };
-  const scale = strokeWidth / ARROW_STROKE_WIDTH;
+  const center = toBoardPoint(head);
+  const scale = headSizeWidth / ARROW_HEAD_WIDTH;
   const tip = { x: center.x + direction.x * 0.36 * scale, y: center.y + direction.y * 0.36 * scale };
   const base = { x: center.x + direction.x * 0.07 * scale, y: center.y + direction.y * 0.07 * scale };
   return [
@@ -86,10 +105,10 @@ function segments(points: Point[]): Segment[] {
 }
 
 function cellCenters(points: Point[]): Point[] {
-  return points.map((point) => ({ x: point.x + 0.5, y: point.y + 0.5 }));
+  return points.map(toBoardPoint);
 }
 
-export function polylinesCollide(left: Point[], right: Point[], distance = ARROW_STROKE_WIDTH): boolean {
+export function polylinesCollide(left: Point[], right: Point[], distance = ARROW_COLLISION_WIDTH): boolean {
   const leftSegments = segments(cellCenters(left));
   const rightSegments = segments(cellCenters(right));
   return leftSegments.some((a) => rightSegments.some((b) => segmentDistance(a, b) <= distance + GEOMETRY_EPSILON));

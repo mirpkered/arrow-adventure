@@ -5,7 +5,9 @@ import appSource from '../src/main.ts?raw';
 import qaSource from '../src/qa/qaPanel.ts?raw';
 import { bindLongPress } from '../src/qa/qaPanel';
 import { CURATED_LEVELS, getCuratedLevel, getNextCuratedLevel, validateCuratedLevels } from '../src/game/catalog';
-import { ARROW_COLLISION_WIDTH, ARROW_MAX_RENDERED_WIDTH, ARROW_STROKE_WIDTH, arrowHeadTriangle, arrowsCollide, findSelfBodyClearanceIssue, findSelfHeadClearanceIssue } from '../src/game/geometry';
+import { ARROW_COLLISION_WIDTH, ARROW_MAX_RENDERED_WIDTH, ARROW_STROKE_WIDTH, BOARD_GRID_SPACING, arrowHeadTriangle, arrowsCollide, findSelfBodyClearanceIssue, findSelfHeadClearanceIssue, isBoardGridIntersection, toBoardPoint } from '../src/game/geometry';
+import { boardGridMarkup } from '../src/app/boardGrid';
+import { measureBoardDensity } from '../src/game/density';
 import { analyzeLevel, completeLevel, directionName, exitDirection, MOVE_SUBSTEPS, movedPathIsOffBoard, moveArrowDistance, nearestArrowAt, simulateMove, solveLevel, TOUCH_PICK_RADIUS, validateArrow, validateArrowSelfTraversal, validateLevel } from '../src/game/rules';
 import { advanceSession, createRun, createSession, loseHeart } from '../src/game/session';
 import { createActionGate } from '../src/game/input';
@@ -38,16 +40,16 @@ describe('curated shared-board catalog', () => {
   });
 
   it('keeps visual stroke presets separate from canonical collision and solver rules', () => {
-    expect(ARROW_STROKE_WIDTH).toBe(0.15);
+    expect(ARROW_STROKE_WIDTH).toBe(0.12);
     expect(ARROW_COLLISION_WIDTH).toBe(0.18);
     for (const entry of CURATED_LEVELS) {
       expect(() => validateLevel(entry.puzzle)).not.toThrow();
       const canonicalSolution = solveLevel(entry.puzzle);
       expect(canonicalSolution, entry.id).not.toBeNull();
       const heading = entry.puzzle.arrows[0].path;
-      const thin = arrowHeadTriangle(heading, 0.12);
-      const bold = arrowHeadTriangle(heading, 0.18);
-      expect(thin).not.toEqual(bold);
+      const visibleHead = arrowHeadTriangle(heading);
+      expect(visibleHead).toEqual(arrowHeadTriangle(heading, 0.15));
+      expect(appSource).toContain('arrowHeadTriangle(arrow.path)');
       expect(solveLevel(entry.puzzle)).toEqual(canonicalSolution);
     }
   });
@@ -62,7 +64,7 @@ describe('curated shared-board catalog', () => {
       'ad6daeee824c5caf1f6daf6f52cd41d6613cd2d28f76415baece4558f6822058',
       '3a4b9275f6413976df1fcd5858934c6b195df4b991d7b1669f9a7737a3b1be2d',
       '3980a0aeb66e99ff2b4b0772112589b3b865d01c3f86fb12904de5dd72450b15',
-      'd0a2c578eddc37d1d9c978557a2bad6be2b6dae0f5f106bed31bbc8430a540b1',
+      'bb8c27c5324732870afb48a48c9568a60af3df9b5c624fd0b3665162c38947ff',
       '0a86c43f5843b91b47f706155502f487819e3f173c118674ab5aa25e905c0d8e',
     ]);
   });
@@ -73,10 +75,10 @@ describe('curated shared-board catalog', () => {
     ).length);
     const metrics = CURATED_LEVELS.map(({ puzzle }) => analyzeLevel(puzzle));
     expect(openingCounts).toEqual(metrics.map(({ initiallyRemovable }) => initiallyRemovable));
-    expect(metrics.map(({ interleavedPairs }) => interleavedPairs)).toEqual([7, 10, 6, 8, 4, 20]);
-    expect(metrics.map(({ closeSegmentContacts }) => closeSegmentContacts)).toEqual([119, 222, 131, 218, 100, 354]);
+    expect(metrics.map(({ interleavedPairs }) => interleavedPairs)).toEqual([7, 10, 6, 8, 6, 20]);
+    expect(metrics.map(({ closeSegmentContacts }) => closeSegmentContacts)).toEqual([119, 222, 131, 218, 141, 354]);
     expect(metrics.map(({ dependencyDepth }) => dependencyDepth)).toEqual([5, 7, 2, 8, 3, 8]);
-    expect(metrics.map(({ initiallyRemovable }) => initiallyRemovable)).toEqual([2, 4, 4, 2, 3, 5]);
+    expect(metrics.map(({ initiallyRemovable }) => initiallyRemovable)).toEqual([2, 4, 4, 2, 4, 5]);
     expect(metrics.every(({ occupancyRatio }) => occupancyRatio >= 0.25)).toBe(true);
     expect(metrics.every(({ blockingDependencies }) => blockingDependencies > 0)).toBe(true);
     expect(metrics.filter(({ newlyUnlockedByRemoval }) => newlyUnlockedByRemoval.some((count) => count > 0))).toHaveLength(5);
@@ -87,8 +89,8 @@ describe('curated shared-board catalog', () => {
   it('exhaustively audits all reachable removal states for every authored level', () => {
     const reports = CURATED_LEVELS.map((entry) => ({ id: entry.id, ...auditReachableStates(entry.puzzle) }));
     expect(reports.every(({ exact, deadlocks, dependencyCycles, terminalStates }) => exact && deadlocks.length === 0 && dependencyCycles.length === 0 && terminalStates === 1)).toBe(true);
-    expect(reports.map(({ reachableStates }) => reachableStates)).toEqual([16, 83, 54, 14, 19, 350]);
-    expect(reports.map(({ legalTransitions }) => legalTransitions)).toEqual([24, 205, 135, 16, 32, 1159]);
+    expect(reports.map(({ reachableStates }) => reachableStates)).toEqual([16, 83, 54, 14, 38, 350]);
+    expect(reports.map(({ legalTransitions }) => legalTransitions)).toEqual([24, 205, 135, 16, 83, 1159]);
   });
 
   it('runs individual self-geometry validation on every published arrow', () => {
@@ -97,7 +99,7 @@ describe('curated shared-board catalog', () => {
       expect(() => validateArrow(arrow, entry.puzzle.width, entry.puzzle.height, entry.number), `${entry.number}/${arrow.id}`).not.toThrow();
       audited += 1;
     }
-    expect(audited).toBe(59);
+    expect(audited).toBe(60);
   });
 
   it('reproduces Level 3 with two long arrows and rejects its former self-colliding head route', () => {
@@ -241,19 +243,42 @@ describe('shared arrow geometry and movement', () => {
     expect(ARROW_MAX_RENDERED_WIDTH).toBe(0.18);
     expect(() => validateLevel({ number: 99, width: 6, height: 5, arrows: [closeA, closeB] })).not.toThrow();
     expect(arrowsCollide(closeA, closeB)).toBe(false);
-    for (const visibleWidth of [0.12, 0.15, 0.18]) {
-      expect(() => validateArrow(closeA, 6, 5, 99)).not.toThrow();
-      expect(arrowHeadTriangle(closeA.path, visibleWidth)).toHaveLength(3);
-    }
+    expect(() => validateArrow(closeA, 6, 5, 99)).not.toThrow();
+    expect(arrowHeadTriangle(closeA.path)).toHaveLength(3);
   });
 
   it('accepts cardinal and diagonal adjacent path segments and rejects malformed steps', () => {
     expect(() => validateArrow(makeArrow('winding', [{ x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 0 }]), 5, 5)).not.toThrow();
-    expect(() => validateArrow(makeArrow('gap', [{ x: 0, y: 0 }, { x: 2, y: 0 }]), 5, 5)).toThrow(/disconnected/i);
+    expect(() => validateArrow(makeArrow('gap', [{ x: 0, y: 0 }, { x: 2, y: 0 }]), 5, 5)).toThrow(/invalid length/i);
     expect(() => validateArrow(makeArrow('repeat', [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 0 }]), 5, 5)).toThrow(/crosses itself/i);
     expect(() => validateArrow(makeArrow('offset', [{ x: 0.5, y: 1 }, { x: 1.5, y: 1 }, { x: 1.5, y: 2 }]), 5, 5)).not.toThrow();
-    expect(() => validateArrow(makeArrow('quarter', [{ x: 0.25, y: 1 }, { x: 1.25, y: 1 }]), 5, 5)).toThrow(/leaves the board/i);
-    expect(() => validateArrow(makeArrow('slope', [{ x: 0, y: 0 }, { x: 1, y: 0.5 }]), 5, 5)).toThrow(/disconnected/i);
+    expect(() => validateArrow(makeArrow('quarter', [{ x: 1.25, y: 1 }, { x: 2.25, y: 1 }]), 5, 5)).toThrow(/0\.5-unit board grid/i);
+    expect(() => validateArrow(makeArrow('slope', [{ x: 0, y: 0 }, { x: 1, y: 0.5 }]), 5, 5)).toThrow(/45° diagonal/i);
+    for (const [dx, dy] of [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]]) {
+      expect(() => validateArrow(makeArrow(`heading-${dx}-${dy}`, [{ x: 2, y: 2 }, { x: 2 + dx, y: 2 + dy }]), 5, 5)).not.toThrow();
+    }
+  });
+
+  it('renders the visible grid and validates every route vertex on its exact half-unit lattice', () => {
+    expect(BOARD_GRID_SPACING).toBe(0.5);
+    expect(boardGridMarkup(2, 2)).toContain('M 0.5 0 V 2');
+    expect(boardGridMarkup(2, 2)).toContain('M 0 0.5 H 2');
+    expect(boardGridMarkup(2, 2)).toContain('class="grid-major "');
+    for (const entry of CURATED_LEVELS) for (const arrow of entry.puzzle.arrows) {
+      for (const point of arrow.path) expect(isBoardGridIntersection(toBoardPoint(point)), `${entry.number}/${arrow.id} @ ${point.x},${point.y}`).toBe(true);
+    }
+    expect(styleSource).toContain('.grid-fine,.grid-major');
+    expect(styleSource).toContain('stroke-width:.025');
+    expect(appSource).toContain('boardGridMarkup(level.width, level.height');
+  });
+
+  it('measures large board gaps by sampling the actual path field', () => {
+    const refined = measureBoardDensity(CURATED_LEVELS[4].puzzle);
+    expect(refined.sampleStep).toBe(0.25);
+    expect(refined.areaFartherThan).toBe(1.5);
+    expect(refined.pathLength).toBe(97);
+    expect(refined.occupancyRatio).toBeCloseTo(0.5774, 3);
+    expect(refined.largeGapRatio).toBeCloseTo(0.1875, 4);
   });
 
   it('moves the full arrow body smoothly through its turns, then completes the exit', () => {
@@ -460,7 +485,7 @@ describe('QA presentation controls and mobile shell', () => {
     target.dispatch('keydown', event); expect(event.preventDefault).toHaveBeenCalledOnce(); expect(open).toHaveBeenCalledOnce();
   });
 
-  it('shows the Merpworks splash and title menu before gameplay in a viewport-fitted shell', () => {
+  it('shows the Mirpworks splash and title menu before gameplay in a viewport-fitted shell', () => {
     expect(appSource).toContain('showLaunchSplash(document, window');
     expect(appSource).toContain("let screen: Screen = 'title'");
     expect(appSource).toContain('title-landscape');

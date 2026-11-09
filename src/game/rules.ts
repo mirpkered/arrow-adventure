@@ -1,5 +1,5 @@
 import type { Arrow, Level, MoveResult, Point } from './types';
-import { arrowsCollide, findSelfBodyClearanceIssue, findSelfHeadClearanceIssue, segmentDistance, ARROW_COLLISION_WIDTH, pointToPolylineDistance } from './geometry';
+import { arrowsCollide, findSelfBodyClearanceIssue, findSelfHeadClearanceIssue, segmentDistance, ARROW_COLLISION_WIDTH, BOARD_GRID_SPACING, isBoardGridIntersection, pointToPolylineDistance, toBoardPoint, toPathPoint } from './geometry';
 
 /** Maximum sweep sampling interval, in board-cell distances. */
 export const COLLISION_STEP = 0.05;
@@ -36,7 +36,7 @@ export function directionName(direction: Point): string {
 
 function fullyExited(points: Point[], width: number, height: number, direction: Point): boolean {
   const margin = 0.3;
-  const centers = points.map((point) => ({ x: point.x + 0.5, y: point.y + 0.5 }));
+  const centers = points.map(toBoardPoint);
   if (direction.x > 0 && direction.y === 0) return centers.every(({ x }) => x >= width + margin);
   if (direction.x < 0 && direction.y === 0) return centers.every(({ x }) => x <= -margin);
   if (direction.y > 0 && direction.x === 0) return centers.every(({ y }) => y >= height + margin);
@@ -54,10 +54,11 @@ export function validateArrow(arrow: Arrow, width: number, height: number, level
   const seen = new Set<string>();
   arrow.path.forEach((point, index) => {
     if (!Number.isFinite(point.x) || !Number.isFinite(point.y)
-      || Math.abs(point.x * 2 - Math.round(point.x * 2)) > 1e-8 || Math.abs(point.y * 2 - Math.round(point.y * 2)) > 1e-8
       || point.x < 0 || point.y < 0 || point.x >= width || point.y >= height) {
       throw new Error(`${label}: path point ${index} leaves the board at ${pointKey(point)}`);
     }
+    const boardPoint = toBoardPoint(point);
+    if (!isBoardGridIntersection(boardPoint)) throw new Error(`${label}: vertex ${index} at (${boardPoint.x}, ${boardPoint.y}) is not on the ${BOARD_GRID_SPACING}-unit board grid`);
     const key = pointKey(point);
     if (index > 0) {
       const previous = arrow.path[index - 1];
@@ -71,7 +72,8 @@ export function validateArrow(arrow: Arrow, width: number, height: number, level
       const previous = arrow.path[index - 1];
       const dx = Math.abs(previous.x - point.x);
       const dy = Math.abs(previous.y - point.y);
-      if (Math.max(dx, dy) !== 1 || (dx > 0 && dy > 0 && Math.abs(dx - dy) > 1e-8)) throw new Error(`${label}: disconnected segment ${index - 1} at ${pointKey(previous)} → ${key}`);
+      if (Math.abs(Math.max(dx, dy) - 1) > 1e-8) throw new Error(`${label}: segment ${index - 1} has invalid length at ${pointKey(previous)} → ${key}; expected one board unit`);
+      if (dx > 1e-8 && dy > 1e-8 && Math.abs(dx - dy) > 1e-8) throw new Error(`${label}: segment ${index - 1} is not a 45° diagonal at ${pointKey(previous)} → ${key}; horizontal and vertical displacement differ`);
     }
   });
   const pathSegments = arrow.path.slice(1).map((point, index) => ({ a: arrow.path[index], b: point }));
@@ -105,7 +107,7 @@ export function validateArrowSelfTraversal(arrow: Arrow, width: number, height: 
   for (let step = 0; step <= samples; step += 1) {
     const traveled = Math.min(maximumTravel, step * COLLISION_STEP);
     const centers = moveArrowDistance(arrow, traveled);
-    const movingPath = centers.map(({ x, y }) => ({ x: x - 0.5, y: y - 0.5 }));
+    const movingPath = centers.map(toPathPoint);
     const bodyIssue = findSelfBodyClearanceIssue(movingPath, COLLISION_STEP);
     if (bodyIssue) throw new Error(`${label}: moving body self-collision at travel ${traveled.toFixed(3)} cells, segments ${bodyIssue.segmentAIndex} and ${bodyIssue.segmentBIndex}, near (${bodyIssue.point.x.toFixed(3)}, ${bodyIssue.point.y.toFixed(3)}); measured clearance ${bodyIssue.clearance.toFixed(4)} cells, required > ${bodyIssue.threshold.toFixed(3)}`);
     const headIssue = findSelfHeadClearanceIssue(movingPath, COLLISION_STEP);
@@ -149,7 +151,7 @@ function pointAtDistance(route: Point[], stations: number[], at: number, directi
 
 /** Position every point of the flexible arrow after it has been pulled this far along its route. */
 export function moveArrowDistance(arrow: Arrow, traveled: number): Point[] {
-  const route = arrow.path.map((point) => ({ x: point.x + 0.5, y: point.y + 0.5 }));
+  const route = arrow.path.map(toBoardPoint);
   const stations = [0];
   for (let index = 1; index < route.length; index += 1) stations.push(stations[index - 1] + distance(route[index - 1], route[index]));
   const direction = exitDirection(arrow);
@@ -177,7 +179,7 @@ export function simulateMove(arrow: Arrow, others: Arrow[], width: number, heigh
   for (let index = 1; index <= intervals; index += 1) {
     const traveled = Math.min(maxTravel, index * COLLISION_STEP);
     const frame = moveArrowDistance(arrow, traveled);
-    const moving = { ...arrow, path: frame.map((point) => ({ x: point.x - 0.5, y: point.y - 0.5 })) };
+    const moving = { ...arrow, path: frame.map(toPathPoint) };
     const blocker = others.find((other) => arrowsCollide(moving, other, COLLISION_STEP));
     if (blocker) {
       let low = lastSafeTravel;
@@ -185,7 +187,7 @@ export function simulateMove(arrow: Arrow, others: Arrow[], width: number, heigh
       // Refine the first deterministic swept-contact sample so the visual impact lands at the blocker.
       for (let refinement = 0; refinement < 7; refinement += 1) {
         const midpoint = (low + high) / 2;
-        const impactPath = moveArrowDistance(arrow, midpoint).map((point) => ({ x: point.x - 0.5, y: point.y - 0.5 }));
+        const impactPath = moveArrowDistance(arrow, midpoint).map(toPathPoint);
         if (arrowsCollide({ ...arrow, path: impactPath }, blocker, COLLISION_STEP)) high = midpoint;
         else low = midpoint;
       }
@@ -258,8 +260,8 @@ export type LevelMetrics = {
 /** Curation metrics: close parallel/weaving runs count; bounding-box overlap does not. */
 export function analyzeLevel(level: Level): LevelMetrics {
   const segmentList = (arrow: Arrow) => arrow.path.slice(1).map((point, index) => ({
-    a: { x: arrow.path[index].x + 0.5, y: arrow.path[index].y + 0.5 },
-    b: { x: point.x + 0.5, y: point.y + 0.5 },
+    a: toBoardPoint(arrow.path[index]),
+    b: toBoardPoint(point),
   }));
   let interleavedPairs = 0;
   let closeSegmentContacts = 0;
@@ -316,7 +318,7 @@ export function movedPathIsOffBoard(frames: Point[][], width: number, height: nu
   const finalFrame = frames.at(-1) ?? [];
   if (finalFrame.length === 0) return true;
   const margin = 0.3;
-  const centers = finalFrame.map(({ x, y }) => ({ x: x + 0.5, y: y + 0.5 }));
+  const centers = finalFrame.map(toBoardPoint);
   return centers.every(({ x }) => x >= width + margin)
     || centers.every(({ x }) => x <= -margin)
     || centers.every(({ y }) => y >= height + margin)

@@ -1,6 +1,6 @@
 # Arrow Adventure
 
-Arrow Adventure is a mobile-first, advertisement-free puzzle game from Merpworks. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. The redesign replaces the former 40-level game with a new six-level shared-board collection.
+Arrow Adventure is a mobile-first, advertisement-free puzzle game from Mirpworks. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. The redesign replaces the former 40-level game with a new six-level shared-board collection.
 
 Production: <https://mirpkered.github.io/arrow-adventure/>
 
@@ -8,7 +8,7 @@ Independent QA: <https://mirpkered.github.io/arrow-adventure-qa/>
 
 ## Play
 
-The Merpworks startup splash leads to the title menu. Choose **Play** to begin at Level 1, or **Continue** to restore the last stable board state. The game saves progress and settings locally on this device. Existing saves from the former release use different keys and are ignored.
+The Mirpworks startup splash leads to the title menu. Choose **Play** to begin at Level 1, or **Continue** to restore the last stable board state. The game saves progress and settings locally on this device. Existing saves from the former release use different keys and are ignored.
 
 Tap an arrow to try to clear it. It follows its winding route, then travels in its final heading until its whole body exits. If blocked, the arrow moves to the collision point, turns red, and returns along its path; it stays red until successfully cleared. Each failed attempt costs one of three hearts, including a repeat attempt on a red arrow. Restart resets the level and hearts. There is no undo, timer, advertising, or monetization.
 
@@ -16,7 +16,7 @@ The board fits the available viewport, supports pinch zoom and panning, and has 
 
 ## Menus and settings
 
-The full-screen title scene uses an original static portrait landscape at `public/branding/arrow-adventure-title-scene.svg`; the approved square logo remains unchanged for icons and credits. It presents Play, Continue, Settings, and Credits. The in-game menu offers resume, restart, settings, and return to title. Settings save Light/Dark/Automatic appearance, optional background music, and independently optional sound effects. Background music is a quiet synthesized original loop; it is off by default. The game does not pause or replace music from Apple Music, Spotify, or other services.
+The full-screen title scene uses an original static portrait landscape at `public/branding/arrow-adventure-title-scene.svg`; the approved square logo remains unchanged for icons and credits. It presents Play, Continue, Settings, and Credits, with the correct Mirpworks spelling. The in-game menu offers resume, restart, settings, and return to title. Settings save Light/Dark/Automatic appearance, optional background music, and independently optional sound effects. Background music is a quiet synthesized original loop; it is off by default. The game does not pause or replace music from Apple Music, Spotify, or other services.
 
 ## Local development and validation
 
@@ -48,22 +48,23 @@ The QA panel is available only in development or builds with `VITE_QA_MODE=true`
 ## Architecture
 
 - `src/game/catalog.ts` — six fixed, solver-screened shared-board puzzles and integrity checks.
-- `src/game/geometry.ts`, `src/game/rules.ts` — canonical collision envelopes, path validation, distance-based body movement, solver, and layout metrics.
+- `src/game/geometry.ts`, `src/game/rules.ts`, `src/game/density.ts` — shared board-coordinate transforms, fixed collision envelopes, grid and segment validation, distance-based body movement, solver, and sampled whitespace metrics.
+- `src/app/boardGrid.ts` — fine-grid paths rendered in the same SVG coordinate frame as the arrows.
 - `src/game/session.ts` — heart and run-state helpers.
 - `src/app/viewport.ts` — fitted board view, pinch zoom, pan, and reset.
 - `src/app/persistence.ts` — versioned local progress/settings with separate QA and production keys.
 - `src/app/audio.ts` — optional synthesized music and original sound effects using Web Audio.
-- `src/app/launchSplash.ts` — one-time Merpworks splash sequence adapted from Word Search Adventure.
+- `src/app/launchSplash.ts` — one-time Mirpworks splash sequence adapted from Word Search Adventure.
 - `src/main.ts` — title/menu flow, SVG board, delegated touch handling, rAF movement and save orchestration.
 - `src/qa/qaPanel.ts` — development/QA-only testing controls, dynamically imported.
 
 Puzzle geometry and collision assumptions are documented in [Game Design](docs/GAME_DESIGN.md). The exact all-state solvability audit and Level 4 reconstruction are in [Solvability Audit](docs/SOLVABILITY_AUDIT.md). The repeatable process for curated content is in [Level Authoring](docs/LEVEL_AUTHORING.md).
 
-The baseline measurements and recommended method for the separate future puzzle-density redesign are in [Round 7A Density Plan](docs/ROUND_7A_DENSITY_PLAN.md). That plan does not change the current levels or gameplay rules.
+The Round 7A historical baseline and Round 8 Level 5 before/after density measurements are in [Round 7A Density Plan](docs/ROUND_7A_DENSITY_PLAN.md). Level 5 now uses a compact 12×14 canopy-and-trunk composition; Level 6 remains the unchanged quality benchmark.
 
 ## Current scope and limitations
 
 - Six curated prototype levels, Levels 1–6. These replace the earlier 40 levels; their progress is not imported.
-- Puzzle content is solver-verified and fingerprinted. Future levels should keep the intentionally varied, densely shared-board geometry.
+- Puzzle content is solver-verified and fingerprinted. All 60 arrows pass the current geometry validator; exhaustive state auditing covers 555 reachable board states and 1,622 legal removal transitions.
 - Physical iPhone Safari playtesting was not performed in this release. Confirm gestures, safe areas, zoom, splash timing, and frame pacing on a device before public announcement.
 - Free Play, tutorials, black holes, switches, gates, portals, and additional chapters are future work.

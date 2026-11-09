@@ -39,13 +39,13 @@ The Level 4 seven-arrow sub-board alone has 10 reachable states, 11 legal transi
 
 ## Self-geometry addendum
 
-The current catalog contains 59 arrows. Each one is validated on its own before level-level overlap, solver, or reachable-state checks. The geometry audit uses the same `moveArrowDistance` route window as animation and checks the full sweep until the arrow is outside the board. Body-to-body clearance is fixed at 0.18 board cells (the canonical widest stroke). To conservatively cover the 0.05-cell movement sample interval, the swept-body bound is 0.23 cells. Arrowhead-to-body checks use the actual maximum-size triangle and its collision stroke: 0.108 cells statically, expanded to 0.158 cells between sweep samples. A connected terminal body segment is excluded from head-self-contact checks; all other segments are checked. Exact contacts within floating-point epsilon fail validation.
+At the time of the original self-geometry audit, the catalog contained 59 arrows. Each was validated on its own before level-level overlap, solver, or reachable-state checks. The geometry audit uses the same `moveArrowDistance` route window as animation and checks the full sweep until the arrow is outside the board. Body-to-body clearance is fixed at 0.18 board cells (the canonical widest stroke). To conservatively cover the 0.05-cell movement sample interval, the swept-body bound is 0.23 cells. Arrowhead-to-body checks use the actual maximum-size triangle and its collision stroke: 0.108 cells statically, expanded to 0.158 cells between sweep samples. A connected terminal body segment is excluded from head-self-contact checks; all other segments are checked. Exact contacts within floating-point epsilon fail validation.
 
 The self-audit reproduced the Level 3 symptom. The likely two-arrow state is reachable after `a06 → a07 → a05 → a02 → a04`, leaving `a01` and `a03`, the two longest paths. The pre-correction `a03` centerline did not cross itself while stationary. Its southbound exit head swept into the unretracted horizontal tail section at about half a cell of travel; the ordinary move simulator only tested other arrows and the old validator did not test the arrow against itself. The old orientation now fails both `validateArrow` and `simulateMove` with a Level 3 arrowhead self-collision diagnostic. The fixed `a03` keeps the same path geometry and faces out from the other endpoint; in the reconstructed state it is the single legal move and the board still clears.
 
 The same audit found three more invalid exits: Level 4 `a04` and `a06`, and Level 6 `a10`. Level 4 `a04` now has a short final hook that exits south instead of sweeping its tail; Level 4 `a06` and Level 6 `a10` use the opposite orientation on their unchanged centerlines. All four old arrows were tested as invalid before correction. All 59 current arrows pass the full self-motion audit. The Level 4 three-removal reproduction remains unchanged: `a05 → a07 → a08` or `a07 → a05 → a08` leaves the same seven-arrow state, where `a06` is the only safe move and the remaining solver route still completes the board.
 
-The level fingerprints for Levels 3, 4, and 6 were intentionally updated and frozen in the regression test. The revised exact audits cover 536 reachable states and 1,571 legal transitions; no current state deadlocks or cycles.
+The level fingerprints for Levels 3, 4, and 6 were intentionally updated and frozen in the regression test. At that point the revised exact audits covered 536 reachable states and 1,571 legal transitions, with no deadlocks or cycles. Current Round 8 totals are recorded in the update below.
 
 ## QA-only state inspection
 
@@ -54,3 +54,11 @@ In development and explicit QA builds, a two-second hold on the level label open
 ## Validation command
 
 The catalog validator runs this exact audit as part of `npm test`, alongside frozen content fingerprints, path separation, the normal solver, and replay of solver sequences through the gameplay simulator. Catalog checks no longer run synchronously during app startup; deployment is gated by the test workflow instead.
+
+## Round 8 catalog update
+
+Round 8 retains the Level 4 definition and its reconstruction above. No Level 4 path was changed: all 14 reachable states and 16 legal transitions still pass, including the seven-arrow state whose only legal move is `a06`. A local portrait browser preview confirmed the board fits at 390×844 CSS pixels; no physical iPhone was available to reproduce the reported playtest tap sequence.
+
+Level 5 was the only puzzle re-authored. Its 12×14 canopy-and-hooked-trunk shape now has 8 arrows (up from 7), including fuller side branches and a short winding route near the canopy. The sampled area farther than 1.5 board units from a path fell from 35.4% to 18.75%; centerline occupancy rose from 0.401 to 0.577. It retains four initially removable arrows and dependency depth 3. The updated puzzle has 38 reachable states, 83 legal transitions, one cleared terminal state, no deadlocks, and no dependency cycles.
+
+The Level 5 content fingerprint is `bb8c27c5324732870afb48a48c9568a60af3df9b5c624fd0b3665162c38947ff`. Level 6 remains frozen at its previous fingerprint `0a86c43f5843b91b47f706155502f487819e3f173c118674ab5aa25e905c0d8e`. The Round 8 catalog contains 60 individually validated arrows and exactly audits 555 reachable states with 1,622 legal transitions across all six levels; none deadlock or form dependency cycles.

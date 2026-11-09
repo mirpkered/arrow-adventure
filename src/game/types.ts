@@ -2,7 +2,7 @@ export type Point = { x: number; y: number };
 
 export type Arrow = {
   id: string;
-  /** Integer grid points defining the centerline, ordered from tail to arrowhead. */
+  /** Board-grid vertices ordered from tail to arrowhead; each step is one board unit. */
   path: Point[];
 };
 

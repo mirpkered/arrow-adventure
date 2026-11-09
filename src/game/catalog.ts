@@ -1716,11 +1716,11 @@ export const CURATED_LEVELS: readonly CuratedLevel[] = [
     "id": "shared-board-005",
     "number": 5,
     "title": "Shaped Puzzle",
-    "difficulty": "challenging",
-    "designNote": "Paths form an original canopy-and-trunk silhouette; diagonal turns are threaded through the crown.",
+    "difficulty": "steady",
+    "designNote": "Eight compact paths form a fuller canopy and a hooked trunk, with broad safe openings and a short dependency chain.",
     "puzzle": {
       "number": 5,
-      "width": 13,
+      "width": 12,
       "height": 14,
       "arrows": [
         {
@@ -1791,6 +1791,8 @@ export const CURATED_LEVELS: readonly CuratedLevel[] = [
         {
           "id": "a02",
           "path": [
+            { "x": 0, "y": 3 },
+            { "x": 1, "y": 3 },
             {
               "x": 2,
               "y": 3
@@ -1904,6 +1906,8 @@ export const CURATED_LEVELS: readonly CuratedLevel[] = [
         {
           "id": "a03",
           "path": [
+            { "x": 11, "y": 6 },
+            { "x": 10, "y": 6 },
             {
               "x": 9,
               "y": 6
@@ -1994,11 +1998,35 @@ export const CURATED_LEVELS: readonly CuratedLevel[] = [
           "id": "a04",
           "path": [
             {
+              "x": 9,
+              "y": 0
+            },
+            {
               "x": 10,
-              "y": 2
+              "y": 0
             },
             {
               "x": 11,
+              "y": 0
+            },
+            {
+              "x": 11,
+              "y": 1
+            },
+            {
+              "x": 10,
+              "y": 1
+            },
+            {
+              "x": 9,
+              "y": 1
+            },
+            {
+              "x": 9,
+              "y": 2
+            },
+            {
+              "x": 10,
               "y": 2
             }
           ]
@@ -2007,8 +2035,12 @@ export const CURATED_LEVELS: readonly CuratedLevel[] = [
           "id": "a05",
           "path": [
             {
-              "x": 5,
+              "x": 4,
               "y": 13
+            },
+            {
+              "x": 4,
+              "y": 12
             },
             {
               "x": 5,
@@ -2017,6 +2049,14 @@ export const CURATED_LEVELS: readonly CuratedLevel[] = [
             {
               "x": 5,
               "y": 11
+            },
+            {
+              "x": 4,
+              "y": 11
+            },
+            {
+              "x": 4,
+              "y": 10
             },
             {
               "x": 5,
@@ -2032,8 +2072,12 @@ export const CURATED_LEVELS: readonly CuratedLevel[] = [
           "id": "a06",
           "path": [
             {
-              "x": 7,
+              "x": 8,
               "y": 13
+            },
+            {
+              "x": 8,
+              "y": 12
             },
             {
               "x": 7,
@@ -2042,6 +2086,14 @@ export const CURATED_LEVELS: readonly CuratedLevel[] = [
             {
               "x": 7,
               "y": 11
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 8,
+              "y": 10
             },
             {
               "x": 7,
@@ -2076,6 +2128,20 @@ export const CURATED_LEVELS: readonly CuratedLevel[] = [
               "x": 6,
               "y": 9
             }
+          ]
+        },
+        {
+          "id": "a08",
+          "path": [
+            { "x": 2, "y": 0 },
+            { "x": 1, "y": 0 },
+            { "x": 0, "y": 0 },
+            { "x": 0, "y": 1 },
+            { "x": 1, "y": 1 },
+            { "x": 2, "y": 1 },
+            { "x": 2, "y": 2 },
+            { "x": 1, "y": 2 },
+            { "x": 0, "y": 2 }
           ]
         }
       ]

@@ -14,7 +14,7 @@ function fixture(reducedMotion = false) {
   return { document: document as unknown as Document, windowRef, timers };
 }
 
-describe('Merpworks launch splash', () => {
+describe('Mirpworks launch splash', () => {
   it('matches the reference phase timings and reveals the app after the black transition', () => {
     const { document, windowRef, timers } = fixture();
     const splash = showLaunchSplash(document, windowRef, '/arrow-adventure/branding/mirpworks-logo.jpg')!;

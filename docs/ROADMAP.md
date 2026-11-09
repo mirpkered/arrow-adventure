@@ -12,9 +12,9 @@ This roadmap describes the reset, shared-board game now targeted for production.
 - Three-heart system, restart, level progression and device-local stable-state saving.
 - Light, Dark and Automatic appearance; independent optional synthesized music and sound effects.
 - Light is the first-launch default unless a valid saved preference exists; Automatic follows the device without restarting the current puzzle.
-- Exact, memoized reachable-state solvability audit of all six boards (536 reachable states, 1,571 legal transitions), plus full self-motion geometry validation of all 59 arrows; details are in [SOLVABILITY_AUDIT.md](SOLVABILITY_AUDIT.md).
+- Exact, memoized reachable-state solvability audit of all six boards (555 reachable states, 1,622 legal transitions), plus full self-motion geometry validation of all 60 arrows; details are in [SOLVABILITY_AUDIT.md](SOLVABILITY_AUDIT.md).
 - QA-only state diagnostics display remaining IDs, legal moves, solver path and selected-arrow collision; the panel can highlight a legal move without mutating gameplay or saves.
-- One-time Merpworks splash adapted from Word Search Adventure.
+- One-time Mirpworks splash adapted from Word Search Adventure.
 - QA and production have separate Pages sites, candidate commits and local-storage namespaces. Production `main` is directly authorized for this release; experimental future changes can still be evaluated independently in QA.
 
 ## Validation and playtest gates
@@ -26,7 +26,7 @@ This roadmap describes the reset, shared-board game now targeted for production.
 
 ## Next recommended work
 
-- Prepare a separate density redesign beginning with Levels 5 and 3, following the sampled whitespace baselines and geometry gates in [ROUND_7A_DENSITY_PLAN.md](ROUND_7A_DENSITY_PLAN.md). The current catalog is unchanged by that assessment.
+- Play all six refined puzzles on a physical iPhone and tune board scale, touch precision, speed, blocked collision feel, and level difficulty. Physical device testing was not performed for Round 8.
 - Playtest all six levels on a physical iPhone and tune board scale, touch precision, speed, blocked collision feel, and level difficulty.
 - Refine or replace individual puzzles based on observed solves; update their frozen fingerprints deliberately and re-run the solver and geometry review.
 - Add a modest next batch of curated puzzles only after the current collection is reviewed.
