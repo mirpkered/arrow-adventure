@@ -1,11 +1,12 @@
 import type { Arrow, Level, MoveResult, Point } from './types';
-import { arrowsCollide, segmentDistance, ARROW_COLLISION_WIDTH, pointToPolylineDistance } from './geometry';
+import { arrowsCollide, findSelfBodyClearanceIssue, findSelfHeadClearanceIssue, segmentDistance, ARROW_COLLISION_WIDTH, pointToPolylineDistance } from './geometry';
 
 /** Maximum sweep sampling interval, in board-cell distances. */
 export const COLLISION_STEP = 0.05;
 /** Kept as a compatibility export for callers that describe sub-grid samples. */
 export const MOVE_SUBSTEPS = 1 / COLLISION_STEP;
 export const TOUCH_PICK_RADIUS = 0.75;
+const validatedSelfMotion = new WeakMap<Arrow, string>();
 
 /** Deterministic closest-path hit testing, used for mouse and touch alike. */
 export function nearestArrowAt(point: Point, arrows: Arrow[], radius = TOUCH_PICK_RADIUS): string | undefined {
@@ -45,33 +46,73 @@ function fullyExited(points: Point[], width: number, height: number, direction: 
   return beyondX || beyondY;
 }
 
-export function validateArrow(arrow: Arrow, width: number, height: number): void {
-  if (arrow.path.length < 2) throw new Error(`${arrow.id} needs at least two cells`);
+export function validateArrow(arrow: Arrow, width: number, height: number, levelNumber?: number): void {
+  const label = `Level ${levelNumber ?? 'unknown'} arrow ${arrow.id}`;
+  if (arrow.path.length < 2) throw new Error(`${label}: needs at least two path points`);
+  const signature = selfMotionSignature(arrow, width, height);
+  if (validatedSelfMotion.get(arrow) === signature) return;
   const seen = new Set<string>();
   arrow.path.forEach((point, index) => {
     if (!Number.isFinite(point.x) || !Number.isFinite(point.y)
       || Math.abs(point.x * 2 - Math.round(point.x * 2)) > 1e-8 || Math.abs(point.y * 2 - Math.round(point.y * 2)) > 1e-8
       || point.x < 0 || point.y < 0 || point.x >= width || point.y >= height) {
-      throw new Error(`${arrow.id} leaves the board at ${pointKey(point)}`);
+      throw new Error(`${label}: path point ${index} leaves the board at ${pointKey(point)}`);
     }
     const key = pointKey(point);
-    if (seen.has(key)) throw new Error(`${arrow.id} crosses itself at ${key}`);
+    if (index > 0) {
+      const previous = arrow.path[index - 1];
+      if (Math.abs(previous.x - point.x) <= 1e-8 && Math.abs(previous.y - point.y) <= 1e-8) {
+        throw new Error(`${label}: zero-length segment ${index - 1} at ${key}`);
+      }
+    }
+    if (seen.has(key)) throw new Error(`${label}: path crosses itself at point ${index}, coordinate ${key}`);
     seen.add(key);
     if (index > 0) {
       const previous = arrow.path[index - 1];
       const dx = Math.abs(previous.x - point.x);
       const dy = Math.abs(previous.y - point.y);
-      if (Math.max(dx, dy) !== 1 || (dx > 0 && dy > 0 && Math.abs(dx - dy) > 1e-8)) throw new Error(`${arrow.id} has a disconnected path`);
+      if (Math.max(dx, dy) !== 1 || (dx > 0 && dy > 0 && Math.abs(dx - dy) > 1e-8)) throw new Error(`${label}: disconnected segment ${index - 1} at ${pointKey(previous)} → ${key}`);
     }
   });
   const pathSegments = arrow.path.slice(1).map((point, index) => ({ a: arrow.path[index], b: point }));
   for (let left = 0; left < pathSegments.length; left += 1) {
     for (let right = left + 2; right < pathSegments.length; right += 1) {
-      if (segmentDistance(pathSegments[left], pathSegments[right]) <= ARROW_COLLISION_WIDTH) {
-        throw new Error(`${arrow.id} has a visually self-intersecting path`);
+      const clearance = segmentDistance(pathSegments[left], pathSegments[right]);
+      if (clearance <= ARROW_COLLISION_WIDTH + 1e-8) {
+        throw new Error(`${label}: self-intersection or insufficient body clearance between segments ${left} and ${right} near ${pointKey(pathSegments[left].a)}; measured ${clearance.toFixed(4)} cells, minimum ${ARROW_COLLISION_WIDTH} cells`);
       }
     }
   }
+  validateArrowSelfTraversal(arrow, width, height, levelNumber);
+  validatedSelfMotion.set(arrow, signature);
+}
+
+function selfMotionSignature(arrow: Arrow, width: number, height: number): string {
+  return `${width}x${height}:${JSON.stringify(arrow.path)}`;
+}
+
+/**
+ * Validates the complete pulled-body motion against the arrow's unretracted
+ * body. Sampling uses the same movement primitive as rendering; an extra
+ * COLLISION_STEP clearance makes the check conservative between samples.
+ */
+export function validateArrowSelfTraversal(arrow: Arrow, width: number, height: number, levelNumber?: number): void {
+  const label = `Level ${levelNumber ?? 'unknown'} arrow ${arrow.id}`;
+  const direction = exitDirection(arrow);
+  const routeLength = arrow.path.slice(1).reduce((sum, point, index) => sum + distance(arrow.path[index], point), 0);
+  const maximumTravel = routeLength + Math.hypot(width, height) + 2;
+  const samples = Math.ceil(maximumTravel / COLLISION_STEP);
+  for (let step = 0; step <= samples; step += 1) {
+    const traveled = Math.min(maximumTravel, step * COLLISION_STEP);
+    const centers = moveArrowDistance(arrow, traveled);
+    const movingPath = centers.map(({ x, y }) => ({ x: x - 0.5, y: y - 0.5 }));
+    const bodyIssue = findSelfBodyClearanceIssue(movingPath, COLLISION_STEP);
+    if (bodyIssue) throw new Error(`${label}: moving body self-collision at travel ${traveled.toFixed(3)} cells, segments ${bodyIssue.segmentAIndex} and ${bodyIssue.segmentBIndex}, near (${bodyIssue.point.x.toFixed(3)}, ${bodyIssue.point.y.toFixed(3)}); measured clearance ${bodyIssue.clearance.toFixed(4)} cells, required > ${bodyIssue.threshold.toFixed(3)}`);
+    const headIssue = findSelfHeadClearanceIssue(movingPath, COLLISION_STEP);
+    if (headIssue) throw new Error(`${label}: arrowhead self-collision at travel ${traveled.toFixed(3)} cells, head versus segment ${headIssue.segmentAIndex}, near (${headIssue.point.x.toFixed(3)}, ${headIssue.point.y.toFixed(3)}); measured clearance ${headIssue.clearance.toFixed(4)} cells, required > ${headIssue.threshold.toFixed(3)}`);
+    if (fullyExited(movingPath, width, height, direction)) return;
+  }
+  throw new Error(`${label}: exit geometry did not fully clear the board`);
 }
 
 export function validateLevel(level: Level): void {
@@ -81,7 +122,7 @@ export function validateLevel(level: Level): void {
   for (const [index, arrow] of level.arrows.entries()) {
     if (ids.has(arrow.id)) throw new Error(`Level ${level.number} has duplicate arrow ID ${arrow.id}`);
     ids.add(arrow.id);
-    validateArrow(arrow, level.width, level.height);
+    validateArrow(arrow, level.width, level.height, level.number);
     for (const other of level.arrows.slice(0, index)) if (arrowsCollide(arrow, other)) throw new Error(`${arrow.id} visually collides with ${other.id}`);
   }
 }
@@ -122,6 +163,9 @@ export function moveArrowDistance(arrow: Arrow, traveled: number): Point[] {
 
 /** Deterministically sample the complete swept body; presentation animation uses an independent rAF clock. */
 export function simulateMove(arrow: Arrow, others: Arrow[], width: number, height: number): MoveResult {
+  // Gameplay refuses malformed content instead of silently animating through
+  // the arrow's own unretracted body. Catalog validation performs the same check.
+  if (validatedSelfMotion.get(arrow) !== selfMotionSignature(arrow, width, height)) validateArrow(arrow, width, height);
   const frames: Point[][] = [];
   const direction = exitDirection(arrow);
   if (Math.max(Math.abs(direction.x), Math.abs(direction.y)) !== 1 || (direction.x === 0 && direction.y === 0)) throw new Error(`${arrow.id} has an invalid exit direction`);

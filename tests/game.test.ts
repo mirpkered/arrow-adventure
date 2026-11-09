@@ -5,8 +5,8 @@ import appSource from '../src/main.ts?raw';
 import qaSource from '../src/qa/qaPanel.ts?raw';
 import { bindLongPress } from '../src/qa/qaPanel';
 import { CURATED_LEVELS, getCuratedLevel, getNextCuratedLevel, validateCuratedLevels } from '../src/game/catalog';
-import { ARROW_COLLISION_WIDTH, ARROW_STROKE_WIDTH, arrowHeadTriangle, arrowsCollide } from '../src/game/geometry';
-import { analyzeLevel, completeLevel, directionName, exitDirection, MOVE_SUBSTEPS, movedPathIsOffBoard, moveArrowDistance, nearestArrowAt, simulateMove, solveLevel, TOUCH_PICK_RADIUS, validateArrow, validateLevel } from '../src/game/rules';
+import { ARROW_COLLISION_WIDTH, ARROW_MAX_RENDERED_WIDTH, ARROW_STROKE_WIDTH, arrowHeadTriangle, arrowsCollide, findSelfBodyClearanceIssue, findSelfHeadClearanceIssue } from '../src/game/geometry';
+import { analyzeLevel, completeLevel, directionName, exitDirection, MOVE_SUBSTEPS, movedPathIsOffBoard, moveArrowDistance, nearestArrowAt, simulateMove, solveLevel, TOUCH_PICK_RADIUS, validateArrow, validateArrowSelfTraversal, validateLevel } from '../src/game/rules';
 import { advanceSession, createRun, createSession, loseHeart } from '../src/game/session';
 import { createActionGate } from '../src/game/input';
 import { movementDuration, NORMAL_MOVE_SPEED, RETURN_MOVE_SPEED } from '../src/app/motion';
@@ -59,10 +59,10 @@ describe('curated shared-board catalog', () => {
     expect(fingerprints).toEqual([
       'f2eea1badfe8d925a93aa7d8cf38335494bdd4966afa2bd1680c989a57a32d3e',
       'ad6daeee824c5caf1f6daf6f52cd41d6613cd2d28f76415baece4558f6822058',
-      '3729870505a360b8c0652ec786bb28b9ebec4e754520574f857add289ec463ad',
-      'f620176b5b5710bfe7175e7f49cbd3646b096fdc7872c73f217318d0fbeab675',
+      '3a4b9275f6413976df1fcd5858934c6b195df4b991d7b1669f9a7737a3b1be2d',
+      '3980a0aeb66e99ff2b4b0772112589b3b865d01c3f86fb12904de5dd72450b15',
       'd0a2c578eddc37d1d9c978557a2bad6be2b6dae0f5f106bed31bbc8430a540b1',
-      'd4461f023801f5e86a71fd197360ff6cfda7f85ad9f1f549a950ac4a14892f8b',
+      '0a86c43f5843b91b47f706155502f487819e3f173c118674ab5aa25e905c0d8e',
     ]);
   });
 
@@ -73,9 +73,9 @@ describe('curated shared-board catalog', () => {
     const metrics = CURATED_LEVELS.map(({ puzzle }) => analyzeLevel(puzzle));
     expect(openingCounts).toEqual(metrics.map(({ initiallyRemovable }) => initiallyRemovable));
     expect(metrics.map(({ interleavedPairs }) => interleavedPairs)).toEqual([7, 10, 6, 8, 4, 20]);
-    expect(metrics.map(({ closeSegmentContacts }) => closeSegmentContacts)).toEqual([119, 222, 131, 224, 100, 354]);
-    expect(metrics.map(({ dependencyDepth }) => dependencyDepth)).toEqual([5, 7, 4, 8, 3, 7]);
-    expect(metrics.map(({ initiallyRemovable }) => initiallyRemovable)).toEqual([2, 4, 3, 2, 3, 6]);
+    expect(metrics.map(({ closeSegmentContacts }) => closeSegmentContacts)).toEqual([119, 222, 131, 218, 100, 354]);
+    expect(metrics.map(({ dependencyDepth }) => dependencyDepth)).toEqual([5, 7, 2, 8, 3, 8]);
+    expect(metrics.map(({ initiallyRemovable }) => initiallyRemovable)).toEqual([2, 4, 4, 2, 3, 5]);
     expect(metrics.every(({ occupancyRatio }) => occupancyRatio >= 0.25)).toBe(true);
     expect(metrics.every(({ blockingDependencies }) => blockingDependencies > 0)).toBe(true);
     expect(metrics.filter(({ newlyUnlockedByRemoval }) => newlyUnlockedByRemoval.some((count) => count > 0))).toHaveLength(5);
@@ -86,8 +86,50 @@ describe('curated shared-board catalog', () => {
   it('exhaustively audits all reachable removal states for every authored level', () => {
     const reports = CURATED_LEVELS.map((entry) => ({ id: entry.id, ...auditReachableStates(entry.puzzle) }));
     expect(reports.every(({ exact, deadlocks, dependencyCycles, terminalStates }) => exact && deadlocks.length === 0 && dependencyCycles.length === 0 && terminalStates === 1)).toBe(true);
-    expect(reports.map(({ reachableStates }) => reachableStates)).toEqual([16, 83, 30, 14, 19, 680]);
-    expect(reports.map(({ legalTransitions }) => legalTransitions)).toEqual([24, 205, 59, 16, 32, 2612]);
+    expect(reports.map(({ reachableStates }) => reachableStates)).toEqual([16, 83, 54, 14, 19, 350]);
+    expect(reports.map(({ legalTransitions }) => legalTransitions)).toEqual([24, 205, 135, 16, 32, 1159]);
+  });
+
+  it('runs individual self-geometry validation on every published arrow', () => {
+    let audited = 0;
+    for (const entry of CURATED_LEVELS) for (const arrow of entry.puzzle.arrows) {
+      expect(() => validateArrow(arrow, entry.puzzle.width, entry.puzzle.height, entry.number), `${entry.number}/${arrow.id}`).not.toThrow();
+      audited += 1;
+    }
+    expect(audited).toBe(59);
+  });
+
+  it('reproduces Level 3 with two long arrows and rejects its former self-colliding head route', () => {
+    const entry = CURATED_LEVELS[2];
+    const corrected = entry.puzzle.arrows.find(({ id }) => id === 'a03')!;
+    let remaining = [...entry.puzzle.arrows];
+    for (const id of ['a06', 'a07', 'a05', 'a02', 'a04']) {
+      expect(legalMoves({ ...entry.puzzle, arrows: remaining }).some(({ arrow }) => arrow.id === id), `Level 3 can clear ${id}`).toBe(true);
+      remaining = remaining.filter((arrow) => arrow.id !== id);
+    }
+    expect(remaining.map(({ id }) => id).sort()).toEqual(['a01', 'a03']);
+    expect(legalMoves({ ...entry.puzzle, arrows: remaining }).map(({ arrow }) => arrow.id)).toEqual(['a03']);
+    expect(simulateMove(corrected, remaining.filter(({ id }) => id !== corrected.id), entry.puzzle.width, entry.puzzle.height).ok).toBe(true);
+    expect(() => validateArrowSelfTraversal(corrected, entry.puzzle.width, entry.puzzle.height, 3)).not.toThrow();
+
+    const formerDirection = { ...corrected, path: [...corrected.path].reverse() };
+    expect(() => validateArrow(formerDirection, entry.puzzle.width, entry.puzzle.height, 3)).toThrow(/Level 3 arrow a03: arrowhead self-collision.*segment/i);
+    expect(() => simulateMove(formerDirection, [], entry.puzzle.width, entry.puzzle.height)).toThrow(/arrowhead self-collision/i);
+    expect(() => solveLevel({ ...entry.puzzle, arrows: entry.puzzle.arrows.map((arrow) => arrow.id === 'a03' ? formerDirection : arrow) })).toThrow(/arrowhead self-collision/i);
+    const collisionPose = moveArrowDistance(formerDirection, 0.5).map(({ x, y }) => ({ x: x - 0.5, y: y - 0.5 }));
+    expect(findSelfHeadClearanceIssue(collisionPose, 0)).toMatchObject({ type: 'head-clearance', segmentAIndex: 4 });
+  });
+
+  it('keeps regression fixtures for the other three published self-colliding exits', () => {
+    const level4 = CURATED_LEVELS[3].puzzle;
+    const level4a04 = level4.arrows.find(({ id }) => id === 'a04')!;
+    const oldA04 = { ...level4a04, path: [...level4a04.path.slice(0, 16), { x: 7, y: 9 }, { x: 8, y: 9 }] };
+    expect(() => validateArrow(oldA04, level4.width, level4.height, 4)).toThrow(/Level 4 arrow a04: arrowhead self-collision/i);
+    for (const [entry, id] of [[level4, 'a06'], [CURATED_LEVELS[5].puzzle, 'a10']] as const) {
+      const safeOrientation = entry.arrows.find((arrow) => arrow.id === id)!;
+      const unsafeOrientation = { ...safeOrientation, path: [...safeOrientation.path].reverse() };
+      expect(() => validateArrow(unsafeOrientation, entry.width, entry.height, entry.number)).toThrow(new RegExp(`Level ${entry.number} arrow ${id}: arrowhead self-collision`, 'i'));
+    }
   });
 
   it('reproduces the reported Level 4 seven-arrow state and verifies its remaining route', () => {
@@ -164,6 +206,46 @@ describe('curated shared-board catalog', () => {
 });
 
 describe('shared arrow geometry and movement', () => {
+  it('accepts straight, tightly turning, and nested winding arrows with safe self-traversal', () => {
+    const straight = makeArrow('straight', [{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 3, y: 1 }]);
+    const tight = makeArrow('tight', [{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 2, y: 2 }, { x: 3, y: 2 }, { x: 3, y: 3 }, { x: 4, y: 3 }]);
+    const nested = makeArrow('nested', [
+      { x: 1, y: 1 }, { x: 2, y: 1 }, { x: 3, y: 1 }, { x: 4, y: 1 }, { x: 4, y: 2 }, { x: 4, y: 3 },
+      { x: 3, y: 3 }, { x: 2, y: 3 }, { x: 1, y: 3 }, { x: 1, y: 4 }, { x: 1, y: 5 }, { x: 2, y: 5 },
+      { x: 3, y: 5 }, { x: 4, y: 5 }, { x: 5, y: 5 },
+    ]);
+    for (const arrow of [straight, tight, nested]) {
+      expect(() => validateArrow(arrow, 8, 8, 99), arrow.id).not.toThrow();
+      expect(() => simulateMove(arrow, [], 8, 8), arrow.id).not.toThrow();
+    }
+  });
+
+  it('rejects centerline crossings, repeated segments, self-touch, and sub-clearance parallels with diagnostics', () => {
+    const crossing = makeArrow('crossing', [{ x: 1, y: 1 }, { x: 2, y: 2 }, { x: 1, y: 2 }, { x: 2, y: 1 }]);
+    const overlap = makeArrow('overlap', [{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 2, y: 2 }, { x: 1, y: 2 }, { x: 2, y: 1 }]);
+    expect(() => validateArrow(crossing, 5, 5, 99)).toThrow(/Level 99 arrow crossing: self-intersection.*segments 0 and 2/i);
+    expect(() => validateArrow(overlap, 5, 5, 99)).toThrow(/Level 99 arrow overlap: path crosses itself/i);
+
+    const justInside = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: ARROW_COLLISION_WIDTH - 0.000001 }, { x: 0, y: ARROW_COLLISION_WIDTH - 0.000001 }];
+    const atLimit = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: ARROW_COLLISION_WIDTH }, { x: 0, y: ARROW_COLLISION_WIDTH }];
+    const justOutside = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: ARROW_COLLISION_WIDTH + 0.000001 }, { x: 0, y: ARROW_COLLISION_WIDTH + 0.000001 }];
+    expect(findSelfBodyClearanceIssue(justInside)?.clearance).toBeCloseTo(ARROW_COLLISION_WIDTH - 0.000001);
+    expect(findSelfBodyClearanceIssue(atLimit)?.clearance).toBeCloseTo(ARROW_COLLISION_WIDTH);
+    expect(findSelfBodyClearanceIssue(justOutside)).toBeUndefined();
+  });
+
+  it('keeps close legal parallel arrows clear at both thin and widest visual stroke presets', () => {
+    const closeA = makeArrow('close-a', [{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 3, y: 1 }]);
+    const closeB = makeArrow('close-b', [{ x: 1, y: 1.5 }, { x: 2, y: 1.5 }, { x: 3, y: 1.5 }]);
+    expect(ARROW_MAX_RENDERED_WIDTH).toBe(0.18);
+    expect(() => validateLevel({ number: 99, width: 6, height: 5, arrows: [closeA, closeB] })).not.toThrow();
+    expect(arrowsCollide(closeA, closeB)).toBe(false);
+    for (const visibleWidth of [0.12, 0.15, 0.18]) {
+      expect(() => validateArrow(closeA, 6, 5, 99)).not.toThrow();
+      expect(arrowHeadTriangle(closeA.path, visibleWidth)).toHaveLength(3);
+    }
+  });
+
   it('accepts cardinal and diagonal adjacent path segments and rejects malformed steps', () => {
     expect(() => validateArrow(makeArrow('winding', [{ x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 0 }]), 5, 5)).not.toThrow();
     expect(() => validateArrow(makeArrow('gap', [{ x: 0, y: 0 }, { x: 2, y: 0 }]), 5, 5)).toThrow(/disconnected/i);

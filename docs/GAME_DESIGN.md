@@ -16,7 +16,7 @@ The app opens with the Merpworks launch splash, then presents a composed title m
 
 The catalog contains exactly six fixed puzzle definitions, with stable local IDs `shared-board-001` through `shared-board-006`. Each entry includes a title, difficulty and design note. The JSON puzzle definitions are frozen in tests by SHA-256 fingerprints. Automated validation checks structure, geometry, variety, dependencies, the normal solver, and every state reachable through successful removals. This audit runs in tests/deployment validation, not during app startup.
 
-Round 6 exhaustively checked 842 reachable states and 2,948 legal transitions across all six levels. No reachable state deadlocks. The exact Level 4 report and seven-arrow reconstruction are in [Solvability Audit](SOLVABILITY_AUDIT.md). The collision and solver rules were not changed for that report.
+Round 6 first exhaustively checked 842 reachable states and 2,948 legal transitions. The self-geometry addendum then added per-arrow swept-body validation, corrected four unsafe exit routes, and rechecked 536 states and 1,571 transitions. No current reachable state deadlocks. The Level 3 reproduction, Level 4 seven-arrow reconstruction and geometry thresholds are in [Solvability Audit](SOLVABILITY_AUDIT.md).
 
 | Level | Board | Arrows | Centerline occupancy* | Interleaved pairs | Close segment contacts | Blocker links | Dependency depth | Initially removable |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |

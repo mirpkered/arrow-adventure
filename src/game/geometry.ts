@@ -95,6 +95,55 @@ export function polylinesCollide(left: Point[], right: Point[], distance = ARROW
   return leftSegments.some((a) => rightSegments.some((b) => segmentDistance(a, b) <= distance + GEOMETRY_EPSILON));
 }
 
+export type SelfClearanceIssue = {
+  type: 'body-clearance' | 'head-clearance';
+  segmentAIndex: number;
+  segmentBIndex?: number;
+  clearance: number;
+  threshold: number;
+  point: Point;
+};
+
+/** Finds nonadjacent body segments that violate the fixed gameplay clearance. */
+export function findSelfBodyClearanceIssue(path: Point[], extraClearance = 0): SelfClearanceIssue | undefined {
+  const body = segments(cellCenters(path));
+  const threshold = ARROW_COLLISION_WIDTH + extraClearance;
+  let nearest: SelfClearanceIssue | undefined;
+  for (let left = 0; left < body.length; left += 1) for (let right = left + 2; right < body.length; right += 1) {
+    const clearance = segmentDistance(body[left], body[right]);
+    if (clearance <= threshold + GEOMETRY_EPSILON && (!nearest || clearance < nearest.clearance)) {
+      nearest = {
+        type: 'body-clearance',
+        segmentAIndex: left,
+        segmentBIndex: right,
+        clearance,
+        threshold,
+        point: { x: (body[left].a.x + body[left].b.x) / 2, y: (body[left].a.y + body[left].b.y) / 2 },
+      };
+    }
+  }
+  return nearest;
+}
+
+/** Checks the arrowhead against all of its own body except the attached final segment. */
+export function findSelfHeadClearanceIssue(path: Point[], extraClearance = 0): SelfClearanceIssue | undefined {
+  if (path.length < 3) return undefined;
+  const head = arrowHeadTriangle(path, ARROW_MAX_RENDERED_WIDTH);
+  const headEdges = segments([...head, head[0]]);
+  const body = segments(cellCenters(path.slice(0, -1)));
+  const threshold = ARROW_COLLISION_WIDTH / 2 + HEAD_STROKE_WIDTH / 2 + extraClearance;
+  let nearest: SelfClearanceIssue | undefined;
+  for (let index = 0; index < body.length; index += 1) {
+    const line = body[index];
+    const clearance = pointInPolygon(line.a, head) || pointInPolygon(line.b, head)
+      ? 0 : Math.min(...headEdges.map((edge) => segmentDistance(line, edge)));
+    if (clearance <= threshold + GEOMETRY_EPSILON && (!nearest || clearance < nearest.clearance)) {
+      nearest = { type: 'head-clearance', segmentAIndex: index, clearance, threshold, point: line.a };
+    }
+  }
+  return nearest;
+}
+
 function pointInPolygon(point: Point, polygon: Point[]): boolean {
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i, i += 1) {

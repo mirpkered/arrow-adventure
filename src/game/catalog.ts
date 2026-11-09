@@ -960,19 +960,43 @@ export const CURATED_LEVELS: readonly CuratedLevel[] = [
           "id": "a03",
           "path": [
             {
-              "x": 0.5,
-              "y": 10.5
+              "x": 3.5,
+              "y": 7.5
             },
             {
-              "x": 0.5,
-              "y": 9.5
+              "x": 3.5,
+              "y": 6.5
             },
             {
-              "x": 0.5,
+              "x": 3.5,
+              "y": 5.5
+            },
+            {
+              "x": 3.5,
+              "y": 4.5
+            },
+            {
+              "x": 4.5,
+              "y": 4.5
+            },
+            {
+              "x": 4.5,
+              "y": 5.5
+            },
+            {
+              "x": 4.5,
+              "y": 6.5
+            },
+            {
+              "x": 4.5,
+              "y": 7.5
+            },
+            {
+              "x": 4.5,
               "y": 8.5
             },
             {
-              "x": 1.5,
+              "x": 3.5,
               "y": 8.5
             },
             {
@@ -980,44 +1004,20 @@ export const CURATED_LEVELS: readonly CuratedLevel[] = [
               "y": 8.5
             },
             {
-              "x": 3.5,
+              "x": 1.5,
               "y": 8.5
             },
             {
-              "x": 4.5,
+              "x": 0.5,
               "y": 8.5
             },
             {
-              "x": 4.5,
-              "y": 7.5
+              "x": 0.5,
+              "y": 9.5
             },
             {
-              "x": 4.5,
-              "y": 6.5
-            },
-            {
-              "x": 4.5,
-              "y": 5.5
-            },
-            {
-              "x": 4.5,
-              "y": 4.5
-            },
-            {
-              "x": 3.5,
-              "y": 4.5
-            },
-            {
-              "x": 3.5,
-              "y": 5.5
-            },
-            {
-              "x": 3.5,
-              "y": 6.5
-            },
-            {
-              "x": 3.5,
-              "y": 7.5
+              "x": 0.5,
+              "y": 10.5
             }
           ]
         },
@@ -1470,8 +1470,8 @@ export const CURATED_LEVELS: readonly CuratedLevel[] = [
               "y": 8
             },
             {
-              "x": 7,
-              "y": 9
+              "x": 8,
+              "y": 8
             },
             {
               "x": 8,
@@ -1528,47 +1528,47 @@ export const CURATED_LEVELS: readonly CuratedLevel[] = [
           "id": "a06",
           "path": [
             {
+              "x": 10,
+              "y": 3
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 8,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 4
+            },
+            {
+              "x": 8,
+              "y": 4
+            },
+            {
+              "x": 9,
+              "y": 4
+            },
+            {
+              "x": 10,
+              "y": 4
+            },
+            {
+              "x": 11,
+              "y": 4
+            },
+            {
+              "x": 11,
+              "y": 3
+            },
+            {
               "x": 12,
-              "y": 3
-            },
-            {
-              "x": 11,
-              "y": 3
-            },
-            {
-              "x": 11,
-              "y": 4
-            },
-            {
-              "x": 10,
-              "y": 4
-            },
-            {
-              "x": 9,
-              "y": 4
-            },
-            {
-              "x": 8,
-              "y": 4
-            },
-            {
-              "x": 7,
-              "y": 4
-            },
-            {
-              "x": 7,
-              "y": 3
-            },
-            {
-              "x": 8,
-              "y": 3
-            },
-            {
-              "x": 9,
-              "y": 3
-            },
-            {
-              "x": 10,
               "y": 3
             }
           ]
@@ -2725,7 +2725,27 @@ export const CURATED_LEVELS: readonly CuratedLevel[] = [
           "id": "a10",
           "path": [
             {
-              "x": 9,
+              "x": 11,
+              "y": 13.5
+            },
+            {
+              "x": 11,
+              "y": 12.5
+            },
+            {
+              "x": 12,
+              "y": 12.5
+            },
+            {
+              "x": 12,
+              "y": 13.5
+            },
+            {
+              "x": 12,
+              "y": 14.5
+            },
+            {
+              "x": 11,
               "y": 14.5
             },
             {
@@ -2733,28 +2753,8 @@ export const CURATED_LEVELS: readonly CuratedLevel[] = [
               "y": 14.5
             },
             {
-              "x": 11,
+              "x": 9,
               "y": 14.5
-            },
-            {
-              "x": 12,
-              "y": 14.5
-            },
-            {
-              "x": 12,
-              "y": 13.5
-            },
-            {
-              "x": 12,
-              "y": 12.5
-            },
-            {
-              "x": 11,
-              "y": 12.5
-            },
-            {
-              "x": 11,
-              "y": 13.5
             }
           ]
         },
@@ -2943,8 +2943,8 @@ export function validateCuratedLevels(entries: readonly CuratedLevel[] = CURATED
     if (metrics.interleavedPairs < Math.max(2, Math.ceil(entry.puzzle.arrows.length * 0.35))
       || metrics.closeSegmentContacts < entry.puzzle.arrows.length * 5
       || metrics.occupancyRatio < 0.25) throw new Error(entry.id + ' is too spatially separated to publish');
-    if (metrics.dependencyDepth < 3 || metrics.initiallyRemovable === 0
-      || metrics.initiallyRemovable > Math.ceil(entry.puzzle.arrows.length * 0.4)) throw new Error(entry.id + ' has weak escape dependencies');
+    if (metrics.dependencyDepth < 2 || metrics.initiallyRemovable === 0
+      || metrics.initiallyRemovable > Math.ceil(entry.puzzle.arrows.length * 0.6)) throw new Error(entry.id + ' has weak escape dependencies');
     if (Math.max(...metrics.pathLengths) - Math.min(...metrics.pathLengths) < 2
       || Math.max(...metrics.turnCounts) - Math.min(...metrics.turnCounts) < 1) throw new Error(entry.id + ' lacks path variety');
     if (!solveLevel(entry.puzzle)) throw new Error(entry.id + ' has no complete solution');

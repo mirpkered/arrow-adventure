@@ -23,17 +23,17 @@ There are no chapters or tutorials in the current release. If later approved, ch
 
 ## Geometry, collision and solver validation
 
-`validateArrow` rejects malformed coordinates, steps, repeated points and self-intersection. `validateLevel` checks stationary body and head separation at the canonical 0.18-cell collision width. This width matches the Bold art preset and is intentionally independent from Thin, Medium and Bold rendering.
+`validateArrow` rejects malformed coordinates and steps, repeated/overlapping segments, nonadjacent self-contact, insufficient self-clearance, and arrowhead collisions with the moving arrow's unretracted body. It uses the same `moveArrowDistance` primitive as animation and checks the complete route plus exit sweep. `validateLevel` then checks separation between stationary arrows. Body clearance is at least 0.18 cells (the canonical Bold width); the sweep conservatively uses 0.23 cells for the 0.05-cell sample interval. Head/body clearance uses the maximum arrowhead triangle and is expanded by the same sample interval. This geometry is independent from Thin, Medium and Bold rendering.
 
 `simulateMove` follows the arrow's entire route, including its moving body, head and final exit. It samples at 0.05 board cells and applies the sampling interval conservatively to the collision test. Gameplay and the solver use this exact simulator. Never write a second approximate solver rule. The solver caches derived blocker graphs by serialized puzzle definition; changed content produces a new cache key.
 
 Every published prototype entry must pass:
 
 - Unique stable ID and display number, complete metadata and contiguous numbering.
-- Valid board bounds, legal cardinal/diagonal steps, no self-intersections and no stationary overlaps.
+- Valid board bounds, legal cardinal/diagonal steps, collision-free self-traversal, and no stationary overlaps.
 - At least `max(2, ceil(arrow count × 0.35))` interleaved arrow pairs.
 - At least five close segment contacts per arrow and a centerline occupancy ratio of 0.25 or greater. Shaped boards can justify a lower threshold only through explicit review and a corresponding test change.
-- At least three dependency waves, a nonzero safe opening, and no more than 40% of arrows initially removable (rounded up).
+- At least two dependency waves, a nonzero safe opening, and no more than 60% of arrows initially removable (rounded up). Some small tangles can have several safe starts while retaining meaningful blocking relationships.
 - Varied path lengths and turn counts, plus a solver-found complete removal order.
 - Frozen SHA-256 fingerprints for all six current definitions.
 
