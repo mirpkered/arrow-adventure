@@ -445,7 +445,7 @@ describe('QA presentation controls and mobile shell', () => {
     expect(movementDuration(42, NORMAL_MOVE_SPEED, true)).toBeLessThanOrEqual(140);
     expect(appSource).toContain('if (completeLevel(arrows))');
     expect(appSource).toContain('onLevel: (number) => startLevel(number, true)');
-    expect(appSource).toContain('if (!storage || busy || (QA_MODE && temporaryQARun)) return');
+    expect(appSource).toContain("if (!storage || !shouldPersistProgress(activePrototype ? 'prototype-review' : 'adventure', busy) || (QA_MODE && temporaryQARun)) return");
   });
 
   it('persists player appearance, audio, and stable progress but not QA settings', () => {

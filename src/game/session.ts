@@ -2,6 +2,12 @@ import type { Arrow, Level } from './types';
 
 export type LevelRun = { arrows: Arrow[]; hearts: number };
 export type PrototypeSession = { levelNumber: number };
+export type ProgressSessionKind = 'adventure' | 'prototype-review';
+
+/** Prototype review runs share gameplay, but never write Adventure Mode saves. */
+export function shouldPersistProgress(kind: ProgressSessionKind, busy: boolean): boolean {
+  return kind === 'adventure' && !busy;
+}
 
 /** Every new page visit starts at Level 1; this state is never read from storage. */
 export function createSession(): PrototypeSession { return { levelNumber: 1 }; }

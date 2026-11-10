@@ -1,6 +1,7 @@
 export type DiagnosticFlags = { ids: boolean; ownership: boolean; hitTargets: boolean; geometry: boolean };
 export type QABoardSnapshot = {
   levelNumber: number;
+  boardTitle?: string;
   remainingArrowIds: string[];
   legalArrowIds: string[];
   solution: string[] | null;
@@ -18,6 +19,8 @@ export type QAPanelOptions = {
   onLevel: (level: number) => void;
   onRestart: () => void;
   onResetQAState: () => void;
+  prototypeCount: number;
+  onPrototypeReview: () => void;
   candidateSha?: string;
 };
 
@@ -87,13 +90,14 @@ export function mountQAPanel(options: QAPanelOptions): { open: () => void; bind:
     root!.classList.add('open');
     root!.innerHTML = `<div class="qa-backdrop" data-qa-close><section class="qa-panel" role="dialog" aria-modal="true" aria-labelledby="qa-title">
       <header><div><span class="qa-kicker">ARROW ADVENTURE</span><h2 id="qa-title">QA settings</h2></div><button type="button" class="qa-close" data-qa-close aria-label="Close QA settings">×</button></header>
-      <section class="qa-live-state" aria-live="polite"><div class="qa-state-top"><b>Level ${snapshot.levelNumber}</b><span>${solvableText}</span></div><p class="qa-state-legal">${legalText}</p>
+      <section class="qa-live-state" aria-live="polite"><div class="qa-state-top"><b>${html(snapshot.boardTitle ?? `Level ${snapshot.levelNumber}`)}</b><span>${solvableText}</span></div><p class="qa-state-legal">${legalText}</p>
         <p><b>Remaining IDs</b><br><code>${snapshot.remainingArrowIds.map(html).join(', ') || 'none'}</code></p>
         <p><b>Solver route</b><br><code>${snapshot.animating ? '—' : snapshot.solution?.map(html).join(' → ') ?? 'none'}</code></p>
         <label class="qa-select-label" for="qa-arrow-select">Collision check</label><select id="qa-arrow-select" data-inspect-select ${snapshot.remainingArrowIds.length ? '' : 'disabled'}>${snapshot.remainingArrowIds.map((id) => `<option value="${html(id)}" ${id === snapshot.selectedArrowId ? 'selected' : ''}>${html(id)}</option>`).join('')}</select>
         <p class="qa-collision-info">${collisionText}</p>
         <button type="button" data-highlight ${snapshot.legalArrowIds.length && !snapshot.animating ? '' : 'disabled'}>Highlight one legal arrow</button>
       </section>
+      <fieldset class="qa-prototype-tools"><legend>Prototype testing</legend><button type="button" class="qa-prototype-review" data-prototype-review ${snapshot.animating ? 'disabled' : ''}>Prototype Review <span>${options.prototypeCount} puzzles</span></button></fieldset>
       <fieldset><legend>Animation speed</legend><div class="qa-options">${SPEED_PRESETS.map((value) => `<button type="button" data-speed="${value}" aria-pressed="${value === speed}">${value}×</button>`).join('')}</div></fieldset>
       <fieldset><legend>Arrow thickness</legend><div class="qa-options">${STROKE_PRESETS.map((value, index) => `<button type="button" data-stroke="${value}" aria-pressed="${value === stroke}">${['Thin', 'Medium', 'Bold'][index]}</button>`).join('')}</div></fieldset>
       <fieldset><legend>Geometry diagnostics</legend>${[['ids','Arrow IDs'],['ownership','Path ownership'],['hitTargets','Hit targets'],['geometry','Board geometry']].map(([key,label]) => `<label class="qa-toggle"><span>${label}</span><input type="checkbox" data-diagnostic="${key}" ${diagnostics[key as keyof DiagnosticFlags] ? 'checked' : ''}></label>`).join('')}</fieldset>
@@ -106,9 +110,10 @@ export function mountQAPanel(options: QAPanelOptions): { open: () => void; bind:
 
   root.addEventListener('pointerdown', (event) => { if ((event.target as Element).matches('.qa-backdrop')) close(); });
   root.addEventListener('click', (event) => {
-    const target = (event.target as Element).closest<HTMLElement>('[data-qa-close], [data-speed], [data-stroke], [data-level], [data-restart], [data-reset], [data-highlight]');
+    const target = (event.target as Element).closest<HTMLElement>('[data-qa-close], [data-speed], [data-stroke], [data-level], [data-restart], [data-reset], [data-highlight], [data-prototype-review]');
     if (!target) return;
     if (target.hasAttribute('data-qa-close')) close();
+    if (target.hasAttribute('data-prototype-review') && !target.hasAttribute('disabled')) { close(); options.onPrototypeReview(); return; }
     if (target.dataset.speed) { speed = Number(target.dataset.speed); options.onSpeed(speed); render(); }
     if (target.dataset.stroke) { stroke = Number(target.dataset.stroke); options.onStroke(stroke); render(); }
     if (target.dataset.level) { options.onLevel(Number(target.dataset.level)); close(); }

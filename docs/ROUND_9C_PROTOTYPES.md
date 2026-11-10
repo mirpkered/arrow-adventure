@@ -2,7 +2,7 @@
 
 ## Status and separation
 
-Round 9C adds three review experiments. They live in `src/game/prototypes/round9c-prototypes.json`; they are not imported by the Adventure Mode catalog and do not replace its ten candidate levels. The prototypes have stable experiment IDs and frozen puzzle fingerprints in `tests/round9c-prototypes.test.ts`.
+Round 9C adds three review experiments. They live in `src/game/prototypes/round9c-prototypes.json`; they are not imported by the Adventure Mode catalog and do not replace its ten candidate levels. A QA-only Prototype Review entry point dynamically loads these exact definitions for interactive testing. The prototypes have stable experiment IDs and frozen puzzle fingerprints in `tests/round9c-prototypes.test.ts`.
 
 Starting branch commit: `6603a970fedfc5c580f78166073ad47ab08c1bbb`.
 Recoverable checkpoint: `checkpoint/round-9c-before-composition` at the starting commit.
@@ -84,4 +84,6 @@ This round includes static phone-proportion visual review of the generated previ
 
 ## Promotion boundary
 
-The prototype file is deliberately outside the active catalog. Round 9C does not change active Adventure Mode levels, progression, saves, production, or the shared QA deployment. No level should be promoted until the composition is approved and an explicit catalog integration is prepared.
+The prototype file is deliberately outside the active catalog. QA review uses the normal movement, collision, hearts, restart, and touch-selection code, but review runs are not saved as Adventure Mode progress. From an iPhone, start the QA game, hold the level label for two seconds, tap **Prototype Review**, then select A, B, or C. Use the HUD restart control to replay; the pause menu offers another prototype or a return to the previous QA board.
+
+This change does not alter the ten-level catalog or production. The QA repository's manual candidate workflow remains the only deployment route for this feature; do not merge or promote any experiment until the composition is approved and a separate catalog change is prepared.

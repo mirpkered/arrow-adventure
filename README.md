@@ -39,7 +39,7 @@ $env:VITE_CANDIDATE_SHA='local-preview'
 npm run build
 ```
 
-The QA panel is available only in development or builds with `VITE_QA_MODE=true`. Hold the level label for two seconds (or use Enter/Space when focused) to open speed, stroke, diagnostics, level navigation, restart, and reset controls. It reports the actual legal moves, remaining IDs, a solver route, collision details for a selected arrow, and can highlight one safe move. QA jumps and restarts are temporary. QA and production use separate local-storage namespaces because both Pages sites share the same browser origin.
+The QA panel is available only in development or builds with `VITE_QA_MODE=true`. Hold the level label for two seconds (or use Enter/Space when focused) to open speed, stroke, diagnostics, level navigation, restart, reset, and Prototype Review controls. In a QA build, choose **Prototype Review** to select A, B, or C. Restart from the game HUD, or use the pause menu to choose another prototype or return to the QA board. Review runs use the same gameplay systems but never write Adventure Mode progress. QA and production use separate local-storage namespaces because both Pages sites share the same browser origin.
 
 ## Deployment
 
@@ -48,7 +48,7 @@ The QA panel is available only in development or builds with `VITE_QA_MODE=true`
 ## Architecture
 
 - `src/game/catalog.ts` and `src/game/adventure-catalog.json` — ten deterministic Round 9 catalog candidates, stable IDs, footprints, metadata, and integrity checks; not yet approved for release.
-- `src/game/prototypes/round9c-prototypes.json` — three separate visual experiments, protected by puzzle fingerprints and exact geometry/state audits; not loaded by Adventure Mode.
+- `src/game/prototypes/round9c-prototypes.json` — three separate visual experiments, protected by puzzle fingerprints and exact geometry/state audits; dynamically loaded only by the QA Prototype Review interface, never by Adventure Mode.
 - `src/game/archive/catalog-round8.ts` — non-playable archive of the retired six-level reference set.
 - `src/game/geometry.ts`, `src/game/rules.ts`, `src/game/density.ts` — shared board-coordinate transforms, fixed collision envelopes, grid and segment validation, distance-based body movement, solver, and sampled whitespace metrics.
 - `src/app/boardGrid.ts` — fine-grid paths rendered in the same SVG coordinate frame as the arrows.

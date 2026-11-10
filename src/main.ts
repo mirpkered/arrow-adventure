@@ -1,7 +1,7 @@
 import { CURATED_LEVELS, getCuratedLevel, getNextCuratedLevel } from './game/catalog';
 import { completeLevel, directionName, exitDirection, moveArrowDistance, nearestArrowAt, simulateMove, solveLevel } from './game/rules';
 import { createActionGate } from './game/input';
-import { advanceSession, createRun, loseHeart, type PrototypeSession } from './game/session';
+import { advanceSession, createRun, loseHeart, shouldPersistProgress, type PrototypeSession } from './game/session';
 import { ARROW_STROKE_WIDTH, arrowHeadTriangle, toBoardPoint, toPathPoint } from './game/geometry';
 import { GameAudio } from './app/audio';
 import { movementDuration, NORMAL_MOVE_SPEED, RETURN_MOVE_SPEED } from './app/motion';
@@ -31,10 +31,23 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
   if (settings.appearance === 'automatic') applyAppearance();
 });
 
-type Screen = 'title' | 'settings' | 'credits' | 'game' | 'pause' | 'complete' | 'out';
+type Screen = 'title' | 'settings' | 'credits' | 'game' | 'pause' | 'complete' | 'out' | 'prototype-select';
 let screen: Screen = 'title';
 let settingsReturn: 'title' | 'pause' = 'title';
 let savedGame: GameSave | null = storage ? loadGameSave(storage, CURATED_LEVELS, storageKeys) : null;
+type QAPrototypeReviewModule = typeof import('./qa/prototypeReview');
+type QAPrototypeReturnState = {
+  level: Level;
+  arrows: Arrow[];
+  hearts: number;
+  redArrowIds: string[];
+  notice: string;
+  temporaryQARun: boolean;
+  screen: 'game' | 'pause' | 'out';
+};
+let prototypeReviewModule: QAPrototypeReviewModule | undefined;
+let activePrototype: QAPrototypeReviewModule['PROTOTYPE_REVIEWS'][number] | null = null;
+let prototypeReturnState: QAPrototypeReturnState | null = null;
 let session: PrototypeSession = { levelNumber: 1 };
 let catalogEntry = getCuratedLevel(1)!;
 let level: Level = catalogEntry.puzzle;
@@ -91,7 +104,7 @@ function activeSave(levelComplete = screen === 'complete'): GameSave {
 
 /** Saves only stable board states. Animation frames are never persisted. */
 function persistProgress(levelComplete = screen === 'complete'): void {
-  if (!storage || busy || (QA_MODE && temporaryQARun)) return;
+  if (!storage || !shouldPersistProgress(activePrototype ? 'prototype-review' : 'adventure', busy) || (QA_MODE && temporaryQARun)) return;
   const next = activeSave(levelComplete);
   if (saveGame(storage, next, storageKeys)) savedGame = next;
 }
@@ -101,6 +114,8 @@ function startLevel(number: number, temporaryQA = false): void {
   actionGate.reset();
   const entry = getLevel(number);
   if (!entry) return;
+  activePrototype = null;
+  prototypeReturnState = null;
   temporaryQARun = temporaryQA;
   qaHighlightedArrowId = null;
   session = { levelNumber: entry.number };
@@ -127,6 +142,8 @@ function startNewGame(): void {
 function continueGame(): void {
   const save = storage ? loadGameSave(storage, CURATED_LEVELS, storageKeys) : savedGame;
   if (!save) { startNewGame(); return; }
+  activePrototype = null;
+  prototypeReturnState = null;
   temporaryQARun = false;
   const entry = CURATED_LEVELS.find(({ id }) => id === save.currentLevelId) ?? CURATED_LEVELS[0];
   catalogEntry = entry;
@@ -142,6 +159,93 @@ function continueGame(): void {
   screen = save.levelComplete ? 'complete' : save.hearts === 0 ? 'out' : 'game';
   viewport.reset(level.width, level.height);
   render();
+}
+
+function copyArrows(source: Arrow[]): Arrow[] {
+  return source.map((arrow) => ({ ...arrow, path: arrow.path.map((point) => ({ ...point })) }));
+}
+
+function capturePrototypeReturnState(): QAPrototypeReturnState {
+  return {
+    level,
+    arrows: copyArrows(arrows),
+    hearts,
+    redArrowIds: [...redArrowIds],
+    notice,
+    temporaryQARun,
+    screen: screen === 'pause' || screen === 'out' ? screen : 'game',
+  };
+}
+
+function enterPrototypeReview(): void {
+  if (!QA_MODE || busy || !prototypeReviewModule) return;
+  if (!prototypeReturnState) prototypeReturnState = capturePrototypeReturnState();
+  animationToken += 1;
+  actionGate.reset();
+  activePrototype = null;
+  qaHighlightedArrowId = null;
+  screen = 'prototype-select';
+  render();
+}
+
+function startPrototypeReview(id: string): void {
+  if (!QA_MODE || !prototypeReviewModule || busy) return;
+  const selection = prototypeReviewModule.createPrototypeReviewRun(id);
+  if (!selection) return;
+  if (!prototypeReturnState) prototypeReturnState = capturePrototypeReturnState();
+  animationToken += 1;
+  actionGate.reset();
+  activePrototype = selection.prototype;
+  level = selection.prototype.puzzle;
+  arrows = selection.run.arrows;
+  hearts = selection.run.hearts;
+  redArrowIds = new Set();
+  temporaryQARun = true;
+  qaHighlightedArrowId = null;
+  notice = '';
+  busy = false;
+  animatingId = null;
+  screen = 'game';
+  viewport.reset(level.width, level.height);
+  render();
+}
+
+function returnToPrototypeSelection(): void {
+  if (!QA_MODE || !prototypeReturnState || busy) return;
+  animationToken += 1;
+  actionGate.reset();
+  activePrototype = null;
+  qaHighlightedArrowId = null;
+  notice = '';
+  screen = 'prototype-select';
+  render();
+}
+
+function leavePrototypeReview(): void {
+  if (!QA_MODE || !prototypeReturnState || busy) return;
+  const saved = prototypeReturnState;
+  animationToken += 1;
+  actionGate.reset();
+  activePrototype = null;
+  prototypeReturnState = null;
+  level = saved.level;
+  arrows = copyArrows(saved.arrows);
+  hearts = saved.hearts;
+  redArrowIds = new Set(saved.redArrowIds);
+  notice = saved.notice;
+  temporaryQARun = saved.temporaryQARun;
+  busy = false;
+  animatingId = null;
+  qaHighlightedArrowId = null;
+  screen = saved.screen;
+  viewport.reset(level.width, level.height);
+  render();
+}
+
+function prototypeHudLetter(): string {
+  if (!activePrototype || !prototypeReviewModule) return '';
+  const index = prototypeReviewModule.PROTOTYPE_REVIEWS.findIndex(({ id }) => id === activePrototype!.id);
+  return index >= 0 ? String.fromCharCode(65 + index) : '?';
 }
 
 function pointString(points: Point[]): string { return points.map((point) => { const board = toBoardPoint(point); return `${board.x},${board.y}`; }).join(' '); }
@@ -262,12 +366,14 @@ function attemptMove(id: string): void {
     actionGate.reset();
     audio.play('clear');
     if (completeLevel(arrows)) {
-      completedIds.add(catalogEntry.id);
-      const next = advanceSession(session, CURATED_LEVELS.length);
-      if (next) session = next;
       screen = 'complete';
       audio.play('level');
-      persistProgress(true);
+      if (!activePrototype) {
+        completedIds.add(catalogEntry.id);
+        const next = advanceSession(session, CURATED_LEVELS.length);
+        if (next) session = next;
+        persistProgress(true);
+      }
     } else persistProgress(false);
     render();
   });
@@ -362,8 +468,10 @@ function bindQATrigger(): void {
 
 function inspectCurrentBoard(selectedArrowId?: string): QABoardSnapshot {
   const selected = arrows.find(({ id }) => id === selectedArrowId) ?? arrows[0];
+  const boardTitle = activePrototype ? `Prototype ${prototypeHudLetter()} - ${activePrototype.name}` : undefined;
   if (busy) return {
     levelNumber: catalogEntry.number,
+    boardTitle,
     remainingArrowIds: arrows.map(({ id }) => id),
     legalArrowIds: [],
     solution: null,
@@ -378,6 +486,7 @@ function inspectCurrentBoard(selectedArrowId?: string): QABoardSnapshot {
   const result = selected ? simulateMove(selected, arrows.filter(({ id }) => id !== selected.id), level.width, level.height) : undefined;
   return {
     levelNumber: catalogEntry.number,
+    boardTitle,
     remainingArrowIds: arrows.map(({ id }) => id),
     legalArrowIds: safe,
     solution,
@@ -434,12 +543,20 @@ function renderCredits(): void {
   </main>`;
 }
 
+function renderPrototypeSelection(): void {
+  if (!QA_MODE || !prototypeReviewModule) return;
+  app.innerHTML = prototypeReviewModule.renderPrototypeReviewSelection();
+}
+
 function renderGame(): void {
   const isPaused = screen === 'pause';
   const isOut = screen === 'out';
+  const prototypeLetter = prototypeHudLetter();
+  const returnAction = activePrototype ? 'prototype-select' : 'title';
+  const returnLabel = activePrototype ? 'CHOOSE ANOTHER PROTOTYPE' : 'RETURN TO TITLE';
   app.innerHTML = `<main class="app-screen game-screen">
     <header class="game-header">
-      <button id="level-hold" class="level-trigger" type="button" aria-label="Level ${catalogEntry.number}${QA_MODE ? '. Hold for QA settings' : ''}" title="Level ${catalogEntry.number}"><span class="level-kicker">LEVEL</span><strong>${catalogEntry.number}</strong></button>
+      <button id="level-hold" class="level-trigger" type="button" aria-label="${activePrototype ? `Prototype ${prototypeLetter}, ${escapeHtml(activePrototype.name)}` : `Level ${catalogEntry.number}`}${QA_MODE ? '. Hold for QA settings' : ''}" title="${activePrototype ? `Prototype ${prototypeLetter} - ${escapeHtml(activePrototype.name)}` : `Level ${catalogEntry.number}`}" ><span class="level-kicker">${activePrototype ? 'PROTOTYPE' : 'LEVEL'}</span><strong>${activePrototype ? prototypeLetter : catalogEntry.number}</strong></button>
       <div class="hearts" aria-label="${hearts} of 3 hearts remaining">${[0,1,2].map((index) => `<span class="heart ${index < hearts ? 'live' : 'lost'}" aria-hidden="true">♥</span>`).join('')}</div>
       <button class="icon-button restart-button" data-action="restart" aria-label="Restart puzzle" type="button">↻</button>
       <button class="icon-button view-button" data-action="zoom-reset" aria-label="Reset puzzle zoom" type="button">⌖</button>
@@ -447,14 +564,18 @@ function renderGame(): void {
     </header>
     <div class="prompt-row" aria-live="polite">${escapeHtml(notice || 'Find an arrow with a clear path out.')}</div>
     ${boardMarkup()}
-    <footer class="game-bottom"><span>${arrows.length} ${arrows.length === 1 ? 'arrow' : 'arrows'} remaining</span><span class="level-progress">${catalogEntry.number} / ${CURATED_LEVELS.length}</span></footer>
-    ${isPaused ? `<div class="overlay-scrim"><section class="menu-sheet" role="dialog" aria-modal="true" aria-labelledby="pause-title"><button class="sheet-close" data-action="resume" aria-label="Resume">×</button><span class="eyebrow">PUZZLE PAUSED</span><h2 id="pause-title">Take your time.</h2><button class="primary-button" data-action="resume">RESUME</button><button class="secondary-button" data-action="restart">RESTART PUZZLE</button><button class="secondary-button" data-action="settings">SETTINGS</button><button class="quiet-button" data-action="title">RETURN TO TITLE</button></section></div>` : ''}
-    ${isOut ? `<div class="overlay-scrim"><section class="menu-sheet" role="dialog" aria-modal="true" aria-labelledby="out-title"><span class="eyebrow">THREE HEARTS USED</span><h2 id="out-title">Try another route.</h2><button class="primary-button" data-action="restart">RESTART PUZZLE</button><button class="secondary-button" data-action="title">RETURN TO TITLE</button></section></div>` : ''}
+    <footer class="game-bottom"><span>${activePrototype ? `Prototype ${prototypeLetter} - ` : ''}${arrows.length} ${arrows.length === 1 ? 'arrow' : 'arrows'} remaining</span><span class="level-progress">${activePrototype ? `PROTOTYPE ${prototypeLetter} / ${prototypeReviewModule?.PROTOTYPE_REVIEWS.length ?? 3}` : `${catalogEntry.number} / ${CURATED_LEVELS.length}`}</span></footer>
+    ${isPaused ? `<div class="overlay-scrim"><section class="menu-sheet" role="dialog" aria-modal="true" aria-labelledby="pause-title"><button class="sheet-close" data-action="resume" aria-label="Resume">×</button><span class="eyebrow">${activePrototype ? 'PROTOTYPE REVIEW' : 'PUZZLE PAUSED'}</span><h2 id="pause-title">Take your time.</h2><button class="primary-button" data-action="resume">RESUME</button><button class="secondary-button" data-action="restart">RESTART PUZZLE</button><button class="secondary-button" data-action="settings">SETTINGS</button><button class="quiet-button" data-action="${returnAction}">${returnLabel}</button></section></div>` : ''}
+    ${isOut ? `<div class="overlay-scrim"><section class="menu-sheet" role="dialog" aria-modal="true" aria-labelledby="out-title"><span class="eyebrow">THREE HEARTS USED</span><h2 id="out-title">Try another route.</h2><button class="primary-button" data-action="restart">RESTART PUZZLE</button><button class="secondary-button" data-action="${returnAction}">${returnLabel}</button></section></div>` : ''}
   </main>`;
   bindQATrigger();
 }
 
 function renderCompletion(): void {
+  if (activePrototype && prototypeReviewModule) {
+    app.innerHTML = prototypeReviewModule.renderPrototypeReviewCompletion(prototypeHudLetter(), level.arrows.length);
+    return;
+  }
   const next = getNextCuratedLevel(catalogEntry);
   app.innerHTML = `<main class="app-screen completion-screen"><div class="completion-symbol">✳</div><span class="eyebrow">${next ? `LEVEL ${catalogEntry.number} COMPLETE` : 'ADVENTURE COMPLETE'}</span><h1>${next ? 'All clear.' : 'Beautifully untangled.'}</h1><p>${next ? 'Every arrow found a way out.' : 'You cleared every puzzle in the adventure.'}</p>
     <div class="completion-stat"><span>Arrows cleared</span><b>${level.arrows.length} / ${level.arrows.length}</b></div>
@@ -468,6 +589,7 @@ function render(): void {
   if (screen === 'title') renderTitle();
   else if (screen === 'settings') renderSettings();
   else if (screen === 'credits') renderCredits();
+  else if (screen === 'prototype-select') renderPrototypeSelection();
   else if (screen === 'complete') renderCompletion();
   else renderGame();
 }
@@ -497,8 +619,9 @@ app.addEventListener('pointerup', handleBoardPointerUp);
 app.addEventListener('pointercancel', handleBoardPointerUp);
 
 app.addEventListener('click', (event) => {
-  const element = (event.target as Element).closest<HTMLElement>('[data-action], [data-appearance], [data-setting]');
+  const element = (event.target as Element).closest<HTMLElement>('[data-action], [data-appearance], [data-setting], [data-prototype-id]');
   if (!element) return;
+  if (element.dataset.prototypeId) { startPrototypeReview(element.dataset.prototypeId); return; }
   if (element.dataset.appearance) {
     settings = { ...settings, appearance: element.dataset.appearance as Appearance };
     saveSettingsNow(); render(); return;
@@ -514,9 +637,15 @@ app.addEventListener('click', (event) => {
   if (action === 'settings') openSettings();
   if (action === 'credits') { screen = 'credits'; render(); }
   if (action === 'back') returnFromSettings();
+  if (action === 'prototype-return' && screen === 'prototype-select') leavePrototypeReview();
+  if (action === 'prototype-select' && activePrototype) returnToPrototypeSelection();
+  if (action === 'prototype-restart' && activePrototype) startPrototypeReview(activePrototype.id);
   if (action === 'pause' && screen === 'game' && !busy) { screen = 'pause'; persistProgress(false); render(); }
   if (action === 'resume' && screen === 'pause') { screen = 'game'; render(); }
-  if (action === 'restart' && (screen === 'game' || screen === 'pause' || screen === 'out')) startLevel(catalogEntry.number);
+  if (action === 'restart' && (screen === 'game' || screen === 'pause' || screen === 'out')) {
+    if (activePrototype) startPrototypeReview(activePrototype.id);
+    else startLevel(catalogEntry.number);
+  }
   if (action === 'title') { if (!busy) persistProgress(screen === 'complete'); screen = 'title'; render(); }
   if (action === 'next' && screen === 'complete') {
     const next = getNextCuratedLevel(catalogEntry);
@@ -536,6 +665,7 @@ app.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && screen === 'game' && !busy) { screen = 'pause'; render(); }
   if (event.key === 'Escape' && screen === 'pause') { screen = 'game'; render(); }
   if (event.key === 'Escape' && screen === 'settings') returnFromSettings();
+  if (event.key === 'Escape' && screen === 'prototype-select') leavePrototypeReview();
 });
 
 function applyStroke(width: number): void {
@@ -546,7 +676,8 @@ function applyStroke(width: number): void {
 render();
 applyStrokeWidth();
 if (QA_MODE) {
-  void import('./qa/qaPanel').then(({ mountQAPanel }) => {
+  void Promise.all([import('./qa/qaPanel'), import('./qa/prototypeReview')]).then(([{ mountQAPanel }, prototypeReview]) => {
+    prototypeReviewModule = prototypeReview;
     qaPanel = mountQAPanel({
       onSpeed: (value) => { speedMultiplier = value; },
       onStroke: applyStroke,
@@ -554,10 +685,12 @@ if (QA_MODE) {
       inspect: inspectCurrentBoard,
       onHighlightLegal: (id) => { if (arrows.some(({ id: arrowId }) => arrowId === id)) { qaHighlightedArrowId = id; render(); } },
       onLevel: (number) => startLevel(number, true),
-      onRestart: () => startLevel(catalogEntry.number, true),
+      onRestart: () => activePrototype ? startPrototypeReview(activePrototype.id) : startLevel(catalogEntry.number, true),
       onResetQAState: () => { qaHighlightedArrowId = null; },
+      prototypeCount: prototypeReview.PROTOTYPE_REVIEWS.length,
+      onPrototypeReview: enterPrototypeReview,
       candidateSha: import.meta.env.VITE_CANDIDATE_SHA,
     });
-    if (screen === 'game') render();
+    if (screen === 'game' || screen === 'pause' || screen === 'out') render();
   });
 }
