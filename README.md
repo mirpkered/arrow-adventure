@@ -1,6 +1,6 @@
 # Arrow Adventure
 
-Arrow Adventure is a mobile-first, advertisement-free puzzle game from Mirpworks. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. The Round 9 branch develops a new ten-level catalog under review; production remains at the current six-level release until the replacement compositions pass visual QA.
+Arrow Adventure is a mobile-first, advertisement-free puzzle game from Mirpworks. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. The Round 9 branch develops a new ten-level catalog under review; production remains at the current six-level release. Round 9C adds three composition-first experiments outside both catalogs for visual review.
 
 Production: <https://mirpkered.github.io/arrow-adventure/>
 
@@ -48,6 +48,7 @@ The QA panel is available only in development or builds with `VITE_QA_MODE=true`
 ## Architecture
 
 - `src/game/catalog.ts` and `src/game/adventure-catalog.json` — ten deterministic Round 9 catalog candidates, stable IDs, footprints, metadata, and integrity checks; not yet approved for release.
+- `src/game/prototypes/round9c-prototypes.json` — three separate visual experiments, protected by puzzle fingerprints and exact geometry/state audits; not loaded by Adventure Mode.
 - `src/game/archive/catalog-round8.ts` — non-playable archive of the retired six-level reference set.
 - `src/game/geometry.ts`, `src/game/rules.ts`, `src/game/density.ts` — shared board-coordinate transforms, fixed collision envelopes, grid and segment validation, distance-based body movement, solver, and sampled whitespace metrics.
 - `src/app/boardGrid.ts` — fine-grid paths rendered in the same SVG coordinate frame as the arrows.
@@ -61,12 +62,12 @@ The QA panel is available only in development or builds with `VITE_QA_MODE=true`
 
 Puzzle geometry and collision assumptions are documented in [Game Design](docs/GAME_DESIGN.md). The exact all-state solvability audit and Level 4 reconstruction are in [Solvability Audit](docs/SOLVABILITY_AUDIT.md). The repeatable process for curated content is in [Level Authoring](docs/LEVEL_AUTHORING.md).
 
-The Round 7A historical baseline and Round 8 Level 5 before/after density measurements are in [Round 7A Density Plan](docs/ROUND_7A_DENSITY_PLAN.md). Level 5 now uses a compact 12×14 canopy-and-trunk composition; Level 6 remains the unchanged quality benchmark.
+The Round 7A historical baseline and Round 8 Level 5 before/after density measurements are in [Round 7A Density Plan](docs/ROUND_7A_DENSITY_PLAN.md). The three composition-first experiment designs, metrics, exact audit results, and preview links are in [Round 9C Prototypes](docs/ROUND_9C_PROTOTYPES.md).
 
 ## Current scope and limitations
 
 - Production remains on its six-level catalog. The Round 9 development branch has ten new deterministic candidates; their solver, geometry, fingerprint and exact-state checks pass, but several compositions still need visual redesign before QA or production deployment.
 - Round 9 candidate progress uses catalog-versioned saves. Retired puzzle progress does not carry over, while theme and sound preferences remain separate.
 - Physical iPhone Safari playtesting was not performed in this release. Confirm gestures, safe areas, zoom, splash timing, and frame pacing on a device before public announcement.
-- The ten Round 9 candidates are not a release. QA and production have not been updated; replace weak compositions before promoting this branch.
+- The ten Round 9 candidates and three Round 9C composition experiments are not a release. QA and production have not been updated; obtain visual approval before promoting or adding content.
 - Free Play, tutorials, black holes, switches, gates, portals, and additional chapters are future work.

@@ -1,0 +1,1207 @@
+[
+  {
+    "id": "round9c-compact-weave",
+    "name": "Compact Abstract Weave",
+    "difficulty": "Easy–Medium",
+    "purpose": "A compact nested maze whose long route curls through the middle while shorter neighboring arrows create a small, branching removal puzzle.",
+    "previewCaption": "A long central fold and short side arrows create a compact branching maze.",
+    "compositionPlan": "Compose a compact irregular footprint around a long inward-folding route. A shorter return path follows the upper corridor and points back into the long route; three short arrows occupy its lower, left, and right clearances to shape two additional blocking choices.",
+    "footprint": [
+      [
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 9.5,
+          "y": 0.5
+        },
+        {
+          "x": 9.5,
+          "y": 8.5
+        },
+        {
+          "x": 0.5,
+          "y": 8.5
+        }
+      ]
+    ],
+    "puzzle": {
+      "number": 1,
+      "width": 10,
+      "height": 9,
+      "arrows": [
+        {
+          "id": "a01",
+          "path": [
+            {
+              "x": 1,
+              "y": 1
+            },
+            {
+              "x": 2,
+              "y": 1
+            },
+            {
+              "x": 3,
+              "y": 1
+            },
+            {
+              "x": 4,
+              "y": 1
+            },
+            {
+              "x": 5,
+              "y": 1
+            },
+            {
+              "x": 6,
+              "y": 1
+            },
+            {
+              "x": 7,
+              "y": 1
+            },
+            {
+              "x": 7,
+              "y": 2
+            },
+            {
+              "x": 6,
+              "y": 2
+            },
+            {
+              "x": 5,
+              "y": 2
+            },
+            {
+              "x": 4,
+              "y": 2
+            },
+            {
+              "x": 3,
+              "y": 2
+            },
+            {
+              "x": 2,
+              "y": 2
+            },
+            {
+              "x": 2,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 4,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 4
+            },
+            {
+              "x": 5,
+              "y": 4
+            },
+            {
+              "x": 4,
+              "y": 4
+            },
+            {
+              "x": 3,
+              "y": 4
+            },
+            {
+              "x": 3,
+              "y": 5
+            },
+            {
+              "x": 4,
+              "y": 5
+            },
+            {
+              "x": 5,
+              "y": 5
+            },
+            {
+              "x": 5,
+              "y": 6
+            },
+            {
+              "x": 4,
+              "y": 6
+            },
+            {
+              "x": 4,
+              "y": 7
+            },
+            {
+              "x": 5,
+              "y": 7
+            }
+          ]
+        },
+        {
+          "id": "a02",
+          "path": [
+            {
+              "x": 8.5,
+              "y": 3.5
+            },
+            {
+              "x": 9.5,
+              "y": 3.5
+            },
+            {
+              "x": 9.5,
+              "y": 2.5
+            },
+            {
+              "x": 9.5,
+              "y": 1.5
+            },
+            {
+              "x": 8.5,
+              "y": 1.5
+            },
+            {
+              "x": 7.5,
+              "y": 1.5
+            },
+            {
+              "x": 7.5,
+              "y": 2.5
+            },
+            {
+              "x": 6.5,
+              "y": 2.5
+            },
+            {
+              "x": 5.5,
+              "y": 2.5
+            },
+            {
+              "x": 4.5,
+              "y": 2.5
+            },
+            {
+              "x": 3.5,
+              "y": 2.5
+            }
+          ]
+        },
+        {
+          "id": "a03",
+          "path": [
+            {
+              "x": 6.5,
+              "y": 5
+            },
+            {
+              "x": 6.5,
+              "y": 6
+            },
+            {
+              "x": 7.5,
+              "y": 6
+            }
+          ]
+        },
+        {
+          "id": "a04",
+          "path": [
+            {
+              "x": 8.5,
+              "y": 6
+            },
+            {
+              "x": 8.5,
+              "y": 7
+            },
+            {
+              "x": 8.5,
+              "y": 8
+            }
+          ]
+        },
+        {
+          "id": "a05",
+          "path": [
+            {
+              "x": 0.5,
+              "y": 5
+            },
+            {
+              "x": 0.5,
+              "y": 6
+            },
+            {
+              "x": 0.5,
+              "y": 7
+            }
+          ]
+        },
+        {
+          "id": "a06",
+          "path": [
+            {
+              "x": 1,
+              "y": 7
+            },
+            {
+              "x": 2,
+              "y": 7
+            },
+            {
+              "x": 3,
+              "y": 7
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "round9c-heart",
+    "name": "Heart in the Weave",
+    "difficulty": "Medium",
+    "purpose": "Arrow paths alone form a heart, while the interior routes add a small removal puzzle.",
+    "previewCaption": "Four contour arrows form a heart; three short paths add interior choices.",
+    "compositionPlan": "A 12 by 11 pixel-grid heart: paired upper lobes, a visible central cleft, sloped shoulders, and lower contours that converge at neighboring tail markers. Three short L-shaped routes weave through the interior and form a small removal chain.",
+    "footprint": [
+      [
+        {
+          "x": 4,
+          "y": 3
+        },
+        {
+          "x": 3,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 3
+        },
+        {
+          "x": 1,
+          "y": 4.5
+        },
+        {
+          "x": 5,
+          "y": 8.5
+        },
+        {
+          "x": 5.5,
+          "y": 8.5
+        },
+        {
+          "x": 10,
+          "y": 4.5
+        },
+        {
+          "x": 10,
+          "y": 3
+        },
+        {
+          "x": 9,
+          "y": 3
+        },
+        {
+          "x": 8,
+          "y": 2
+        },
+        {
+          "x": 7,
+          "y": 2
+        },
+        {
+          "x": 6,
+          "y": 3
+        }
+      ]
+    ],
+    "puzzle": {
+      "number": 2,
+      "width": 12,
+      "height": 11,
+      "arrows": [
+        {
+          "id": "a01",
+          "path": [
+            {
+              "x": 4,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 2
+            },
+            {
+              "x": 2,
+              "y": 2
+            },
+            {
+              "x": 1,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "id": "a02",
+          "path": [
+            {
+              "x": 6,
+              "y": 3
+            },
+            {
+              "x": 7,
+              "y": 2
+            },
+            {
+              "x": 8,
+              "y": 2
+            },
+            {
+              "x": 9,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "id": "a03",
+          "path": [
+            {
+              "x": 5,
+              "y": 8.5
+            },
+            {
+              "x": 4,
+              "y": 7.5
+            },
+            {
+              "x": 3,
+              "y": 6.5
+            },
+            {
+              "x": 2,
+              "y": 5.5
+            },
+            {
+              "x": 1,
+              "y": 4.5
+            }
+          ]
+        },
+        {
+          "id": "a04",
+          "path": [
+            {
+              "x": 5.5,
+              "y": 8.5
+            },
+            {
+              "x": 6.5,
+              "y": 7.5
+            },
+            {
+              "x": 7.5,
+              "y": 6.5
+            },
+            {
+              "x": 8.5,
+              "y": 5.5
+            },
+            {
+              "x": 9.5,
+              "y": 4.5
+            }
+          ]
+        },
+        {
+          "id": "a05",
+          "path": [
+            {
+              "x": 3,
+              "y": 4.5
+            },
+            {
+              "x": 3,
+              "y": 5.5
+            },
+            {
+              "x": 4,
+              "y": 5.5
+            }
+          ]
+        },
+        {
+          "id": "a06",
+          "path": [
+            {
+              "x": 7,
+              "y": 5.5
+            },
+            {
+              "x": 8,
+              "y": 5.5
+            },
+            {
+              "x": 8,
+              "y": 4.5
+            }
+          ]
+        },
+        {
+          "id": "a07",
+          "path": [
+            {
+              "x": 5,
+              "y": 4.5
+            },
+            {
+              "x": 5,
+              "y": 5.5
+            },
+            {
+              "x": 6,
+              "y": 5.5
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "round9c-advanced-weave",
+    "name": "Advanced Abstract Weave",
+    "difficulty": "Medium–Hard",
+    "purpose": "A single board-wide irregular expanding spiral is partitioned into twelve winding arrow routes, with three close parallel arrows occupying its narrow corridors.",
+    "previewCaption": "An asymmetric expanding spiral holds winding routes and tight inner corridors.",
+    "compositionPlan": "Draw one asymmetric expanding spiral across the full 16 by 13 composition, varying the radius and length of each side. Partition the frozen line at straight corridors into twelve winding arrows of varied lengths. Add three short parallel arrows inside otherwise empty half-cell channels. The result reads as one maze rather than stacked independent lanes and creates three initial choices plus a deep but solvable removal chain.",
+    "footprint": [
+      [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 15,
+          "y": 0
+        },
+        {
+          "x": 15,
+          "y": 12
+        },
+        {
+          "x": 0,
+          "y": 12
+        }
+      ]
+    ],
+    "puzzle": {
+      "number": 3,
+      "width": 16,
+      "height": 13,
+      "arrows": [
+        {
+          "id": "a01",
+          "path": [
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 9,
+              "y": 6
+            },
+            {
+              "x": 9,
+              "y": 7
+            },
+            {
+              "x": 8,
+              "y": 7
+            },
+            {
+              "x": 7,
+              "y": 7
+            },
+            {
+              "x": 7,
+              "y": 6
+            },
+            {
+              "x": 7,
+              "y": 5
+            },
+            {
+              "x": 8,
+              "y": 5
+            },
+            {
+              "x": 9,
+              "y": 5
+            },
+            {
+              "x": 10,
+              "y": 5
+            },
+            {
+              "x": 11,
+              "y": 5
+            },
+            {
+              "x": 11,
+              "y": 6
+            },
+            {
+              "x": 11,
+              "y": 7
+            },
+            {
+              "x": 11,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 8
+            },
+            {
+              "x": 9,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            }
+          ]
+        },
+        {
+          "id": "a02",
+          "path": [
+            {
+              "x": 7,
+              "y": 8
+            },
+            {
+              "x": 6,
+              "y": 8
+            },
+            {
+              "x": 6,
+              "y": 7
+            },
+            {
+              "x": 6,
+              "y": 6
+            },
+            {
+              "x": 6,
+              "y": 5
+            },
+            {
+              "x": 6,
+              "y": 4
+            },
+            {
+              "x": 7,
+              "y": 4
+            },
+            {
+              "x": 8,
+              "y": 4
+            },
+            {
+              "x": 9,
+              "y": 4
+            },
+            {
+              "x": 10,
+              "y": 4
+            },
+            {
+              "x": 11,
+              "y": 4
+            },
+            {
+              "x": 12,
+              "y": 4
+            },
+            {
+              "x": 12,
+              "y": 5
+            },
+            {
+              "x": 12,
+              "y": 6
+            },
+            {
+              "x": 12,
+              "y": 7
+            },
+            {
+              "x": 12,
+              "y": 8
+            },
+            {
+              "x": 12,
+              "y": 9
+            },
+            {
+              "x": 11,
+              "y": 9
+            }
+          ]
+        },
+        {
+          "id": "a03",
+          "path": [
+            {
+              "x": 10,
+              "y": 9
+            },
+            {
+              "x": 9,
+              "y": 9
+            },
+            {
+              "x": 8,
+              "y": 9
+            },
+            {
+              "x": 7,
+              "y": 9
+            },
+            {
+              "x": 6,
+              "y": 9
+            },
+            {
+              "x": 5,
+              "y": 9
+            },
+            {
+              "x": 5,
+              "y": 8
+            },
+            {
+              "x": 5,
+              "y": 7
+            },
+            {
+              "x": 5,
+              "y": 6
+            },
+            {
+              "x": 5,
+              "y": 5
+            },
+            {
+              "x": 5,
+              "y": 4
+            },
+            {
+              "x": 5,
+              "y": 3
+            },
+            {
+              "x": 5,
+              "y": 2
+            },
+            {
+              "x": 6,
+              "y": 2
+            },
+            {
+              "x": 7,
+              "y": 2
+            },
+            {
+              "x": 8,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "a04",
+          "path": [
+            {
+              "x": 9,
+              "y": 2
+            },
+            {
+              "x": 10,
+              "y": 2
+            },
+            {
+              "x": 11,
+              "y": 2
+            },
+            {
+              "x": 12,
+              "y": 2
+            },
+            {
+              "x": 13,
+              "y": 2
+            },
+            {
+              "x": 13,
+              "y": 3
+            },
+            {
+              "x": 13,
+              "y": 4
+            },
+            {
+              "x": 13,
+              "y": 5
+            },
+            {
+              "x": 13,
+              "y": 6
+            },
+            {
+              "x": 13,
+              "y": 7
+            },
+            {
+              "x": 13,
+              "y": 8
+            },
+            {
+              "x": 13,
+              "y": 9
+            },
+            {
+              "x": 13,
+              "y": 10
+            },
+            {
+              "x": 12,
+              "y": 10
+            }
+          ]
+        },
+        {
+          "id": "a05",
+          "path": [
+            {
+              "x": 11,
+              "y": 10
+            },
+            {
+              "x": 10,
+              "y": 10
+            },
+            {
+              "x": 9,
+              "y": 10
+            },
+            {
+              "x": 8,
+              "y": 10
+            },
+            {
+              "x": 7,
+              "y": 10
+            },
+            {
+              "x": 6,
+              "y": 10
+            },
+            {
+              "x": 5,
+              "y": 10
+            },
+            {
+              "x": 4,
+              "y": 10
+            },
+            {
+              "x": 4,
+              "y": 9
+            },
+            {
+              "x": 4,
+              "y": 8
+            },
+            {
+              "x": 4,
+              "y": 7
+            },
+            {
+              "x": 4,
+              "y": 6
+            }
+          ]
+        },
+        {
+          "id": "a06",
+          "path": [
+            {
+              "x": 4,
+              "y": 5
+            },
+            {
+              "x": 4,
+              "y": 4
+            },
+            {
+              "x": 4,
+              "y": 3
+            },
+            {
+              "x": 4,
+              "y": 2
+            },
+            {
+              "x": 4,
+              "y": 1
+            },
+            {
+              "x": 5,
+              "y": 1
+            },
+            {
+              "x": 6,
+              "y": 1
+            },
+            {
+              "x": 7,
+              "y": 1
+            },
+            {
+              "x": 8,
+              "y": 1
+            },
+            {
+              "x": 9,
+              "y": 1
+            },
+            {
+              "x": 10,
+              "y": 1
+            }
+          ]
+        },
+        {
+          "id": "a07",
+          "path": [
+            {
+              "x": 11,
+              "y": 1
+            },
+            {
+              "x": 12,
+              "y": 1
+            },
+            {
+              "x": 13,
+              "y": 1
+            },
+            {
+              "x": 14,
+              "y": 1
+            },
+            {
+              "x": 14,
+              "y": 2
+            },
+            {
+              "x": 14,
+              "y": 3
+            },
+            {
+              "x": 14,
+              "y": 4
+            },
+            {
+              "x": 14,
+              "y": 5
+            },
+            {
+              "x": 14,
+              "y": 6
+            },
+            {
+              "x": 14,
+              "y": 7
+            }
+          ]
+        },
+        {
+          "id": "a08",
+          "path": [
+            {
+              "x": 14,
+              "y": 8
+            },
+            {
+              "x": 14,
+              "y": 9
+            },
+            {
+              "x": 14,
+              "y": 10
+            },
+            {
+              "x": 14,
+              "y": 11
+            },
+            {
+              "x": 13,
+              "y": 11
+            },
+            {
+              "x": 12,
+              "y": 11
+            },
+            {
+              "x": 11,
+              "y": 11
+            },
+            {
+              "x": 10,
+              "y": 11
+            },
+            {
+              "x": 9,
+              "y": 11
+            }
+          ]
+        },
+        {
+          "id": "a09",
+          "path": [
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 7,
+              "y": 11
+            },
+            {
+              "x": 6,
+              "y": 11
+            },
+            {
+              "x": 5,
+              "y": 11
+            },
+            {
+              "x": 4,
+              "y": 11
+            },
+            {
+              "x": 3,
+              "y": 11
+            },
+            {
+              "x": 3,
+              "y": 10
+            }
+          ]
+        },
+        {
+          "id": "a10",
+          "path": [
+            {
+              "x": 3,
+              "y": 9
+            },
+            {
+              "x": 3,
+              "y": 8
+            },
+            {
+              "x": 3,
+              "y": 7
+            },
+            {
+              "x": 3,
+              "y": 6
+            },
+            {
+              "x": 3,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "id": "a11",
+          "path": [
+            {
+              "x": 3,
+              "y": 4
+            },
+            {
+              "x": 3,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "a12",
+          "path": [
+            {
+              "x": 3,
+              "y": 1
+            },
+            {
+              "x": 3,
+              "y": 0
+            },
+            {
+              "x": 4,
+              "y": 0
+            },
+            {
+              "x": 5,
+              "y": 0
+            },
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 7,
+              "y": 0
+            },
+            {
+              "x": 8,
+              "y": 0
+            },
+            {
+              "x": 9,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 11,
+              "y": 0
+            },
+            {
+              "x": 12,
+              "y": 0
+            },
+            {
+              "x": 13,
+              "y": 0
+            },
+            {
+              "x": 14,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            }
+          ]
+        },
+        {
+          "id": "a13",
+          "path": [
+            {
+              "x": 1.5,
+              "y": 4.5
+            },
+            {
+              "x": 1.5,
+              "y": 5.5
+            },
+            {
+              "x": 1.5,
+              "y": 6.5
+            },
+            {
+              "x": 1.5,
+              "y": 7.5
+            },
+            {
+              "x": 1.5,
+              "y": 8.5
+            }
+          ]
+        },
+        {
+          "id": "a14",
+          "path": [
+            {
+              "x": 14.5,
+              "y": 4.5
+            },
+            {
+              "x": 14.5,
+              "y": 5.5
+            },
+            {
+              "x": 14.5,
+              "y": 6.5
+            },
+            {
+              "x": 14.5,
+              "y": 7.5
+            },
+            {
+              "x": 14.5,
+              "y": 8.5
+            }
+          ]
+        },
+        {
+          "id": "a15",
+          "path": [
+            {
+              "x": 3.5,
+              "y": 3.5
+            },
+            {
+              "x": 3.5,
+              "y": 4.5
+            },
+            {
+              "x": 3.5,
+              "y": 5.5
+            },
+            {
+              "x": 3.5,
+              "y": 6.5
+            },
+            {
+              "x": 3.5,
+              "y": 7.5
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

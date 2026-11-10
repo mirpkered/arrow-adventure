@@ -6,6 +6,8 @@ The Round 9 branch contains a ten-entry catalog candidate under `first-flight-r1
 
 The six Round 8 definitions remain in `src/game/archive/catalog-round8.ts`. That archive is never imported by the active catalog. The archived Level 6 is a visual reference only, and archived content is not restored to player progression.
 
+Round 9C adds three composition experiments at `src/game/prototypes/round9c-prototypes.json`. They are not catalog entries and are not available in Adventure Mode. Their composition-first workflow, puzzle metrics, exact audits, and generated previews are recorded in [Round 9C Prototypes](ROUND_9C_PROTOTYPES.md). Review those three experiments before expanding or promoting the new visual style.
+
 ## Catalog definition
 
 Each entry in `src/game/adventure-catalog.json` has a permanent ID (`first-flight-NNN`), display number, catalog and content versions, chapter ID, title, difficulty, composition kind, design note, intended footprint, and exact puzzle definition. Display order is metadata; array indices are not identities. Published changes require a deliberate content-version increase and an updated frozen fingerprint test.
@@ -14,8 +16,8 @@ The target catalog is exactly seven abstract weaves and three silhouettes. For a
 
 ## Repeatable authoring process
 
-1. Sketch the complete composition first and define its board footprint.
-2. Route the long nested paths through the shared visual region, then add shorter paths that make the overall weave coherent.
+1. Sketch the complete composition first and define its board footprint. For a maze, author the shared corridor field as a whole before splitting it into arrows; do not independently generate arrows and try to pack them afterward.
+2. Route the long nested paths through the shared visual region, then add shorter paths that occupy useful clearances or create deliberate removal choices.
 3. Make silhouettes from arrow paths themselves. Review the board without any footprint overlay.
 4. Preserve the approved half-unit display grid, cardinal and 45-degree moves, fixed collision envelope, arrowhead geometry, touch tolerance, and self-traversal checks.
 5. Run `validateCuratedLevels`, the exact reachable-state audit, and the geometry tests against the frozen JSON. Do not accept solver success alone.
