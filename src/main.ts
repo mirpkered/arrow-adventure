@@ -7,7 +7,7 @@ import { GameAudio } from './app/audio';
 import { movementDuration, NORMAL_MOVE_SPEED, RETURN_MOVE_SPEED } from './app/motion';
 import { loadGameSave, loadSettings, prefersDarkTheme, retireIncompatibleProgress, saveGame, saveSettings, storageKeysFor, type Appearance, type GameSave, type PlayerSettings, type StorageLike } from './app/persistence';
 import { showLaunchSplash } from './app/launchSplash';
-import { BoardViewport } from './app/viewport';
+import { arrowCompositionBounds, BoardViewport } from './app/viewport';
 import { boardGridMarkup } from './app/boardGrid';
 import type { Arrow, Level, Point } from './game/types';
 import { legalMoves } from './game/stateAudit';
@@ -68,6 +68,7 @@ let diagnostics: DiagnosticFlags = { ids: false, ownership: false, hitTargets: f
 let qaPanel: { open: () => void; bind: (target: HTMLElement, open: () => void) => () => void } | undefined;
 let unbindHold: (() => void) | undefined;
 let viewport = new BoardViewport(level.width, level.height);
+let cameraNeedsFit = true;
 const activePointers = new Map<number, Point>();
 let pointerOrigin: Point | undefined;
 let pointerMoved = false;
@@ -130,6 +131,7 @@ function startLevel(number: number, temporaryQA = false): void {
   animatingId = null;
   screen = 'game';
   viewport.reset(level.width, level.height);
+  cameraNeedsFit = true;
   if (!temporaryQARun) persistProgress(false);
   render();
 }
@@ -158,6 +160,7 @@ function continueGame(): void {
   animatingId = null;
   screen = save.levelComplete ? 'complete' : save.hearts === 0 ? 'out' : 'game';
   viewport.reset(level.width, level.height);
+  cameraNeedsFit = true;
   render();
 }
 
@@ -207,6 +210,7 @@ function startPrototypeReview(id: string): void {
   animatingId = null;
   screen = 'game';
   viewport.reset(level.width, level.height);
+  cameraNeedsFit = true;
   render();
 }
 
@@ -239,6 +243,7 @@ function leavePrototypeReview(): void {
   qaHighlightedArrowId = null;
   screen = saved.screen;
   viewport.reset(level.width, level.height);
+  cameraNeedsFit = true;
   render();
 }
 
@@ -272,6 +277,17 @@ function boardMarkup(): string {
   return `<div class="board-wrap"><svg class="board" width="100%" height="100%" viewBox="${box.x} ${box.y} ${box.width} ${box.height}" role="group" aria-label="Puzzle board, ${arrows.length} arrows remaining" aria-roledescription="zoomable puzzle board">
     ${boardGridMarkup(level.width, level.height, diagnostics.geometry)}${arrows.map(arrowMarkup).join('')}
   </svg></div>`;
+}
+
+function fitBoardToComposition(preserveZoom = false): void {
+  const boardWrap = app.querySelector<HTMLElement>('.board-wrap');
+  const board = app.querySelector<SVGSVGElement>('.board');
+  if (!boardWrap || !board) return;
+  const rect = boardWrap.getBoundingClientRect();
+  if (rect.width < 1 || rect.height < 1) return;
+  viewport.fitToContent(arrowCompositionBounds(level.arrows), rect.width, rect.height, 0.12, preserveZoom);
+  const box = viewport.viewBox;
+  board.setAttribute('viewBox', `${box.x} ${box.y} ${box.width} ${box.height}`);
 }
 
 function updateHearts(): void {
@@ -569,6 +585,10 @@ function renderGame(): void {
     ${isOut ? `<div class="overlay-scrim"><section class="menu-sheet" role="dialog" aria-modal="true" aria-labelledby="out-title"><span class="eyebrow">THREE HEARTS USED</span><h2 id="out-title">Try another route.</h2><button class="primary-button" data-action="restart">RESTART PUZZLE</button><button class="secondary-button" data-action="${returnAction}">${returnLabel}</button></section></div>` : ''}
   </main>`;
   bindQATrigger();
+  if (cameraNeedsFit) {
+    cameraNeedsFit = false;
+    requestAnimationFrame(() => fitBoardToComposition());
+  }
 }
 
 function renderCompletion(): void {
@@ -618,6 +638,12 @@ app.addEventListener('pointermove', handleBoardPointerMove);
 app.addEventListener('pointerup', handleBoardPointerUp);
 app.addEventListener('pointercancel', handleBoardPointerUp);
 
+const refitBoardAfterViewportResize = (): void => {
+  requestAnimationFrame(() => fitBoardToComposition(true));
+};
+window.addEventListener('resize', refitBoardAfterViewportResize, { passive: true });
+window.visualViewport?.addEventListener('resize', refitBoardAfterViewportResize, { passive: true });
+
 app.addEventListener('click', (event) => {
   const element = (event.target as Element).closest<HTMLElement>('[data-action], [data-appearance], [data-setting], [data-prototype-id]');
   if (!element) return;
@@ -652,7 +678,7 @@ app.addEventListener('click', (event) => {
     if (next) startLevel(next.number); else { persistProgress(true); screen = 'title'; render(); }
   }
   if (action === 'zoom-reset') {
-    viewport.reset(level.width, level.height);
+    viewport.restoreFit();
     const board = app.querySelector<SVGSVGElement>('.board');
     const box = viewport.viewBox;
     board?.setAttribute('viewBox', `${box.x} ${box.y} ${box.width} ${box.height}`);

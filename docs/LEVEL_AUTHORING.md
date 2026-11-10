@@ -8,6 +8,8 @@ The six Round 8 definitions remain in `src/game/archive/catalog-round8.ts`. That
 
 Round 9C adds three composition experiments at `src/game/prototypes/round9c-prototypes.json`. They are not catalog entries and are not available in Adventure Mode. Their composition-first workflow, puzzle metrics, exact audits, and generated previews are recorded in [Round 9C Prototypes](ROUND_9C_PROTOTYPES.md). Review those three experiments before expanding or promoting the new visual style.
 
+Round 9D adds five QA-only composition studies in `src/game/prototypes/round9d-prototypes.json`: a short-arrow field, an irregular weave, an arrow-built tree silhouette, a larger mixed weave, and a framed composition with intentional negative space. They remain separate from the Adventure catalog. See [Round 9D Design](ROUND_9D_DESIGN.md) for their frozen IDs, exact audits, measured composition results, phone-proportion previews, and current visual questions.
+
 ## Catalog definition
 
 Each entry in `src/game/adventure-catalog.json` has a permanent ID (`first-flight-NNN`), display number, catalog and content versions, chapter ID, title, difficulty, composition kind, design note, intended footprint, and exact puzzle definition. Display order is metadata; array indices are not identities. Published changes require a deliberate content-version increase and an updated frozen fingerprint test.
@@ -24,6 +26,7 @@ The target catalog is exactly seven abstract weaves and three silhouettes. For a
 6. Render all ten starting boards, inspect full-board thumbnails and phone-sized views, and reject sparse, repetitive, or ambiguous compositions even when the metrics pass.
 7. Record the selected candidate source/seed in authoring notes, freeze the resulting puzzle JSON, and add its SHA-256 fingerprint. Never regenerate active Adventure Mode content at runtime.
 8. Play every board on mobile after the browser review; generated screenshots do not substitute for device playtesting.
+9. For experiments spanning several styles, vary the composition architecture deliberately: compact short-arrow fields, continuous irregular meshes, recognizable arrow-only images, large mixed-length arrangements, and authored frames with a defined empty region. Do not treat longer paths or bounding-box overlap as a substitute for visual coherence. Use occupied arrow bounds for the initial camera fit; preserve any intentional void in the composition itself rather than inflating the logical board just to affect the camera.
 
 ## Quality measurements
 
@@ -38,6 +41,8 @@ Round 9B curation can also use `measureComposition`. It reports the share of rou
 `validateArrow` checks continuity, unit cardinal/diagonal steps, self-intersection, body and head clearance, and the complete self-traversal and exit. `validateLevel` checks stationary collisions between different arrows. `simulateMove` checks the entire moving arrow against stationary arrows and is shared by gameplay, solver, and catalog validation. `auditReachableStates` exhaustively visits every reachable remaining-arrow subset up to 20 arrows, reports deadlock witnesses and dependency cycles, and throws if its explicit state cap is exceeded.
 
 The current candidate validator checks stable metadata, footprint validity, path occupancy, sampled whitespace, spacing, interleaving, dependencies, solver completion, and exact state audit. A failed or incomplete audit is never a pass. Remaining authoring concerns are visual coherence and the readability of the three claimed silhouettes; these require manual selection and review before release.
+
+QA-only experiments follow the same geometry and exact-state gate as catalog content. Keep prototype definitions frozen and add a content fingerprint regression when a composition is selected for review. The renderer should fit the visible composition—centerlines, arrowheads, tails, and stroke clearance—inside the measured gameplay viewport, not fit every logical board to the same square. Fit tests should cover phone portrait, compact phone, and landscape, plus a user-requested reset after zooming. Use the static SVG contact sheets and individual phone canvases as review aids; they do not replace browser interaction or physical-device checks.
 
 ## Save compatibility
 

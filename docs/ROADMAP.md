@@ -6,6 +6,14 @@ Round 9 replaces the active Adventure catalog on its development branch with ten
 
 The source branch is `round-9/adventure-rebuild`. Production `main` and the independent QA site remain unchanged. Round 9 should not be promoted until each of the ten compositions passes unaided visual review at phone scale and the three silhouettes read from arrow paths alone.
 
+## Round 9D composition review
+
+Round 9D adds five isolated visual experiments D–H to Prototype Review without replacing the ten Adventure candidates. The styles are a compact micro-arrow grid, dense irregular weave, tree-like arrow silhouette, larger mixed-length weave, and framed negative space. Final route definitions are frozen outside the Adventure catalog, carry stable experiment IDs, and are protected by geometry fingerprints and exact reachable-state audits. Round 9D prototypes are candidates for physical iPhone playtesting, not approved permanent levels.
+
+The QA review screen retains Round 9C A–C and offers all eight experiments. Adaptive board fitting now uses occupied arrow bounds—including head and tail marks—in the live viewport, with 12% margin. Unit checks cover phone, medium, and landscape aspect ratios, zoom, pan, and fit reset. Visual preview files and measured composition/dependency results are in [Round 9D Design](ROUND_9D_DESIGN.md). The five reference images were unavailable in the execution workspace, so this iteration used their written composition descriptions and generated path previews.
+
+The exact audit checked 1,034 reachable states and 3,094 successful-removal transitions across D–H; each board has one terminal state and no deadlock or dependency cycle. Prototype D is at the current 20-arrow exhaustive-solver limit. A larger count must not be admitted until an exact scalable proof approach is implemented and measured.
+
 ## Accepted design direction
 
 - Replace the former six active boards with ten new curated levels: seven abstract arrow weaves and three arrow-built silhouettes.

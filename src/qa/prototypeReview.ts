@@ -1,4 +1,5 @@
-import definitions from '../game/prototypes/round9c-prototypes.json';
+import round9cDefinitions from '../game/prototypes/round9c-prototypes.json';
+import round9dDefinitions from '../game/prototypes/round9d-prototypes.json';
 import { createRun } from '../game/session';
 import type { Level } from '../game/types';
 
@@ -7,6 +8,9 @@ export type PrototypeReviewDefinition = {
   name: string;
   difficulty: string;
   purpose: string;
+  compositionStyle?: string;
+  compositionPlan?: string;
+  previewCaption?: string;
   puzzle: Level;
 };
 
@@ -17,17 +21,19 @@ export type PrototypeReviewChoice = {
   width: number;
   height: number;
   arrowCount: number;
+  compositionStyle?: string;
 };
 
-export const PROTOTYPE_REVIEWS = definitions as PrototypeReviewDefinition[];
+export const PROTOTYPE_REVIEWS = [...round9cDefinitions, ...round9dDefinitions] as PrototypeReviewDefinition[];
 
-export const PROTOTYPE_REVIEW_CHOICES: PrototypeReviewChoice[] = PROTOTYPE_REVIEWS.map(({ id, name, difficulty, puzzle }) => ({
+export const PROTOTYPE_REVIEW_CHOICES: PrototypeReviewChoice[] = PROTOTYPE_REVIEWS.map(({ id, name, difficulty, compositionStyle, puzzle }) => ({
   id,
   name,
   difficulty,
   width: puzzle.width,
   height: puzzle.height,
   arrowCount: puzzle.arrows.length,
+  compositionStyle,
 }));
 
 function escapeHtml(value: string): string {
@@ -39,9 +45,9 @@ export function renderPrototypeReviewSelection(): string {
     <header class="sub-header"><button class="icon-button" data-action="prototype-return" aria-label="Return to the QA board">‹</button><div><span class="eyebrow">QA-ONLY PLAYTEST</span><h1>Prototype Review</h1></div><span class="header-spacer"></span></header>
     <p class="prototype-review-intro">Choose a composition to play with the normal movement, collision, hearts, and touch controls. Review runs do not change Adventure Mode progress.</p>
     <section class="prototype-review-list" aria-label="Available prototypes">
-      ${PROTOTYPE_REVIEW_CHOICES.map((choice, index) => `<button type="button" class="prototype-review-card" data-prototype-id="${escapeHtml(choice.id)}" aria-label="Play Prototype ${String.fromCharCode(65 + index)}, ${escapeHtml(choice.name)}, ${choice.arrowCount} arrows">
+      ${PROTOTYPE_REVIEW_CHOICES.map((choice, index) => `<button type="button" class="prototype-review-card" data-prototype-id="${escapeHtml(choice.id)}" aria-label="Play Prototype ${String.fromCharCode(65 + index)}, ${escapeHtml(choice.name)}, ${choice.arrowCount} arrows${choice.compositionStyle ? `, ${escapeHtml(choice.compositionStyle)}` : ''}">
         <span class="prototype-review-letter" aria-hidden="true">${String.fromCharCode(65 + index)}</span>
-        <span class="prototype-review-copy"><b>Prototype ${String.fromCharCode(65 + index)} - ${escapeHtml(choice.name)}</b><small>${choice.arrowCount} arrows · ${choice.width}×${choice.height} · ${escapeHtml(choice.difficulty)}</small></span>
+        <span class="prototype-review-copy"><b>Prototype ${String.fromCharCode(65 + index)} - ${escapeHtml(choice.name)}</b><small>${choice.arrowCount} arrows · ${choice.width}×${choice.height} · ${escapeHtml(choice.difficulty)}</small>${choice.compositionStyle ? `<small class="prototype-review-style">${escapeHtml(choice.compositionStyle)}</small>` : ''}</span>
         <span class="prototype-review-chevron" aria-hidden="true">›</span>
       </button>`).join('')}
     </section>

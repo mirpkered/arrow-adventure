@@ -12,17 +12,24 @@ const qaPanelSource = readFileSync(fileURLToPath(new URL('../src/qa/qaPanel.ts',
 const prototypeModuleSource = readFileSync(fileURLToPath(new URL('../src/qa/prototypeReview.ts', import.meta.url)), 'utf8');
 const styleSource = readFileSync(fileURLToPath(new URL('../src/style.css', import.meta.url)), 'utf8');
 
-describe('isolated Round 9C prototype review mode', () => {
-  it('offers exactly the three named experiments without adding them to Adventure Mode', () => {
-    expect(PROTOTYPE_REVIEWS.map(({ id, name }) => [id, name])).toEqual([
+describe('isolated prototype review mode', () => {
+  it('keeps the three Round 9C comparisons and offers five distinct Round 9D compositions outside Adventure Mode', () => {
+    expect(PROTOTYPE_REVIEWS.slice(0, 3).map(({ id, name }) => [id, name])).toEqual([
       ['round9c-compact-weave', 'Compact Abstract Weave'],
       ['round9c-heart', 'Heart in the Weave'],
       ['round9c-advanced-weave', 'Advanced Abstract Weave'],
     ]);
+    expect(PROTOTYPE_REVIEWS.slice(3).map(({ id, name, compositionStyle }) => [id, name, compositionStyle])).toEqual([
+      ['round9d-micro-arrow-field', 'Micro-Arrow Field', 'Micro-arrow grid'],
+      ['round9d-dense-interwoven-maze', 'Dense Interwoven Maze', 'Dense interwoven maze'],
+      ['round9d-tree-silhouette', 'Tree Silhouette', 'Recognizable silhouette'],
+      ['round9d-large-mixed-weave', 'Large Mixed-Length Weave', 'Large mixed-length weave'],
+      ['round9d-framed-composition', 'Framed Composition', 'Framed negative space'],
+    ]);
     expect(CURATED_LEVELS).toHaveLength(10);
-    expect(CURATED_LEVELS.some(({ id }) => id.startsWith('round9c-'))).toBe(false);
+    expect(CURATED_LEVELS.some(({ id }) => id.startsWith('round9c-') || id.startsWith('round9d-'))).toBe(false);
     const selection = renderPrototypeReviewSelection();
-    expect((selection.match(/data-prototype-id=/g) ?? [])).toHaveLength(3);
+    expect((selection.match(/data-prototype-id=/g) ?? [])).toHaveLength(8);
     for (const { id, name } of PROTOTYPE_REVIEWS) {
       expect(selection).toContain(id);
       expect(selection).toContain(name);
@@ -31,7 +38,7 @@ describe('isolated Round 9C prototype review mode', () => {
     expect(renderPrototypeReviewCompletion('A', 6)).toContain('CHOOSE ANOTHER PROTOTYPE');
   });
 
-  it('uses the real gameplay definitions and validates every playable prototype', () => {
+  it('uses the real gameplay definitions and validates all eight playable prototypes', () => {
     for (const { puzzle } of PROTOTYPE_REVIEWS) {
       expect(() => validateLevel(puzzle)).not.toThrow();
       expect(solveLevel(puzzle)).not.toBeNull();

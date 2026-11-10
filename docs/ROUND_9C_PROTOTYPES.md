@@ -86,4 +86,6 @@ This round includes static phone-proportion visual review of the generated previ
 
 The prototype file is deliberately outside the active catalog. QA review uses the normal movement, collision, hearts, restart, and touch-selection code, but review runs are not saved as Adventure Mode progress. From an iPhone, start the QA game, hold the level label for two seconds, tap **Prototype Review**, then select A, B, or C. Use the HUD restart control to replay; the pause menu offers another prototype or a return to the previous QA board.
 
-This change does not alter the ten-level catalog or production. The QA repository's manual candidate workflow remains the only deployment route for this feature; do not merge or promote any experiment until the composition is approved and a separate catalog change is prepared.
+Round 9C originally offered only A–C. Round 9D extends the same QA-only selection screen with D–H while preserving those three comparison boards. From an iPhone, start the QA game, hold the level label for two seconds, tap **Prototype Review**, then choose any A–H card. Use Restart to replay; the pause menu can return to the selection screen. The five added boards and their preview files are documented in [Round 9D Design](ROUND_9D_DESIGN.md).
+
+These experiments do not alter the ten-level catalog or production. The QA repository's manual candidate workflow remains the only deployment route for this feature; do not merge or promote any experiment until the composition is approved and a separate catalog change is prepared.

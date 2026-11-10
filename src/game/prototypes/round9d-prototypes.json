@@ -1,0 +1,2410 @@
+[
+  {
+    "id": "round9d-micro-arrow-field",
+    "name": "Micro-Arrow Field",
+    "difficulty": "Easy–Medium",
+    "purpose": "A compact field of short straight, hooked, and diagonal arrows. Four aligned rows make each arrow readable while the facing direction and corridor order create small, deliberate removal chains.",
+    "compositionStyle": "Micro-arrow grid",
+    "compositionPlan": "Use a five-by-four half-grid field. Keep most routes one to two cells long; vary hooks and a few diagonal exits. Align row exits so each row clears from its exposed edge inward, with one diagonal end arrow opening the row.",
+    "previewCaption": "Twenty short routes fill a compact micro-arrow field with four clear row chains.",
+    "footprint": [
+      [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 10,
+          "y": 0
+        },
+        {
+          "x": 10,
+          "y": 8
+        },
+        {
+          "x": 0,
+          "y": 8
+        }
+      ]
+    ],
+    "puzzle": {
+      "number": 4,
+      "width": 11,
+      "height": 9,
+      "arrows": [
+        {
+          "id": "d01",
+          "path": [
+            {
+              "x": 0.5,
+              "y": 1.5
+            },
+            {
+              "x": 0.5,
+              "y": 0.5
+            },
+            {
+              "x": 1.5,
+              "y": 0.5
+            }
+          ]
+        },
+        {
+          "id": "d02",
+          "path": [
+            {
+              "x": 2.5,
+              "y": 0.5
+            },
+            {
+              "x": 3.5,
+              "y": 0.5
+            }
+          ]
+        },
+        {
+          "id": "d03",
+          "path": [
+            {
+              "x": 4.5,
+              "y": 1.5
+            },
+            {
+              "x": 4.5,
+              "y": 0.5
+            },
+            {
+              "x": 5.5,
+              "y": 0.5
+            }
+          ]
+        },
+        {
+          "id": "d04",
+          "path": [
+            {
+              "x": 6.5,
+              "y": 0.5
+            },
+            {
+              "x": 7.5,
+              "y": 0.5
+            }
+          ]
+        },
+        {
+          "id": "d05",
+          "path": [
+            {
+              "x": 8.5,
+              "y": 1.5
+            },
+            {
+              "x": 9.5,
+              "y": 0.5
+            }
+          ]
+        },
+        {
+          "id": "d06",
+          "path": [
+            {
+              "x": 1.5,
+              "y": 3
+            },
+            {
+              "x": 0.5,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "d07",
+          "path": [
+            {
+              "x": 3.5,
+              "y": 3
+            },
+            {
+              "x": 3.5,
+              "y": 2
+            },
+            {
+              "x": 2.5,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "d08",
+          "path": [
+            {
+              "x": 5.5,
+              "y": 2
+            },
+            {
+              "x": 4.5,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "d09",
+          "path": [
+            {
+              "x": 7.5,
+              "y": 3
+            },
+            {
+              "x": 7.5,
+              "y": 2
+            },
+            {
+              "x": 6.5,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "d10",
+          "path": [
+            {
+              "x": 9.5,
+              "y": 2
+            },
+            {
+              "x": 8.5,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "d11",
+          "path": [
+            {
+              "x": 0.5,
+              "y": 3.5
+            },
+            {
+              "x": 1.5,
+              "y": 3.5
+            }
+          ]
+        },
+        {
+          "id": "d12",
+          "path": [
+            {
+              "x": 2.5,
+              "y": 4.5
+            },
+            {
+              "x": 2.5,
+              "y": 3.5
+            },
+            {
+              "x": 3.5,
+              "y": 3.5
+            }
+          ]
+        },
+        {
+          "id": "d13",
+          "path": [
+            {
+              "x": 4.5,
+              "y": 3.5
+            },
+            {
+              "x": 5.5,
+              "y": 3.5
+            }
+          ]
+        },
+        {
+          "id": "d14",
+          "path": [
+            {
+              "x": 6.5,
+              "y": 4.5
+            },
+            {
+              "x": 6.5,
+              "y": 3.5
+            },
+            {
+              "x": 7.5,
+              "y": 3.5
+            }
+          ]
+        },
+        {
+          "id": "d15",
+          "path": [
+            {
+              "x": 8.5,
+              "y": 2.5
+            },
+            {
+              "x": 9.5,
+              "y": 3.5
+            }
+          ]
+        },
+        {
+          "id": "d16",
+          "path": [
+            {
+              "x": 1.5,
+              "y": 6
+            },
+            {
+              "x": 0.5,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "id": "d17",
+          "path": [
+            {
+              "x": 3.5,
+              "y": 6
+            },
+            {
+              "x": 3.5,
+              "y": 5
+            },
+            {
+              "x": 2.5,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "id": "d18",
+          "path": [
+            {
+              "x": 5.5,
+              "y": 5
+            },
+            {
+              "x": 4.5,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "id": "d19",
+          "path": [
+            {
+              "x": 7.5,
+              "y": 6
+            },
+            {
+              "x": 7.5,
+              "y": 5
+            },
+            {
+              "x": 6.5,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "id": "d20",
+          "path": [
+            {
+              "x": 9.5,
+              "y": 5
+            },
+            {
+              "x": 8.5,
+              "y": 5
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "round9d-dense-interwoven-maze",
+    "name": "Dense Interwoven Maze",
+    "difficulty": "Medium",
+    "purpose": "A compact, slanted weave combining hooked upper corridors, a diagonal wave through the middle, an irregular lower return, and short arrows that sit in the openings.",
+    "compositionStyle": "Dense interwoven maze",
+    "compositionPlan": "Build four offset long routes before filling the gaps: a hooked crown, a zigzag diagonal crossing the middle, a notched return, and a lower irregular run. Place tiny blockers on selected exit rays. Keep each main route visually close to the next without crossing.",
+    "previewCaption": "A hooked crown, diagonal middle wave, notched return, and short blockers form a compact weave.",
+    "footprint": [
+      [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 14,
+          "y": 0
+        },
+        {
+          "x": 14,
+          "y": 5
+        },
+        {
+          "x": 13,
+          "y": 8
+        },
+        {
+          "x": 14,
+          "y": 11
+        },
+        {
+          "x": 12,
+          "y": 12
+        },
+        {
+          "x": 1,
+          "y": 12
+        },
+        {
+          "x": 0,
+          "y": 9
+        },
+        {
+          "x": 1,
+          "y": 6
+        }
+      ]
+    ],
+    "puzzle": {
+      "number": 5,
+      "width": 16,
+      "height": 13,
+      "arrows": [
+        {
+          "id": "e01",
+          "path": [
+            {
+              "x": 13,
+              "y": 10
+            },
+            {
+              "x": 12,
+              "y": 9
+            },
+            {
+              "x": 13,
+              "y": 9
+            },
+            {
+              "x": 12,
+              "y": 8
+            },
+            {
+              "x": 13,
+              "y": 7
+            },
+            {
+              "x": 12,
+              "y": 7
+            },
+            {
+              "x": 11,
+              "y": 8
+            }
+          ]
+        },
+        {
+          "id": "e02",
+          "path": [
+            {
+              "x": 4.5,
+              "y": 9.5
+            },
+            {
+              "x": 4.5,
+              "y": 8.5
+            },
+            {
+              "x": 5.5,
+              "y": 7.5
+            },
+            {
+              "x": 5.5,
+              "y": 8.5
+            },
+            {
+              "x": 6.5,
+              "y": 7.5
+            },
+            {
+              "x": 6.5,
+              "y": 8.5
+            }
+          ]
+        },
+        {
+          "id": "e03",
+          "path": [
+            {
+              "x": 11.5,
+              "y": 7
+            },
+            {
+              "x": 10.5,
+              "y": 6
+            },
+            {
+              "x": 10.5,
+              "y": 7
+            },
+            {
+              "x": 9.5,
+              "y": 7
+            },
+            {
+              "x": 9.5,
+              "y": 8
+            },
+            {
+              "x": 10.5,
+              "y": 9
+            },
+            {
+              "x": 10.5,
+              "y": 10
+            },
+            {
+              "x": 9.5,
+              "y": 9
+            },
+            {
+              "x": 8.5,
+              "y": 8
+            },
+            {
+              "x": 8.5,
+              "y": 7
+            },
+            {
+              "x": 7.5,
+              "y": 6
+            }
+          ]
+        },
+        {
+          "id": "e04",
+          "path": [
+            {
+              "x": 12.5,
+              "y": 5.5
+            },
+            {
+              "x": 12.5,
+              "y": 4.5
+            },
+            {
+              "x": 11.5,
+              "y": 3.5
+            },
+            {
+              "x": 10.5,
+              "y": 2.5
+            },
+            {
+              "x": 11.5,
+              "y": 1.5
+            },
+            {
+              "x": 11.5,
+              "y": 2.5
+            },
+            {
+              "x": 12.5,
+              "y": 3.5
+            },
+            {
+              "x": 13.5,
+              "y": 2.5
+            },
+            {
+              "x": 12.5,
+              "y": 2.5
+            },
+            {
+              "x": 12.5,
+              "y": 1.5
+            }
+          ]
+        },
+        {
+          "id": "e05",
+          "path": [
+            {
+              "x": 1.5,
+              "y": 4.5
+            },
+            {
+              "x": 2.5,
+              "y": 3.5
+            },
+            {
+              "x": 2.5,
+              "y": 2.5
+            },
+            {
+              "x": 3.5,
+              "y": 3.5
+            },
+            {
+              "x": 4.5,
+              "y": 3.5
+            }
+          ]
+        },
+        {
+          "id": "e06",
+          "path": [
+            {
+              "x": 1.5,
+              "y": 7.5
+            },
+            {
+              "x": 0.5,
+              "y": 7.5
+            },
+            {
+              "x": 1.5,
+              "y": 6.5
+            },
+            {
+              "x": 1.5,
+              "y": 5.5
+            },
+            {
+              "x": 0.5,
+              "y": 6.5
+            },
+            {
+              "x": 0.5,
+              "y": 5.5
+            },
+            {
+              "x": 0.5,
+              "y": 4.5
+            },
+            {
+              "x": 1.5,
+              "y": 3.5
+            },
+            {
+              "x": 1.5,
+              "y": 2.5
+            },
+            {
+              "x": 0.5,
+              "y": 3.5
+            },
+            {
+              "x": 0.5,
+              "y": 2.5
+            },
+            {
+              "x": 1.5,
+              "y": 1.5
+            },
+            {
+              "x": 0.5,
+              "y": 1.5
+            },
+            {
+              "x": 0.5,
+              "y": 0.5
+            },
+            {
+              "x": 1.5,
+              "y": 0.5
+            },
+            {
+              "x": 2.5,
+              "y": 1.5
+            },
+            {
+              "x": 3.5,
+              "y": 1.5
+            }
+          ]
+        },
+        {
+          "id": "e07",
+          "path": [
+            {
+              "x": 2,
+              "y": 5
+            },
+            {
+              "x": 2,
+              "y": 6
+            },
+            {
+              "x": 3,
+              "y": 7
+            },
+            {
+              "x": 2,
+              "y": 7
+            },
+            {
+              "x": 2,
+              "y": 8
+            },
+            {
+              "x": 1,
+              "y": 8
+            },
+            {
+              "x": 2,
+              "y": 9
+            },
+            {
+              "x": 1,
+              "y": 9
+            },
+            {
+              "x": 1,
+              "y": 10
+            },
+            {
+              "x": 2,
+              "y": 10
+            },
+            {
+              "x": 3,
+              "y": 9
+            },
+            {
+              "x": 4,
+              "y": 8
+            },
+            {
+              "x": 4,
+              "y": 7
+            }
+          ]
+        },
+        {
+          "id": "e08",
+          "path": [
+            {
+              "x": 6,
+              "y": 4.5
+            },
+            {
+              "x": 5,
+              "y": 4.5
+            },
+            {
+              "x": 6,
+              "y": 3.5
+            },
+            {
+              "x": 7,
+              "y": 3.5
+            },
+            {
+              "x": 8,
+              "y": 4.5
+            },
+            {
+              "x": 7,
+              "y": 4.5
+            },
+            {
+              "x": 6,
+              "y": 5.5
+            },
+            {
+              "x": 7,
+              "y": 6.5
+            },
+            {
+              "x": 8,
+              "y": 7.5
+            },
+            {
+              "x": 7,
+              "y": 8.5
+            },
+            {
+              "x": 8,
+              "y": 9.5
+            },
+            {
+              "x": 8,
+              "y": 8.5
+            },
+            {
+              "x": 9,
+              "y": 9.5
+            },
+            {
+              "x": 9,
+              "y": 10.5
+            },
+            {
+              "x": 10,
+              "y": 11.5
+            }
+          ]
+        },
+        {
+          "id": "e09",
+          "path": [
+            {
+              "x": 8.5,
+              "y": 5
+            },
+            {
+              "x": 9.5,
+              "y": 6
+            },
+            {
+              "x": 8.5,
+              "y": 6
+            },
+            {
+              "x": 7.5,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "id": "e10",
+          "path": [
+            {
+              "x": 13,
+              "y": 8
+            },
+            {
+              "x": 14,
+              "y": 9
+            },
+            {
+              "x": 14,
+              "y": 8
+            },
+            {
+              "x": 14,
+              "y": 7
+            },
+            {
+              "x": 14,
+              "y": 6
+            },
+            {
+              "x": 13,
+              "y": 5
+            },
+            {
+              "x": 13,
+              "y": 6
+            },
+            {
+              "x": 12,
+              "y": 6
+            },
+            {
+              "x": 12,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "id": "e11",
+          "path": [
+            {
+              "x": 13.5,
+              "y": 9
+            },
+            {
+              "x": 13.5,
+              "y": 10
+            },
+            {
+              "x": 12.5,
+              "y": 11
+            },
+            {
+              "x": 13.5,
+              "y": 11
+            },
+            {
+              "x": 13.5,
+              "y": 12
+            },
+            {
+              "x": 12.5,
+              "y": 12
+            },
+            {
+              "x": 11.5,
+              "y": 11
+            },
+            {
+              "x": 10.5,
+              "y": 12
+            },
+            {
+              "x": 9.5,
+              "y": 12
+            },
+            {
+              "x": 8.5,
+              "y": 12
+            },
+            {
+              "x": 8.5,
+              "y": 11
+            },
+            {
+              "x": 7.5,
+              "y": 11
+            },
+            {
+              "x": 8.5,
+              "y": 10
+            },
+            {
+              "x": 7.5,
+              "y": 10
+            },
+            {
+              "x": 6.5,
+              "y": 11
+            },
+            {
+              "x": 6.5,
+              "y": 12
+            },
+            {
+              "x": 5.5,
+              "y": 11
+            },
+            {
+              "x": 4.5,
+              "y": 11
+            },
+            {
+              "x": 5.5,
+              "y": 12
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "round9d-tree-silhouette",
+    "name": "Tree Silhouette",
+    "difficulty": "Medium",
+    "purpose": "An original evergreen-like image made only from arrows: stepped canopy edges, irregular branch tiers, inner twigs, and a split trunk with small roots.",
+    "compositionStyle": "Recognizable silhouette",
+    "compositionPlan": "Start with two asymmetric diagonal canopy edges, then place shorter branches inside a tapering crown. Use a separate trunk and small root strokes; never add an outline, image, or background shape to the playable board.",
+    "previewCaption": "Arrow-built canopy, branch tiers, trunk, and roots form an original tree silhouette.",
+    "footprint": [
+      [
+        {
+          "x": 6,
+          "y": 0
+        },
+        {
+          "x": 8,
+          "y": 0
+        },
+        {
+          "x": 11,
+          "y": 2
+        },
+        {
+          "x": 13,
+          "y": 5
+        },
+        {
+          "x": 11,
+          "y": 8
+        },
+        {
+          "x": 8,
+          "y": 8
+        },
+        {
+          "x": 8,
+          "y": 14
+        },
+        {
+          "x": 5,
+          "y": 14
+        },
+        {
+          "x": 5,
+          "y": 8
+        },
+        {
+          "x": 2,
+          "y": 8
+        },
+        {
+          "x": 0,
+          "y": 5
+        },
+        {
+          "x": 2,
+          "y": 2
+        }
+      ]
+    ],
+    "puzzle": {
+      "number": 6,
+      "width": 14,
+      "height": 15,
+      "arrows": [
+        {
+          "id": "f01",
+          "path": [
+            {
+              "x": 6,
+              "y": 0.5
+            },
+            {
+              "x": 5,
+              "y": 1.5
+            },
+            {
+              "x": 4,
+              "y": 1.5
+            },
+            {
+              "x": 5,
+              "y": 2.5
+            },
+            {
+              "x": 4,
+              "y": 2.5
+            },
+            {
+              "x": 3,
+              "y": 2.5
+            },
+            {
+              "x": 4,
+              "y": 3.5
+            },
+            {
+              "x": 3,
+              "y": 3.5
+            },
+            {
+              "x": 2,
+              "y": 3.5
+            },
+            {
+              "x": 3,
+              "y": 4.5
+            },
+            {
+              "x": 2,
+              "y": 4.5
+            },
+            {
+              "x": 1,
+              "y": 4.5
+            },
+            {
+              "x": 2,
+              "y": 5.5
+            },
+            {
+              "x": 1,
+              "y": 5.5
+            }
+          ]
+        },
+        {
+          "id": "f02",
+          "path": [
+            {
+              "x": 7,
+              "y": 0.5
+            },
+            {
+              "x": 8,
+              "y": 1.5
+            },
+            {
+              "x": 9,
+              "y": 1.5
+            },
+            {
+              "x": 8,
+              "y": 2.5
+            },
+            {
+              "x": 9,
+              "y": 2.5
+            },
+            {
+              "x": 10,
+              "y": 2.5
+            },
+            {
+              "x": 9,
+              "y": 3.5
+            },
+            {
+              "x": 10,
+              "y": 3.5
+            },
+            {
+              "x": 11,
+              "y": 3.5
+            },
+            {
+              "x": 10,
+              "y": 4.5
+            },
+            {
+              "x": 11,
+              "y": 4.5
+            },
+            {
+              "x": 12,
+              "y": 4.5
+            },
+            {
+              "x": 11,
+              "y": 5.5
+            },
+            {
+              "x": 12,
+              "y": 5.5
+            }
+          ]
+        },
+        {
+          "id": "f03",
+          "path": [
+            {
+              "x": 6,
+              "y": 2.5
+            },
+            {
+              "x": 7,
+              "y": 2.5
+            }
+          ]
+        },
+        {
+          "id": "f04",
+          "path": [
+            {
+              "x": 5,
+              "y": 3.5
+            },
+            {
+              "x": 5,
+              "y": 4.5
+            },
+            {
+              "x": 6,
+              "y": 4.5
+            },
+            {
+              "x": 7,
+              "y": 4.5
+            }
+          ]
+        },
+        {
+          "id": "f05",
+          "path": [
+            {
+              "x": 8,
+              "y": 4.5
+            },
+            {
+              "x": 8,
+              "y": 3.5
+            }
+          ]
+        },
+        {
+          "id": "f06",
+          "path": [
+            {
+              "x": 4,
+              "y": 5.5
+            },
+            {
+              "x": 5,
+              "y": 5.5
+            },
+            {
+              "x": 6,
+              "y": 5.5
+            },
+            {
+              "x": 7,
+              "y": 5.5
+            },
+            {
+              "x": 8,
+              "y": 5.5
+            }
+          ]
+        },
+        {
+          "id": "f07",
+          "path": [
+            {
+              "x": 2.5,
+              "y": 6.5
+            },
+            {
+              "x": 3.5,
+              "y": 6.5
+            },
+            {
+              "x": 3.5,
+              "y": 7.5
+            },
+            {
+              "x": 4.5,
+              "y": 7.5
+            },
+            {
+              "x": 5.5,
+              "y": 7.5
+            }
+          ]
+        },
+        {
+          "id": "f08",
+          "path": [
+            {
+              "x": 10.5,
+              "y": 7.5
+            },
+            {
+              "x": 10.5,
+              "y": 6.5
+            }
+          ]
+        },
+        {
+          "id": "f09",
+          "path": [
+            {
+              "x": 6,
+              "y": 9
+            },
+            {
+              "x": 6,
+              "y": 10
+            },
+            {
+              "x": 6,
+              "y": 11
+            },
+            {
+              "x": 6,
+              "y": 12
+            },
+            {
+              "x": 6,
+              "y": 13
+            }
+          ]
+        },
+        {
+          "id": "f10",
+          "path": [
+            {
+              "x": 7,
+              "y": 12
+            },
+            {
+              "x": 7,
+              "y": 11
+            },
+            {
+              "x": 7,
+              "y": 10
+            }
+          ]
+        },
+        {
+          "id": "f11",
+          "path": [
+            {
+              "x": 5,
+              "y": 13
+            },
+            {
+              "x": 4,
+              "y": 13
+            },
+            {
+              "x": 4,
+              "y": 12
+            }
+          ]
+        },
+        {
+          "id": "f12",
+          "path": [
+            {
+              "x": 8,
+              "y": 13
+            },
+            {
+              "x": 9,
+              "y": 13
+            },
+            {
+              "x": 9,
+              "y": 12
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "round9d-large-mixed-weave",
+    "name": "Large Mixed-Length Weave",
+    "difficulty": "Hard",
+    "purpose": "A large, irregular all-direction weave where long angular routes, medium braids, and short internal arrows occupy one connected visual footprint.",
+    "compositionStyle": "Large mixed-length weave",
+    "compositionPlan": "Search seeded self-avoiding route packs using the gameplay geometry, then select and freeze a high-contact candidate with mixed path lengths, multiple exit directions, and a complete exact audit. Refine the final layout as a broad, asymmetrical mesh rather than a nested spiral.",
+    "previewCaption": "A selected 13-arrow pack combines winding corridors, short routes, and a deep removal chain.",
+    "footprint": [
+      [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 19,
+          "y": 0
+        },
+        {
+          "x": 19,
+          "y": 14
+        },
+        {
+          "x": 0,
+          "y": 14
+        }
+      ]
+    ],
+    "puzzle": {
+      "number": 7,
+      "width": 20,
+      "height": 15,
+      "arrows": [
+        {
+          "id": "g01",
+          "path": [
+            {
+              "x": 6,
+              "y": 5.5
+            },
+            {
+              "x": 6,
+              "y": 6.5
+            },
+            {
+              "x": 7,
+              "y": 5.5
+            },
+            {
+              "x": 7,
+              "y": 6.5
+            },
+            {
+              "x": 8,
+              "y": 7.5
+            },
+            {
+              "x": 7,
+              "y": 8.5
+            },
+            {
+              "x": 7,
+              "y": 9.5
+            },
+            {
+              "x": 8,
+              "y": 9.5
+            },
+            {
+              "x": 8,
+              "y": 8.5
+            },
+            {
+              "x": 9,
+              "y": 8.5
+            },
+            {
+              "x": 9,
+              "y": 7.5
+            },
+            {
+              "x": 10,
+              "y": 8.5
+            },
+            {
+              "x": 11,
+              "y": 8.5
+            }
+          ]
+        },
+        {
+          "id": "g02",
+          "path": [
+            {
+              "x": 9,
+              "y": 9
+            },
+            {
+              "x": 8,
+              "y": 10
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 9,
+              "y": 11
+            },
+            {
+              "x": 9,
+              "y": 12
+            },
+            {
+              "x": 10,
+              "y": 12
+            },
+            {
+              "x": 9,
+              "y": 13
+            },
+            {
+              "x": 10,
+              "y": 13
+            },
+            {
+              "x": 11,
+              "y": 12
+            },
+            {
+              "x": 12,
+              "y": 11
+            },
+            {
+              "x": 13,
+              "y": 11
+            },
+            {
+              "x": 12,
+              "y": 10
+            },
+            {
+              "x": 12,
+              "y": 9
+            },
+            {
+              "x": 13,
+              "y": 8
+            },
+            {
+              "x": 13,
+              "y": 7
+            },
+            {
+              "x": 12,
+              "y": 6
+            },
+            {
+              "x": 13,
+              "y": 5
+            },
+            {
+              "x": 14,
+              "y": 4
+            }
+          ]
+        },
+        {
+          "id": "g03",
+          "path": [
+            {
+              "x": 6,
+              "y": 8
+            },
+            {
+              "x": 5,
+              "y": 9
+            },
+            {
+              "x": 6,
+              "y": 9
+            }
+          ]
+        },
+        {
+          "id": "g04",
+          "path": [
+            {
+              "x": 7,
+              "y": 4.5
+            },
+            {
+              "x": 8,
+              "y": 5.5
+            },
+            {
+              "x": 9,
+              "y": 4.5
+            },
+            {
+              "x": 9,
+              "y": 5.5
+            },
+            {
+              "x": 8,
+              "y": 6.5
+            },
+            {
+              "x": 9,
+              "y": 6.5
+            },
+            {
+              "x": 10,
+              "y": 7.5
+            },
+            {
+              "x": 11,
+              "y": 6.5
+            },
+            {
+              "x": 11,
+              "y": 5.5
+            },
+            {
+              "x": 12,
+              "y": 4.5
+            },
+            {
+              "x": 11,
+              "y": 4.5
+            },
+            {
+              "x": 10,
+              "y": 3.5
+            },
+            {
+              "x": 10,
+              "y": 2.5
+            },
+            {
+              "x": 9,
+              "y": 1.5
+            },
+            {
+              "x": 9,
+              "y": 2.5
+            },
+            {
+              "x": 8,
+              "y": 3.5
+            },
+            {
+              "x": 9,
+              "y": 3.5
+            },
+            {
+              "x": 8,
+              "y": 4.5
+            },
+            {
+              "x": 7,
+              "y": 3.5
+            }
+          ]
+        },
+        {
+          "id": "g05",
+          "path": [
+            {
+              "x": 15.5,
+              "y": 6
+            },
+            {
+              "x": 14.5,
+              "y": 7
+            },
+            {
+              "x": 15.5,
+              "y": 8
+            },
+            {
+              "x": 14.5,
+              "y": 8
+            },
+            {
+              "x": 13.5,
+              "y": 9
+            },
+            {
+              "x": 13.5,
+              "y": 8
+            },
+            {
+              "x": 12.5,
+              "y": 9
+            },
+            {
+              "x": 13.5,
+              "y": 10
+            },
+            {
+              "x": 14.5,
+              "y": 9
+            },
+            {
+              "x": 15.5,
+              "y": 9
+            },
+            {
+              "x": 14.5,
+              "y": 10
+            },
+            {
+              "x": 15.5,
+              "y": 10
+            },
+            {
+              "x": 15.5,
+              "y": 11
+            },
+            {
+              "x": 14.5,
+              "y": 12
+            },
+            {
+              "x": 14.5,
+              "y": 13
+            }
+          ]
+        },
+        {
+          "id": "g06",
+          "path": [
+            {
+              "x": 6.5,
+              "y": 9.5
+            },
+            {
+              "x": 5.5,
+              "y": 10.5
+            },
+            {
+              "x": 4.5,
+              "y": 10.5
+            },
+            {
+              "x": 3.5,
+              "y": 11.5
+            }
+          ]
+        },
+        {
+          "id": "g07",
+          "path": [
+            {
+              "x": 12.5,
+              "y": 10
+            },
+            {
+              "x": 13.5,
+              "y": 11
+            },
+            {
+              "x": 14.5,
+              "y": 11
+            },
+            {
+              "x": 13.5,
+              "y": 12
+            },
+            {
+              "x": 13.5,
+              "y": 13
+            }
+          ]
+        },
+        {
+          "id": "g08",
+          "path": [
+            {
+              "x": 11.5,
+              "y": 12
+            },
+            {
+              "x": 12.5,
+              "y": 12
+            },
+            {
+              "x": 11.5,
+              "y": 13
+            },
+            {
+              "x": 12.5,
+              "y": 13
+            },
+            {
+              "x": 13.5,
+              "y": 14
+            },
+            {
+              "x": 14.5,
+              "y": 14
+            },
+            {
+              "x": 15.5,
+              "y": 13
+            },
+            {
+              "x": 16.5,
+              "y": 14
+            },
+            {
+              "x": 17.5,
+              "y": 13
+            }
+          ]
+        },
+        {
+          "id": "g09",
+          "path": [
+            {
+              "x": 7,
+              "y": 10
+            },
+            {
+              "x": 6,
+              "y": 11
+            },
+            {
+              "x": 6,
+              "y": 12
+            },
+            {
+              "x": 5,
+              "y": 11
+            },
+            {
+              "x": 5,
+              "y": 12
+            },
+            {
+              "x": 6,
+              "y": 13
+            },
+            {
+              "x": 6,
+              "y": 14
+            },
+            {
+              "x": 5,
+              "y": 13
+            },
+            {
+              "x": 5,
+              "y": 14
+            },
+            {
+              "x": 4,
+              "y": 14
+            },
+            {
+              "x": 3,
+              "y": 13
+            }
+          ]
+        },
+        {
+          "id": "g10",
+          "path": [
+            {
+              "x": 11,
+              "y": 2
+            },
+            {
+              "x": 12,
+              "y": 3
+            },
+            {
+              "x": 12,
+              "y": 2
+            },
+            {
+              "x": 11,
+              "y": 1
+            },
+            {
+              "x": 10,
+              "y": 1
+            }
+          ]
+        },
+        {
+          "id": "g11",
+          "path": [
+            {
+              "x": 4.5,
+              "y": 13.5
+            },
+            {
+              "x": 4.5,
+              "y": 12.5
+            },
+            {
+              "x": 3.5,
+              "y": 12.5
+            },
+            {
+              "x": 2.5,
+              "y": 11.5
+            },
+            {
+              "x": 3.5,
+              "y": 10.5
+            },
+            {
+              "x": 2.5,
+              "y": 10.5
+            },
+            {
+              "x": 1.5,
+              "y": 10.5
+            }
+          ]
+        },
+        {
+          "id": "g12",
+          "path": [
+            {
+              "x": 11,
+              "y": 4
+            },
+            {
+              "x": 12,
+              "y": 4
+            },
+            {
+              "x": 11,
+              "y": 3
+            },
+            {
+              "x": 10,
+              "y": 2
+            },
+            {
+              "x": 9,
+              "y": 1
+            },
+            {
+              "x": 8,
+              "y": 2
+            },
+            {
+              "x": 8,
+              "y": 1
+            },
+            {
+              "x": 7,
+              "y": 1
+            }
+          ]
+        },
+        {
+          "id": "g13",
+          "path": [
+            {
+              "x": 16,
+              "y": 10
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 15,
+              "y": 12
+            },
+            {
+              "x": 16,
+              "y": 13
+            },
+            {
+              "x": 16,
+              "y": 12
+            },
+            {
+              "x": 17,
+              "y": 12
+            },
+            {
+              "x": 18,
+              "y": 11
+            },
+            {
+              "x": 19,
+              "y": 11
+            },
+            {
+              "x": 18,
+              "y": 10
+            },
+            {
+              "x": 18,
+              "y": 9
+            },
+            {
+              "x": 17,
+              "y": 8
+            },
+            {
+              "x": 17,
+              "y": 7
+            },
+            {
+              "x": 18,
+              "y": 6
+            },
+            {
+              "x": 19,
+              "y": 7
+            },
+            {
+              "x": 19,
+              "y": 6
+            },
+            {
+              "x": 18,
+              "y": 5
+            },
+            {
+              "x": 17,
+              "y": 5
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "round9d-framed-composition",
+    "name": "Framed Composition",
+    "difficulty": "Medium–Hard",
+    "purpose": "An irregular frame of interlocking arrows surrounds a large, deliberate central opening. The open region is part of the design, not a density failure.",
+    "compositionStyle": "Framed negative space",
+    "compositionPlan": "Draw an uneven top, right, bottom, and left band around a clear central window. Vary the band routes and arrow lengths; preserve the window as intentional negative space while using it as a readable visual anchor.",
+    "previewCaption": "Dense, varied border routes frame an intentionally open center.",
+    "footprint": [
+      [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 15,
+          "y": 0
+        },
+        {
+          "x": 15,
+          "y": 3.5
+        },
+        {
+          "x": 12.5,
+          "y": 3.5
+        },
+        {
+          "x": 12.5,
+          "y": 8.5
+        },
+        {
+          "x": 15,
+          "y": 8.5
+        },
+        {
+          "x": 15,
+          "y": 12
+        },
+        {
+          "x": 0,
+          "y": 12
+        },
+        {
+          "x": 0,
+          "y": 8.5
+        },
+        {
+          "x": 4.5,
+          "y": 8.5
+        },
+        {
+          "x": 4.5,
+          "y": 3.5
+        },
+        {
+          "x": 0,
+          "y": 3.5
+        }
+      ]
+    ],
+    "puzzle": {
+      "number": 8,
+      "width": 16,
+      "height": 13,
+      "arrows": [
+        {
+          "id": "h01",
+          "path": [
+            {
+              "x": 3.5,
+              "y": 3
+            },
+            {
+              "x": 3.5,
+              "y": 2
+            },
+            {
+              "x": 3.5,
+              "y": 1
+            },
+            {
+              "x": 4.5,
+              "y": 1
+            },
+            {
+              "x": 4.5,
+              "y": 2
+            },
+            {
+              "x": 5.5,
+              "y": 2
+            },
+            {
+              "x": 6.5,
+              "y": 2
+            },
+            {
+              "x": 7.5,
+              "y": 2
+            },
+            {
+              "x": 7.5,
+              "y": 1
+            },
+            {
+              "x": 8.5,
+              "y": 1
+            },
+            {
+              "x": 9.5,
+              "y": 1
+            },
+            {
+              "x": 10.5,
+              "y": 1
+            },
+            {
+              "x": 11.5,
+              "y": 1
+            },
+            {
+              "x": 12.5,
+              "y": 1
+            },
+            {
+              "x": 13.5,
+              "y": 1
+            }
+          ]
+        },
+        {
+          "id": "h02",
+          "path": [
+            {
+              "x": 5,
+              "y": 3.5
+            },
+            {
+              "x": 5,
+              "y": 2.5
+            },
+            {
+              "x": 6,
+              "y": 2.5
+            },
+            {
+              "x": 6,
+              "y": 3.5
+            },
+            {
+              "x": 7,
+              "y": 3.5
+            },
+            {
+              "x": 8,
+              "y": 3.5
+            },
+            {
+              "x": 9,
+              "y": 3.5
+            },
+            {
+              "x": 10,
+              "y": 3.5
+            },
+            {
+              "x": 10,
+              "y": 2.5
+            },
+            {
+              "x": 11,
+              "y": 2.5
+            },
+            {
+              "x": 12,
+              "y": 2.5
+            }
+          ]
+        },
+        {
+          "id": "h03",
+          "path": [
+            {
+              "x": 14,
+              "y": 1.5
+            },
+            {
+              "x": 15,
+              "y": 1.5
+            },
+            {
+              "x": 15,
+              "y": 2.5
+            },
+            {
+              "x": 15,
+              "y": 3.5
+            },
+            {
+              "x": 14,
+              "y": 3.5
+            },
+            {
+              "x": 14,
+              "y": 4.5
+            },
+            {
+              "x": 14,
+              "y": 5.5
+            },
+            {
+              "x": 14,
+              "y": 6.5
+            },
+            {
+              "x": 14,
+              "y": 7.5
+            },
+            {
+              "x": 15,
+              "y": 7.5
+            },
+            {
+              "x": 15,
+              "y": 8.5
+            },
+            {
+              "x": 15,
+              "y": 9.5
+            },
+            {
+              "x": 15,
+              "y": 10.5
+            },
+            {
+              "x": 14,
+              "y": 10.5
+            },
+            {
+              "x": 13,
+              "y": 10.5
+            },
+            {
+              "x": 12,
+              "y": 10.5
+            }
+          ]
+        },
+        {
+          "id": "h04",
+          "path": [
+            {
+              "x": 12.5,
+              "y": 3.5
+            },
+            {
+              "x": 13.5,
+              "y": 3.5
+            },
+            {
+              "x": 13.5,
+              "y": 4.5
+            },
+            {
+              "x": 13.5,
+              "y": 5.5
+            },
+            {
+              "x": 13.5,
+              "y": 6.5
+            },
+            {
+              "x": 13.5,
+              "y": 7.5
+            },
+            {
+              "x": 13.5,
+              "y": 8.5
+            },
+            {
+              "x": 12.5,
+              "y": 8.5
+            }
+          ]
+        },
+        {
+          "id": "h05",
+          "path": [
+            {
+              "x": 12,
+              "y": 9.5
+            },
+            {
+              "x": 11,
+              "y": 9.5
+            },
+            {
+              "x": 10,
+              "y": 9.5
+            },
+            {
+              "x": 9,
+              "y": 9.5
+            },
+            {
+              "x": 9,
+              "y": 8.5
+            },
+            {
+              "x": 8,
+              "y": 8.5
+            },
+            {
+              "x": 7,
+              "y": 8.5
+            },
+            {
+              "x": 6,
+              "y": 8.5
+            },
+            {
+              "x": 5,
+              "y": 8.5
+            },
+            {
+              "x": 5,
+              "y": 9.5
+            },
+            {
+              "x": 4,
+              "y": 9.5
+            },
+            {
+              "x": 3,
+              "y": 9.5
+            },
+            {
+              "x": 2,
+              "y": 9.5
+            }
+          ]
+        },
+        {
+          "id": "h06",
+          "path": [
+            {
+              "x": 12.5,
+              "y": 11.5
+            },
+            {
+              "x": 11.5,
+              "y": 11.5
+            },
+            {
+              "x": 10.5,
+              "y": 11.5
+            },
+            {
+              "x": 9.5,
+              "y": 11.5
+            },
+            {
+              "x": 8.5,
+              "y": 11.5
+            },
+            {
+              "x": 8.5,
+              "y": 10.5
+            },
+            {
+              "x": 7.5,
+              "y": 10.5
+            },
+            {
+              "x": 6.5,
+              "y": 10.5
+            },
+            {
+              "x": 5.5,
+              "y": 10.5
+            },
+            {
+              "x": 4.5,
+              "y": 10.5
+            },
+            {
+              "x": 4.5,
+              "y": 11.5
+            },
+            {
+              "x": 3.5,
+              "y": 11.5
+            },
+            {
+              "x": 2.5,
+              "y": 11.5
+            },
+            {
+              "x": 1.5,
+              "y": 11.5
+            }
+          ]
+        },
+        {
+          "id": "h07",
+          "path": [
+            {
+              "x": 0.5,
+              "y": 10
+            },
+            {
+              "x": 0.5,
+              "y": 9
+            },
+            {
+              "x": 0.5,
+              "y": 8
+            },
+            {
+              "x": 0.5,
+              "y": 7
+            },
+            {
+              "x": 0.5,
+              "y": 6
+            },
+            {
+              "x": 1.5,
+              "y": 6
+            },
+            {
+              "x": 1.5,
+              "y": 5
+            },
+            {
+              "x": 1.5,
+              "y": 4
+            },
+            {
+              "x": 1.5,
+              "y": 3
+            },
+            {
+              "x": 1.5,
+              "y": 2
+            },
+            {
+              "x": 2.5,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "h08",
+          "path": [
+            {
+              "x": 3.5,
+              "y": 3.5
+            },
+            {
+              "x": 4.5,
+              "y": 3.5
+            },
+            {
+              "x": 4.5,
+              "y": 4.5
+            },
+            {
+              "x": 4.5,
+              "y": 5.5
+            },
+            {
+              "x": 4.5,
+              "y": 6.5
+            },
+            {
+              "x": 4.5,
+              "y": 7.5
+            },
+            {
+              "x": 4.5,
+              "y": 8.5
+            },
+            {
+              "x": 3.5,
+              "y": 8.5
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

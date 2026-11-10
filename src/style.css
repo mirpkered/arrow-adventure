@@ -52,3 +52,8 @@
 .grid-fine,.grid-major{fill:none;stroke:var(--grid);stroke-width:.025;opacity:.68}
 .grid-major{stroke-width:.03;opacity:.78}
 .grid-major.is-debug{stroke:var(--line);stroke-width:.035;opacity:1}
+
+/* Round 9D adds five more review boards; keep the selection list usable on phones. */
+.prototype-review-list{justify-content:flex-start;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.prototype-review-card{flex:none}
+.prototype-review-copy .prototype-review-style{margin-top:2px;color:var(--accent);font:500 9px 'DM Mono',monospace;letter-spacing:.04em;text-transform:uppercase}

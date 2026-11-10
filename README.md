@@ -1,6 +1,6 @@
 # Arrow Adventure
 
-Arrow Adventure is a mobile-first, advertisement-free puzzle game from Mirpworks. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. The Round 9 branch develops a new ten-level catalog under review; production remains at the current six-level release. Round 9C adds three composition-first experiments outside both catalogs for visual review.
+Arrow Adventure is a mobile-first, advertisement-free puzzle game from Mirpworks. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. The `round-9/adventure-rebuild` branch holds a ten-level Adventure catalog candidate and eight separate composition experiments for review. The active Adventure catalog is not changed by the Round 9D prototypes.
 
 Production: <https://mirpkered.github.io/arrow-adventure/>
 
@@ -39,7 +39,7 @@ $env:VITE_CANDIDATE_SHA='local-preview'
 npm run build
 ```
 
-The QA panel is available only in development or builds with `VITE_QA_MODE=true`. Hold the level label for two seconds (or use Enter/Space when focused) to open speed, stroke, diagnostics, level navigation, restart, reset, and Prototype Review controls. In a QA build, choose **Prototype Review** to select A, B, or C. Restart from the game HUD, or use the pause menu to choose another prototype or return to the QA board. Review runs use the same gameplay systems but never write Adventure Mode progress. QA and production use separate local-storage namespaces because both Pages sites share the same browser origin.
+The QA panel is available only in development or builds with `VITE_QA_MODE=true`. Hold the level label for two seconds (or use Enter/Space when focused) to open speed, stroke, diagnostics, level navigation, restart, reset, and Prototype Review controls. In a QA build, **Prototype Review** offers A–H. D–H are the five Round 9D composition styles: Micro-Arrow Field, Dense Interwoven Maze, Tree Silhouette, Large Mixed-Length Weave, and Framed Composition. Restart from the game HUD, or use the pause menu to choose another prototype or return to the QA board. Review runs use the same gameplay systems but never write Adventure Mode progress. QA and production use separate local-storage namespaces because both Pages sites share the same browser origin.
 
 ## Deployment
 
@@ -48,7 +48,7 @@ The QA panel is available only in development or builds with `VITE_QA_MODE=true`
 ## Architecture
 
 - `src/game/catalog.ts` and `src/game/adventure-catalog.json` — ten deterministic Round 9 catalog candidates, stable IDs, footprints, metadata, and integrity checks; not yet approved for release.
-- `src/game/prototypes/round9c-prototypes.json` — three separate visual experiments, protected by puzzle fingerprints and exact geometry/state audits; dynamically loaded only by the QA Prototype Review interface, never by Adventure Mode.
+- `src/game/prototypes/round9c-prototypes.json` and `round9d-prototypes.json` — eight separate visual experiments, protected by frozen puzzle fingerprints and exact geometry/state audits; loaded only by the QA Prototype Review interface, never by Adventure Mode.
 - `src/game/archive/catalog-round8.ts` — non-playable archive of the retired six-level reference set.
 - `src/game/geometry.ts`, `src/game/rules.ts`, `src/game/density.ts` — shared board-coordinate transforms, fixed collision envelopes, grid and segment validation, distance-based body movement, solver, and sampled whitespace metrics.
 - `src/app/boardGrid.ts` — fine-grid paths rendered in the same SVG coordinate frame as the arrows.
@@ -62,12 +62,12 @@ The QA panel is available only in development or builds with `VITE_QA_MODE=true`
 
 Puzzle geometry and collision assumptions are documented in [Game Design](docs/GAME_DESIGN.md). The exact all-state solvability audit and Level 4 reconstruction are in [Solvability Audit](docs/SOLVABILITY_AUDIT.md). The repeatable process for curated content is in [Level Authoring](docs/LEVEL_AUTHORING.md).
 
-The Round 7A historical baseline and Round 8 Level 5 before/after density measurements are in [Round 7A Density Plan](docs/ROUND_7A_DENSITY_PLAN.md). The three composition-first experiment designs, metrics, exact audit results, and preview links are in [Round 9C Prototypes](docs/ROUND_9C_PROTOTYPES.md).
+The Round 7A historical baseline and Round 8 Level 5 before/after density measurements are in [Round 7A Density Plan](docs/ROUND_7A_DENSITY_PLAN.md). The first three composition experiments are documented in [Round 9C Prototypes](docs/ROUND_9C_PROTOTYPES.md). The five Round 9D archetypes, exact-state audits, composition metrics, adaptive fit, and preview links are in [Round 9D Design](docs/ROUND_9D_DESIGN.md).
 
 ## Current scope and limitations
 
-- Production remains on its six-level catalog. The Round 9 development branch has ten new deterministic candidates; their solver, geometry, fingerprint and exact-state checks pass, but several compositions still need visual redesign before QA or production deployment.
+- Production remains on its six-level catalog. The Round 9 development branch has ten deterministic Adventure candidates plus eight QA-only composition experiments; the five Round 9D definitions pass geometry, frozen fingerprint, solver, and exhaustive reachable-state checks.
 - Round 9 candidate progress uses catalog-versioned saves. Retired puzzle progress does not carry over, while theme and sound preferences remain separate.
 - Physical iPhone Safari playtesting was not performed in this release. Confirm gestures, safe areas, zoom, splash timing, and frame pacing on a device before public announcement.
-- The ten Round 9 candidates and three Round 9C composition experiments are not a release. QA and production have not been updated; obtain visual approval before promoting or adding content.
+- The ten Round 9 candidates and eight review prototypes are not permanent Adventure levels. This branch is prepared for isolated QA review only; production has not been changed. Obtain visual approval before promoting or adding content.
 - Free Play, tutorials, black holes, switches, gates, portals, and additional chapters are future work.
