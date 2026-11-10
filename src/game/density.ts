@@ -1,4 +1,5 @@
 import { pointToPolylineDistance, segmentDistance } from './geometry';
+import { directionName, exitDirection } from './rules';
 import type { CuratedLevel, Level, Point } from './types';
 
 export type BoardDensity = {
@@ -17,6 +18,14 @@ export type FootprintDensity = BoardDensity & {
 };
 
 export type NeighborSpacing = { minimum: number; p10: number; median: number; p90: number; samples: number };
+export type CompositionMetrics = {
+  totalPathLength: number;
+  adjacentGridPathRatio: number;
+  parallelCorridorLength: number;
+  routeLengthBands: { short: number; medium: number; long: number };
+  exitDirections: Record<string, number>;
+  touchCompetitionPathRatio: number;
+};
 
 /** Measures sampled whitespace and route occupancy without treating overlap of bounds as interleaving. */
 export function measureBoardDensity(level: Level, sampleStep = 0.25, gapDistance = 1.5): BoardDensity {
@@ -107,6 +116,69 @@ export function measureNeighborSpacing(level: Level): NeighborSpacing {
   samples.sort((a, b) => a - b);
   const percentile = (p: number) => samples.length ? samples[Math.min(samples.length - 1, Math.floor((samples.length - 1) * p))] : Infinity;
   return { minimum: samples[0] ?? Infinity, p10: percentile(0.1), median: percentile(0.5), p90: percentile(0.9), samples: samples.length };
+}
+
+/**
+ * Measures how often distinct paths share a neighboring grid corridor. The
+ * default 0.75 distance includes a 0.5-grid adjacent line and a 45-degree
+ * neighbor (sqrt(0.5²+0.5²)); this is descriptive, not a collision rule.
+ */
+export function measureComposition(level: Level): CompositionMetrics {
+  const segmentsByArrow = level.arrows.map((arrow) => arrow.path.slice(1).map((point, index) => ({
+    a: arrow.path[index], b: point,
+    length: Math.hypot(point.x - arrow.path[index].x, point.y - arrow.path[index].y),
+  })));
+  const routeLengths = level.arrows.map((arrow) => arrow.path.slice(1).reduce((sum, point, index) => sum + Math.hypot(point.x - arrow.path[index].x, point.y - arrow.path[index].y), 0));
+  const totalPathLength = routeLengths.reduce((sum, length) => sum + length, 0);
+  const routeLengthBands = {
+    short: routeLengths.filter((length) => length <= 4).length,
+    medium: routeLengths.filter((length) => length > 4 && length <= 14).length,
+    long: routeLengths.filter((length) => length > 14).length,
+  };
+  const exitDirections: Record<string, number> = {};
+  for (const arrow of level.arrows) {
+    const direction = directionName(exitDirection(arrow));
+    exitDirections[direction] = (exitDirections[direction] ?? 0) + 1;
+  }
+
+  let adjacentPathLength = 0;
+  let competingPathLength = 0;
+  let parallelCorridorLength = 0;
+  for (let arrowIndex = 0; arrowIndex < level.arrows.length; arrowIndex += 1) {
+    const own = segmentsByArrow[arrowIndex];
+    const others = segmentsByArrow.filter((_, index) => index !== arrowIndex);
+    for (const segment of own) {
+      let nearest = Infinity;
+      for (const otherArrow of others) for (const other of otherArrow) {
+        const distance = segmentDistance(segment, other);
+        nearest = Math.min(nearest, distance);
+        if (distance <= 0.75 && parallelOverlapLength(segment, other) > 0) {
+          parallelCorridorLength += parallelOverlapLength(segment, other);
+        }
+      }
+      if (nearest <= 0.75) adjacentPathLength += segment.length;
+      if (nearest <= 1.5) competingPathLength += segment.length;
+    }
+  }
+  return {
+    totalPathLength,
+    adjacentGridPathRatio: totalPathLength ? adjacentPathLength / totalPathLength : 0,
+    parallelCorridorLength: parallelCorridorLength / 2,
+    routeLengthBands,
+    exitDirections,
+    touchCompetitionPathRatio: totalPathLength ? competingPathLength / totalPathLength : 0,
+  };
+}
+
+function parallelOverlapLength(left: {a: Point; b: Point}, right: {a: Point; b: Point}): number {
+  const lx = left.b.x - left.a.x; const ly = left.b.y - left.a.y;
+  const rx = right.b.x - right.a.x; const ry = right.b.y - right.a.y;
+  const leftLength = Math.hypot(lx, ly); const rightLength = Math.hypot(rx, ry);
+  if (!leftLength || !rightLength || Math.abs(lx * ry - ly * rx) / (leftLength * rightLength) > 1e-8) return 0;
+  const ux = lx / leftLength; const uy = ly / leftLength;
+  const first = (right.a.x - left.a.x) * ux + (right.a.y - left.a.y) * uy;
+  const second = (right.b.x - left.a.x) * ux + (right.b.y - left.a.y) * uy;
+  return Math.max(0, Math.min(leftLength, Math.max(first, second)) - Math.max(0, Math.min(first, second)));
 }
 
 /** A compact authoring heatmap: # inside the silhouette, ! for an unintended large gap, · for covered cells. */

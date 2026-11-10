@@ -7,7 +7,7 @@ import { bindLongPress } from '../src/qa/qaPanel';
 import { CURATED_LEVELS, getCuratedLevel, getNextCuratedLevel, validateCuratedLevels } from '../src/game/catalog';
 import { ARROW_COLLISION_WIDTH, ARROW_MAX_RENDERED_WIDTH, ARROW_STROKE_WIDTH, BOARD_GRID_SPACING, arrowHeadTriangle, arrowsCollide, findSelfBodyClearanceIssue, isBoardGridIntersection, toBoardPoint } from '../src/game/geometry';
 import { boardGridMarkup } from '../src/app/boardGrid';
-import { measureBoardDensity } from '../src/game/density';
+import { measureBoardDensity, measureComposition } from '../src/game/density';
 import { completeLevel, directionName, exitDirection, MOVE_SUBSTEPS, movedPathIsOffBoard, moveArrowDistance, nearestArrowAt, simulateMove, solveLevel, TOUCH_PICK_RADIUS, validateArrow, validateLevel } from '../src/game/rules';
 import { advanceSession, createRun, createSession, loseHeart } from '../src/game/session';
 import { createActionGate } from '../src/game/input';
@@ -172,6 +172,20 @@ describe('shared arrow geometry and movement', () => {
     expect(refined.pathLength).toBe(97);
     expect(refined.occupancyRatio).toBeCloseTo(0.5774, 3);
     expect(refined.largeGapRatio).toBeCloseTo(0.1875, 4);
+  });
+
+  it('measures grid-adjacent packing, parallel corridors, route variety and direction', () => {
+    const packed: Level = { number: 99, width: 8, height: 5, arrows: [
+      makeArrow('upper', [{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 3, y: 1 }, { x: 4, y: 1 }]),
+      makeArrow('lower', [{ x: 1, y: 1.5 }, { x: 2, y: 1.5 }, { x: 3, y: 1.5 }, { x: 4, y: 1.5 }]),
+    ] };
+    const metrics = measureComposition(packed);
+    expect(metrics.totalPathLength).toBe(6);
+    expect(metrics.adjacentGridPathRatio).toBe(1);
+    expect(metrics.parallelCorridorLength).toBe(3);
+    expect(metrics.routeLengthBands).toEqual({ short: 2, medium: 0, long: 0 });
+    expect(metrics.exitDirections).toEqual({ east: 2 });
+    expect(metrics.touchCompetitionPathRatio).toBe(1);
   });
 
   it('moves the full arrow body smoothly through its turns, then completes the exit', () => {
