@@ -1,6 +1,6 @@
 # Arrow Adventure
 
-Arrow Adventure is a mobile-first, advertisement-free puzzle game from Mirpworks. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. The `round-9/adventure-rebuild` branch holds a ten-level Adventure catalog candidate and eight separate composition experiments for review. The active Adventure catalog is not changed by the Round 9D prototypes.
+Arrow Adventure is a mobile-first, advertisement-free puzzle game from Mirpworks. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. The `round-9/adventure-rebuild` branch holds a ten-level Adventure catalog candidate, eight A–H QA review boards, and two separate square-weave experiments. These prototypes do not change the active Adventure catalog.
 
 Production: <https://mirpkered.github.io/arrow-adventure/>
 
@@ -48,7 +48,7 @@ The QA panel is available only in development or builds with `VITE_QA_MODE=true`
 ## Architecture
 
 - `src/game/catalog.ts` and `src/game/adventure-catalog.json` — ten deterministic Round 9 catalog candidates, stable IDs, footprints, metadata, and integrity checks; not yet approved for release.
-- `src/game/prototypes/round9c-prototypes.json` and `round9d-prototypes.json` — eight separate visual experiments, protected by frozen puzzle fingerprints and exact geometry/state audits; loaded only by the QA Prototype Review interface, never by Adventure Mode.
+- `src/game/prototypes/round9c-prototypes.json`, `round9d-prototypes.json`, `round9e-square-15.json`, and `round9f-square-7.json` — eight Round 9C/D QA review boards plus the separate, frozen Round 9E 15×15 and Round 9F 7×7 prototypes; only the A–H experiments are loaded by QA Prototype Review, never by Adventure Mode.
 - `src/game/archive/catalog-round8.ts` — non-playable archive of the retired six-level reference set.
 - `src/game/geometry.ts`, `src/game/rules.ts`, `src/game/density.ts` — shared board-coordinate transforms, fixed collision envelopes, grid and segment validation, distance-based body movement, solver, and sampled whitespace metrics.
 - `src/app/boardGrid.ts` — fine-grid paths rendered in the same SVG coordinate frame as the arrows.
@@ -62,7 +62,7 @@ The QA panel is available only in development or builds with `VITE_QA_MODE=true`
 
 Puzzle geometry and collision assumptions are documented in [Game Design](docs/GAME_DESIGN.md). The exact all-state solvability audit and Level 4 reconstruction are in [Solvability Audit](docs/SOLVABILITY_AUDIT.md). The repeatable process for curated content is in [Level Authoring](docs/LEVEL_AUTHORING.md).
 
-The Round 7A historical baseline and Round 8 Level 5 before/after density measurements are in [Round 7A Density Plan](docs/ROUND_7A_DENSITY_PLAN.md). The first three composition experiments are documented in [Round 9C Prototypes](docs/ROUND_9C_PROTOTYPES.md). The five Round 9D archetypes, exact-state audits, composition metrics, adaptive fit, and preview links are in [Round 9D Design](docs/ROUND_9D_DESIGN.md).
+The Round 7A historical baseline and Round 8 Level 5 before/after density measurements are in [Round 7A Density Plan](docs/ROUND_7A_DENSITY_PLAN.md). The first three composition experiments are documented in [Round 9C Prototypes](docs/ROUND_9C_PROTOTYPES.md). The five Round 9D archetypes, exact-state audits, composition metrics, adaptive fit, and preview links are in [Round 9D Design](docs/ROUND_9D_DESIGN.md). The compact 7×7 Round 9F prototype, exact reachable-state audit, metrics, and image previews are in [Round 9F Compact Square](docs/ROUND_9F_COMPACT_SQUARE.md).
 
 ## Current scope and limitations
 
