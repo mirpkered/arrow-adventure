@@ -43,7 +43,7 @@ function coordinatedBendPairs(arrows: Arrow[], radius: number): number {
 }
 
 describe('Round 9H true 7×7 visible grid prototype', () => {
-  it('is a frozen 15-arrow prototype isolated from Adventure Mode and QA selection', () => {
+  it('is frozen, separate from Adventure Mode, and registered in QA review', () => {
     expect(prototype).toMatchObject({
       id: 'prototype-square-true-7', title: 'True-Grid Interwoven Square', contentVersion: 1, category: 'experimental-review',
       board: { width: 7, height: 7, unit: 'cells', visibleGridSpacing: 1, intersectionPositionsPerAxis: 8 },
@@ -56,7 +56,7 @@ describe('Round 9H true 7×7 visible grid prototype', () => {
     expect(fingerprint).toBe(expectedFingerprint);
     expect(prototype.puzzleFingerprintSha256).toBe(expectedFingerprint);
     expect(readFileSync(new URL('../src/game/adventure-catalog.json', import.meta.url), 'utf8')).not.toContain(prototype.id);
-    expect(readFileSync(new URL('../src/qa/prototypeReview.ts', import.meta.url), 'utf8')).not.toContain(prototype.id);
+    expect(readFileSync(new URL('../src/qa/prototypeReview.ts', import.meta.url), 'utf8')).toContain('round9h-square-true-7.json');
   });
 
   it('renders exactly eight intersection lines per axis and rejects hidden half-step routing', () => {

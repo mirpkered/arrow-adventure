@@ -1,6 +1,6 @@
 # Round 9H — True 7×7 Grid Prototype
 
-Round 9H is one experimental composition, stored at `src/game/prototypes/round9h-square-true-7.json`. Its stable prototype ID is `prototype-square-true-7`, content version 1, and puzzle SHA-256 is `7d48e27bbb9a7d4212eefc5548549f9bd227eed0eb0d7111dac4c1341629ac8a`. It is not in the Adventure catalog or the QA prototype selector. It does not change the active ten-level catalog, save format, or published game.
+Round 9H is one experimental composition, stored at `src/game/prototypes/round9h-square-true-7.json`. Its stable prototype ID is `prototype-square-true-7`, content version 1, and puzzle SHA-256 is `7d48e27bbb9a7d4212eefc5548549f9bd227eed0eb0d7111dac4c1341629ac8a`. It is registered as an additional QA-only Prototype Review choice and remains outside the Adventure catalog. It does not change the active ten-level catalog, save format, or production game.
 
 ## The visible grid is the coordinate authority
 
@@ -48,4 +48,4 @@ The comparison labels Round 9G as 14×14 visible subcells and Round 9H as 7×7 v
 
 Automated Round 9H tests verify the frozen fingerprint, exact rendered grid line positions, rejection of a half-step mutation, all route geometry, footprint and spacing measurements, exact state audit, simulator replay, touch-coordinate selection, and fit/zoom/pan behavior at representative phone and landscape viewports. Round 9F/9G tests preserve their original half-unit interpretation. The exhaustive audit cap remains 20 arrows; this prototype's 15 arrows are fully within that bound.
 
-This round is development-only. No QA or production deployment was made. No physical iPhone testing was performed.
+Round 9H is available only in the QA Prototype Review build; production builds do not load this module. The portrait image is a renderer-based viewport preview, not a browser capture. Physical iPhone testing remains outstanding.

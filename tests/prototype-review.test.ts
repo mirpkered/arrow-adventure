@@ -13,32 +13,41 @@ const prototypeModuleSource = readFileSync(fileURLToPath(new URL('../src/qa/prot
 const styleSource = readFileSync(fileURLToPath(new URL('../src/style.css', import.meta.url)), 'utf8');
 
 describe('isolated prototype review mode', () => {
-  it('keeps the three Round 9C comparisons and offers five distinct Round 9D compositions outside Adventure Mode', () => {
+  it('preserves prototypes A–H and appends the named Round 9H true-grid board outside Adventure Mode', () => {
     expect(PROTOTYPE_REVIEWS.slice(0, 3).map(({ id, name }) => [id, name])).toEqual([
       ['round9c-compact-weave', 'Compact Abstract Weave'],
       ['round9c-heart', 'Heart in the Weave'],
       ['round9c-advanced-weave', 'Advanced Abstract Weave'],
     ]);
-    expect(PROTOTYPE_REVIEWS.slice(3).map(({ id, name, compositionStyle }) => [id, name, compositionStyle])).toEqual([
+    expect(PROTOTYPE_REVIEWS.slice(3, 8).map(({ id, name, compositionStyle }) => [id, name, compositionStyle])).toEqual([
       ['round9d-micro-arrow-field', 'Micro-Arrow Field', 'Micro-arrow grid'],
       ['round9d-dense-interwoven-maze', 'Dense Interwoven Maze', 'Dense interwoven maze'],
       ['round9d-tree-silhouette', 'Tree Silhouette', 'Recognizable silhouette'],
       ['round9d-large-mixed-weave', 'Large Mixed-Length Weave', 'Large mixed-length weave'],
       ['round9d-framed-composition', 'Framed Composition', 'Framed negative space'],
     ]);
+    expect(PROTOTYPE_REVIEWS[8]).toMatchObject({
+      id: 'prototype-square-true-7', name: 'True 7×7 Square', displayLabel: 'Round 9H — True 7×7 Square',
+      puzzle: { width: 7, height: 7, arrows: expect.arrayContaining([expect.any(Object)]) },
+    });
+    expect(PROTOTYPE_REVIEWS[8].puzzle.arrows).toHaveLength(15);
+    expect(PROTOTYPE_REVIEWS[8].puzzle.grid).toEqual({
+      spacing: 1, origin: { x: 0, y: 0 }, pathOffset: 0, includeOuterBoundary: true,
+    });
     expect(CURATED_LEVELS).toHaveLength(10);
-    expect(CURATED_LEVELS.some(({ id }) => id.startsWith('round9c-') || id.startsWith('round9d-'))).toBe(false);
+    expect(CURATED_LEVELS.some(({ id }) => id.startsWith('round9c-') || id.startsWith('round9d-') || id === 'prototype-square-true-7')).toBe(false);
     const selection = renderPrototypeReviewSelection();
-    expect((selection.match(/data-prototype-id=/g) ?? [])).toHaveLength(8);
+    expect((selection.match(/data-prototype-id=/g) ?? [])).toHaveLength(9);
     for (const { id, name } of PROTOTYPE_REVIEWS) {
       expect(selection).toContain(id);
       expect(selection).toContain(name);
     }
+    expect(selection).toContain('Round 9H — True 7×7 Square');
     expect(renderPrototypeReviewCompletion('A', 6)).toContain('REPLAY PROTOTYPE A');
     expect(renderPrototypeReviewCompletion('A', 6)).toContain('CHOOSE ANOTHER PROTOTYPE');
   });
 
-  it('uses the real gameplay definitions and validates all eight playable prototypes', () => {
+  it('uses the real gameplay definitions and validates all nine playable prototypes', () => {
     for (const { puzzle } of PROTOTYPE_REVIEWS) {
       expect(() => validateLevel(puzzle)).not.toThrow();
       expect(solveLevel(puzzle)).not.toBeNull();
@@ -61,6 +70,10 @@ describe('isolated prototype review mode', () => {
     expect(restarted.run.arrows).not.toBe(first.run.arrows);
     expect(JSON.stringify(prototype.puzzle)).toBe(original);
     expect(createPrototypeReviewRun('missing')).toBeUndefined();
+    const round9h = PROTOTYPE_REVIEWS[8];
+    const round9hRun = createPrototypeReviewRun(round9h.id)!;
+    expect(round9hRun.run.hearts).toBe(3);
+    expect(round9hRun.run.arrows).toHaveLength(15);
   });
 
   it('keeps prototype runs out of Adventure Mode progress saves', () => {

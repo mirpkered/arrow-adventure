@@ -1,6 +1,6 @@
 # Arrow Adventure
 
-Arrow Adventure is a mobile-first, advertisement-free puzzle game from Mirpworks. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. The `round-9/adventure-rebuild` branch holds a ten-level Adventure catalog candidate, eight A–H QA review boards, and four separate square-weave experiments. These prototypes do not change the active Adventure catalog.
+Arrow Adventure is a mobile-first, advertisement-free puzzle game from Mirpworks. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. The `round-9/adventure-rebuild` branch holds a ten-level Adventure catalog candidate, the A–H QA comparisons plus a separately labeled Round 9H QA review board, and four frozen square-weave experiments. These prototypes do not change the active Adventure catalog.
 
 Production: <https://mirpkered.github.io/arrow-adventure/>
 
@@ -39,7 +39,7 @@ $env:VITE_CANDIDATE_SHA='local-preview'
 npm run build
 ```
 
-The QA panel is available only in development or builds with `VITE_QA_MODE=true`. Hold the level label for two seconds (or use Enter/Space when focused) to open speed, stroke, diagnostics, level navigation, restart, reset, and Prototype Review controls. In a QA build, **Prototype Review** offers A–H. D–H are the five Round 9D composition styles: Micro-Arrow Field, Dense Interwoven Maze, Tree Silhouette, Large Mixed-Length Weave, and Framed Composition. Restart from the game HUD, or use the pause menu to choose another prototype or return to the QA board. Review runs use the same gameplay systems but never write Adventure Mode progress. QA and production use separate local-storage namespaces because both Pages sites share the same browser origin.
+The QA panel is available only in development or builds with `VITE_QA_MODE=true`. Hold the level label for two seconds (or use Enter/Space when focused) to open speed, stroke, diagnostics, level navigation, restart, reset, and Prototype Review controls. In a QA build, **Prototype Review** offers A–H and the separate **Round 9H — True 7×7 Square** board. D–H are the five Round 9D composition styles: Micro-Arrow Field, Dense Interwoven Maze, Tree Silhouette, Large Mixed-Length Weave, and Framed Composition. Restart from the game HUD, or use the pause menu to choose another prototype or return to the QA board. Review runs use the same gameplay systems but never write Adventure Mode progress. QA and production use separate local-storage namespaces because both Pages sites share the same browser origin.
 
 ## Deployment
 
@@ -48,7 +48,7 @@ The QA panel is available only in development or builds with `VITE_QA_MODE=true`
 ## Architecture
 
 - `src/game/catalog.ts` and `src/game/adventure-catalog.json` — ten deterministic Round 9 catalog candidates, stable IDs, footprints, metadata, and integrity checks; not yet approved for release.
-- `src/game/prototypes/round9c-prototypes.json`, `round9d-prototypes.json`, `round9e-square-15.json`, `round9f-square-7.json`, `round9g-square-7-weave.json`, and `round9h-square-true-7.json` — eight Round 9C/D QA review boards plus separate, frozen Round 9E–9H experiments; only the A–H boards are loaded by QA Prototype Review, never by Adventure Mode.
+- `src/game/prototypes/round9c-prototypes.json`, `round9d-prototypes.json`, `round9e-square-15.json`, `round9f-square-7.json`, `round9g-square-7-weave.json`, and `round9h-square-true-7.json` — eight Round 9C/D QA review boards plus separate, frozen Round 9E–9H experiments; A–H and the explicit Round 9H choice are loaded only by QA Prototype Review, never by Adventure Mode.
 - `src/game/archive/catalog-round8.ts` — non-playable archive of the retired six-level reference set.
 - `src/game/geometry.ts`, `src/game/rules.ts`, `src/game/density.ts` — shared board-coordinate transforms, fixed collision envelopes, grid and segment validation, distance-based body movement, solver, and sampled whitespace metrics.
 - `src/app/boardGrid.ts` — fine-grid paths rendered in the same SVG coordinate frame as the arrows.

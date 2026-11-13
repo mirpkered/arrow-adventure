@@ -60,9 +60,10 @@ Production builds with `/arrow-adventure/`; QA builds the selected candidate wit
 
 Both Pages URLs share the `mirpkered.github.io` origin. The current game has local progress and settings, so it explicitly namespaces storage keys as `arrow-adventure.production.*` and `arrow-adventure.qa.*`; the QA build flag controls the namespace. This keeps QA saves and preferences separate despite the shared origin. There is no service worker or offline cache. If one is added later, cache names must also be environment-specific.
 
-## Current deployment record
+## Deployment history and live record
 
 - QA repository Pages source: GitHub Actions, independently configured from production.
 - Initial QA source: `mirpkered/arrow-adventure@2e46726deca69058e7af8726d60902f937e7eb83`.
 - QA workflow run: [41748236896](https://github.com/mirpkered/arrow-adventure-qa/actions/runs/41748236896) (build and deploy succeeded).
-- The initial QA deployment record above remains available for rollback. Future QA deployments continue to select a source SHA in the QA repository; production changes deploy independently from `main`.
+- Before the Round 9H interactive review rollout, the live QA record identified source `6ab53db3770e3ca4f975818ea7dd26f5f29383c2` and [workflow run 42911906151](https://github.com/mirpkered/arrow-adventure-qa/actions/runs/42911906151).
+- The live source SHA and workflow URL are exposed by `https://mirpkered.github.io/arrow-adventure-qa/qa-deployment.json`; that endpoint and the QA repository's Actions history are authoritative for the current deployment. Historical source SHAs remain available for rollback.
