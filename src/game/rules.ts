@@ -1,5 +1,5 @@
-import type { Arrow, Level, MoveResult, Point } from './types';
-import { arrowsCollide, findSelfBodyClearanceIssue, findSelfHeadClearanceIssue, segmentDistance, ARROW_COLLISION_WIDTH, BOARD_GRID_SPACING, isBoardGridIntersection, pointToPolylineDistance, toBoardPoint, toPathPoint } from './geometry';
+import type { Arrow, GridSpecification, Level, MoveResult, Point } from './types';
+import { arrowsCollide, findSelfBodyClearanceIssue, findSelfHeadClearanceIssue, segmentDistance, ARROW_COLLISION_WIDTH, LEGACY_GRID_SPECIFICATION, PATH_POINT_OFFSET, isBoardGridIntersection, pointToPolylineDistance, toBoardPoint, toPathPoint } from './geometry';
 
 /** Maximum sweep sampling interval, in board-cell distances. */
 export const COLLISION_STEP = 0.05;
@@ -9,8 +9,8 @@ export const TOUCH_PICK_RADIUS = 0.75;
 const validatedSelfMotion = new WeakMap<Arrow, string>();
 
 /** Deterministic closest-path hit testing, used for mouse and touch alike. */
-export function nearestArrowAt(point: Point, arrows: Arrow[], radius = TOUCH_PICK_RADIUS): string | undefined {
-  return arrows.map((arrow) => ({ arrow, distance: pointToPolylineDistance(point, arrow.path) }))
+export function nearestArrowAt(point: Point, arrows: Arrow[], radius = TOUCH_PICK_RADIUS, pathOffset = LEGACY_GRID_SPECIFICATION.pathOffset): string | undefined {
+  return arrows.map((arrow) => ({ arrow, distance: pointToPolylineDistance(point, arrow.path, pathOffset) }))
     .filter(({ distance }) => distance <= radius)
     .sort((left, right) => left.distance - right.distance || left.arrow.id.localeCompare(right.arrow.id))[0]?.arrow.id;
 }
@@ -34,31 +34,34 @@ export function directionName(direction: Point): string {
   throw new Error(`Invalid exit direction (${direction.x}, ${direction.y})`);
 }
 
-function fullyExited(points: Point[], width: number, height: number, direction: Point): boolean {
+function fullyExited(points: Point[], width: number, height: number, direction: Point, grid: GridSpecification = LEGACY_GRID_SPECIFICATION): boolean {
   const margin = 0.3;
-  const centers = points.map(toBoardPoint);
-  if (direction.x > 0 && direction.y === 0) return centers.every(({ x }) => x >= width + margin);
-  if (direction.x < 0 && direction.y === 0) return centers.every(({ x }) => x <= -margin);
-  if (direction.y > 0 && direction.x === 0) return centers.every(({ y }) => y >= height + margin);
-  if (direction.y < 0 && direction.x === 0) return centers.every(({ y }) => y <= -margin);
-  const beyondX = direction.x > 0 ? centers.every(({ x }) => x >= width + margin) : centers.every(({ x }) => x <= -margin);
-  const beyondY = direction.y > 0 ? centers.every(({ y }) => y >= height + margin) : centers.every(({ y }) => y <= -margin);
+  const centers = points.map((point) => toBoardPoint(point, grid.pathOffset));
+  const minX = grid.origin.x; const maxX = grid.origin.x + width;
+  const minY = grid.origin.y; const maxY = grid.origin.y + height;
+  if (direction.x > 0 && direction.y === 0) return centers.every(({ x }) => x >= maxX + margin);
+  if (direction.x < 0 && direction.y === 0) return centers.every(({ x }) => x <= minX - margin);
+  if (direction.y > 0 && direction.x === 0) return centers.every(({ y }) => y >= maxY + margin);
+  if (direction.y < 0 && direction.x === 0) return centers.every(({ y }) => y <= minY - margin);
+  const beyondX = direction.x > 0 ? centers.every(({ x }) => x >= maxX + margin) : centers.every(({ x }) => x <= minX - margin);
+  const beyondY = direction.y > 0 ? centers.every(({ y }) => y >= maxY + margin) : centers.every(({ y }) => y <= minY - margin);
   return beyondX || beyondY;
 }
 
-export function validateArrow(arrow: Arrow, width: number, height: number, levelNumber?: number): void {
+export function validateArrow(arrow: Arrow, width: number, height: number, levelNumber?: number, grid: GridSpecification = LEGACY_GRID_SPECIFICATION): void {
   const label = `Level ${levelNumber ?? 'unknown'} arrow ${arrow.id}`;
   if (arrow.path.length < 2) throw new Error(`${label}: needs at least two path points`);
-  const signature = selfMotionSignature(arrow, width, height);
+  const signature = selfMotionSignature(arrow, width, height, grid);
   if (validatedSelfMotion.get(arrow) === signature) return;
   const seen = new Set<string>();
   arrow.path.forEach((point, index) => {
-    if (!Number.isFinite(point.x) || !Number.isFinite(point.y)
-      || point.x < 0 || point.y < 0 || point.x >= width || point.y >= height) {
+    const outsideX = point.x < 0 || (grid.includeOuterBoundary ? point.x > width : point.x >= width);
+    const outsideY = point.y < 0 || (grid.includeOuterBoundary ? point.y > height : point.y >= height);
+    if (!Number.isFinite(point.x) || !Number.isFinite(point.y) || outsideX || outsideY) {
       throw new Error(`${label}: path point ${index} leaves the board at ${pointKey(point)}`);
     }
-    const boardPoint = toBoardPoint(point);
-    if (!isBoardGridIntersection(boardPoint)) throw new Error(`${label}: vertex ${index} at (${boardPoint.x}, ${boardPoint.y}) is not on the ${BOARD_GRID_SPACING}-unit board grid`);
+    const boardPoint = toBoardPoint(point, grid.pathOffset);
+    if (!isBoardGridIntersection(boardPoint, grid.spacing, grid.origin)) throw new Error(`${label}: vertex ${index} at (${boardPoint.x}, ${boardPoint.y}) is not on the ${grid.spacing}-unit board grid`);
     const key = pointKey(point);
     if (index > 0) {
       const previous = arrow.path[index - 1];
@@ -85,12 +88,12 @@ export function validateArrow(arrow: Arrow, width: number, height: number, level
       }
     }
   }
-  validateArrowSelfTraversal(arrow, width, height, levelNumber);
+  validateArrowSelfTraversal(arrow, width, height, levelNumber, grid);
   validatedSelfMotion.set(arrow, signature);
 }
 
-function selfMotionSignature(arrow: Arrow, width: number, height: number): string {
-  return `${width}x${height}:${JSON.stringify(arrow.path)}`;
+function selfMotionSignature(arrow: Arrow, width: number, height: number, grid: GridSpecification): string {
+  return `${width}x${height}:${JSON.stringify(grid)}:${JSON.stringify(arrow.path)}`;
 }
 
 /**
@@ -98,7 +101,7 @@ function selfMotionSignature(arrow: Arrow, width: number, height: number): strin
  * body. Sampling uses the same movement primitive as rendering; an extra
  * COLLISION_STEP clearance makes the check conservative between samples.
  */
-export function validateArrowSelfTraversal(arrow: Arrow, width: number, height: number, levelNumber?: number): void {
+export function validateArrowSelfTraversal(arrow: Arrow, width: number, height: number, levelNumber?: number, grid: GridSpecification = LEGACY_GRID_SPECIFICATION): void {
   const label = `Level ${levelNumber ?? 'unknown'} arrow ${arrow.id}`;
   const direction = exitDirection(arrow);
   const routeLength = arrow.path.slice(1).reduce((sum, point, index) => sum + distance(arrow.path[index], point), 0);
@@ -106,13 +109,13 @@ export function validateArrowSelfTraversal(arrow: Arrow, width: number, height: 
   const samples = Math.ceil(maximumTravel / COLLISION_STEP);
   for (let step = 0; step <= samples; step += 1) {
     const traveled = Math.min(maximumTravel, step * COLLISION_STEP);
-    const centers = moveArrowDistance(arrow, traveled);
-    const movingPath = centers.map(toPathPoint);
-    const bodyIssue = findSelfBodyClearanceIssue(movingPath, COLLISION_STEP);
+    const centers = moveArrowDistance(arrow, traveled, grid.pathOffset);
+    const movingPath = centers.map((point) => toPathPoint(point, grid.pathOffset));
+    const bodyIssue = findSelfBodyClearanceIssue(movingPath, COLLISION_STEP, grid.pathOffset);
     if (bodyIssue) throw new Error(`${label}: moving body self-collision at travel ${traveled.toFixed(3)} cells, segments ${bodyIssue.segmentAIndex} and ${bodyIssue.segmentBIndex}, near (${bodyIssue.point.x.toFixed(3)}, ${bodyIssue.point.y.toFixed(3)}); measured clearance ${bodyIssue.clearance.toFixed(4)} cells, required > ${bodyIssue.threshold.toFixed(3)}`);
-    const headIssue = findSelfHeadClearanceIssue(movingPath, COLLISION_STEP);
+    const headIssue = findSelfHeadClearanceIssue(movingPath, COLLISION_STEP, grid.pathOffset);
     if (headIssue) throw new Error(`${label}: arrowhead self-collision at travel ${traveled.toFixed(3)} cells, head versus segment ${headIssue.segmentAIndex}, near (${headIssue.point.x.toFixed(3)}, ${headIssue.point.y.toFixed(3)}); measured clearance ${headIssue.clearance.toFixed(4)} cells, required > ${headIssue.threshold.toFixed(3)}`);
-    if (fullyExited(movingPath, width, height, direction)) return;
+    if (fullyExited(movingPath, width, height, direction, grid)) return;
   }
   throw new Error(`${label}: exit geometry did not fully clear the board`);
 }
@@ -120,12 +123,19 @@ export function validateArrowSelfTraversal(arrow: Arrow, width: number, height: 
 export function validateLevel(level: Level): void {
   if (!Number.isInteger(level.width) || level.width < 1 || !Number.isInteger(level.height) || level.height < 1) throw new Error(`Level ${level.number} has invalid dimensions`);
   if (level.arrows.length === 0) throw new Error(`Level ${level.number} is empty`);
+  const grid = level.grid ?? LEGACY_GRID_SPECIFICATION;
+  if (!Number.isFinite(grid.spacing) || grid.spacing <= 0 || !Number.isFinite(grid.pathOffset)
+    || !Number.isFinite(grid.origin.x) || !Number.isFinite(grid.origin.y)
+    || Math.abs(level.width / grid.spacing - Math.round(level.width / grid.spacing)) > 1e-8
+    || Math.abs(level.height / grid.spacing - Math.round(level.height / grid.spacing)) > 1e-8) {
+    throw new Error(`Level ${level.number} has an invalid visible-grid specification`);
+  }
   const ids = new Set<string>();
   for (const [index, arrow] of level.arrows.entries()) {
     if (ids.has(arrow.id)) throw new Error(`Level ${level.number} has duplicate arrow ID ${arrow.id}`);
     ids.add(arrow.id);
-    validateArrow(arrow, level.width, level.height, level.number);
-    for (const other of level.arrows.slice(0, index)) if (arrowsCollide(arrow, other)) throw new Error(`${arrow.id} visually collides with ${other.id}`);
+    validateArrow(arrow, level.width, level.height, level.number, grid);
+    for (const other of level.arrows.slice(0, index)) if (arrowsCollide(arrow, other, 0, grid.pathOffset)) throw new Error(`${arrow.id} visually collides with ${other.id}`);
   }
 }
 
@@ -150,8 +160,8 @@ function pointAtDistance(route: Point[], stations: number[], at: number, directi
 }
 
 /** Position every point of the flexible arrow after it has been pulled this far along its route. */
-export function moveArrowDistance(arrow: Arrow, traveled: number): Point[] {
-  const route = arrow.path.map(toBoardPoint);
+export function moveArrowDistance(arrow: Arrow, traveled: number, pathOffset = PATH_POINT_OFFSET): Point[] {
+  const route = arrow.path.map((point) => toBoardPoint(point, pathOffset));
   const stations = [0];
   for (let index = 1; index < route.length; index += 1) stations.push(stations[index - 1] + distance(route[index - 1], route[index]));
   const direction = exitDirection(arrow);
@@ -164,10 +174,10 @@ export function moveArrowDistance(arrow: Arrow, traveled: number): Point[] {
 }
 
 /** Deterministically sample the complete swept body; presentation animation uses an independent rAF clock. */
-export function simulateMove(arrow: Arrow, others: Arrow[], width: number, height: number): MoveResult {
+export function simulateMove(arrow: Arrow, others: Arrow[], width: number, height: number, grid: GridSpecification = LEGACY_GRID_SPECIFICATION): MoveResult {
   // Gameplay refuses malformed content instead of silently animating through
   // the arrow's own unretracted body. Catalog validation performs the same check.
-  if (validatedSelfMotion.get(arrow) !== selfMotionSignature(arrow, width, height)) validateArrow(arrow, width, height);
+  if (validatedSelfMotion.get(arrow) !== selfMotionSignature(arrow, width, height, grid)) validateArrow(arrow, width, height, undefined, grid);
   const frames: Point[][] = [];
   const direction = exitDirection(arrow);
   if (Math.max(Math.abs(direction.x), Math.abs(direction.y)) !== 1 || (direction.x === 0 && direction.y === 0)) throw new Error(`${arrow.id} has an invalid exit direction`);
@@ -178,23 +188,23 @@ export function simulateMove(arrow: Arrow, others: Arrow[], width: number, heigh
   let lastSafeTravel = 0;
   for (let index = 1; index <= intervals; index += 1) {
     const traveled = Math.min(maxTravel, index * COLLISION_STEP);
-    const frame = moveArrowDistance(arrow, traveled);
-    const moving = { ...arrow, path: frame.map(toPathPoint) };
-    const blocker = others.find((other) => arrowsCollide(moving, other, COLLISION_STEP));
+    const frame = moveArrowDistance(arrow, traveled, grid.pathOffset);
+    const moving = { ...arrow, path: frame.map((point) => toPathPoint(point, grid.pathOffset)) };
+    const blocker = others.find((other) => arrowsCollide(moving, other, COLLISION_STEP, grid.pathOffset));
     if (blocker) {
       let low = lastSafeTravel;
       let high = traveled;
       // Refine the first deterministic swept-contact sample so the visual impact lands at the blocker.
       for (let refinement = 0; refinement < 7; refinement += 1) {
         const midpoint = (low + high) / 2;
-        const impactPath = moveArrowDistance(arrow, midpoint).map(toPathPoint);
-        if (arrowsCollide({ ...arrow, path: impactPath }, blocker, COLLISION_STEP)) high = midpoint;
+        const impactPath = moveArrowDistance(arrow, midpoint, grid.pathOffset).map((point) => toPathPoint(point, grid.pathOffset));
+        if (arrowsCollide({ ...arrow, path: impactPath }, blocker, COLLISION_STEP, grid.pathOffset)) high = midpoint;
         else low = midpoint;
       }
       return { ok: false, blockedBy: blocker.id, travelDistance: high };
     }
     frames.push(moving.path);
-    if (fullyExited(moving.path, width, height, direction)) return { ok: true, frames, travelDistance: traveled };
+    if (fullyExited(moving.path, width, height, direction, grid)) return { ok: true, frames, travelDistance: traveled };
     lastSafeTravel = traveled;
   }
   return { ok: false, blockedBy: 'boundary', travelDistance: maxTravel };
@@ -203,7 +213,11 @@ export function simulateMove(arrow: Arrow, others: Arrow[], width: number, heigh
 /** Pairwise exits are sufficient because every other arrow is stationary during a move. */
 const blockerCache = new Map<string, Map<string, Set<string>>>();
 const solutionCache = new Map<string, string[] | null>();
-function puzzleKey(level: Level): string { return JSON.stringify([level.width, level.height, level.arrows]); }
+function puzzleKey(level: Level): string {
+  // Grid interpretation affects bounds, rendering-space offsets, and movement;
+  // keep legacy and explicit-grid prototypes from sharing cached solutions.
+  return JSON.stringify([level.width, level.height, level.grid ?? LEGACY_GRID_SPECIFICATION, level.arrows]);
+}
 
 function buildExitBlockers(level: Level): Map<string, Set<string>> {
   const key = puzzleKey(level);
@@ -212,7 +226,7 @@ function buildExitBlockers(level: Level): Map<string, Set<string>> {
   const blockers = new Map(level.arrows.map(({ id }) => [id, new Set<string>()]));
   for (const arrow of level.arrows) for (const other of level.arrows) {
     if (arrow.id === other.id) continue;
-    if (!simulateMove(arrow, [other], level.width, level.height).ok) blockers.get(arrow.id)!.add(other.id);
+    if (!simulateMove(arrow, [other], level.width, level.height, level.grid).ok) blockers.get(arrow.id)!.add(other.id);
   }
   if (blockerCache.size >= 64) blockerCache.clear();
   blockerCache.set(key, blockers);
@@ -330,7 +344,7 @@ export function movedPathIsOffBoard(frames: Point[][], width: number, height: nu
   const finalFrame = frames.at(-1) ?? [];
   if (finalFrame.length === 0) return true;
   const margin = 0.3;
-  const centers = finalFrame.map(toBoardPoint);
+  const centers = finalFrame.map((point) => toBoardPoint(point));
   return centers.every(({ x }) => x >= width + margin)
     || centers.every(({ x }) => x <= -margin)
     || centers.every(({ y }) => y >= height + margin)

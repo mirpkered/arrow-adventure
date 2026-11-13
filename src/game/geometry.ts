@@ -1,4 +1,4 @@
-import type { Arrow, Point } from './types';
+import type { Arrow, GridSpecification, Point } from './types';
 
 /** Default visible SVG body stroke width in board-cell units. */
 export const ARROW_STROKE_WIDTH = 0.12;
@@ -11,26 +11,33 @@ export const ARROW_MAX_RENDERED_WIDTH = 0.18;
 /** Existing half-unit coordinates define a real, globally aligned fine grid. */
 export const BOARD_GRID_SPACING = 0.5;
 export const PATH_POINT_OFFSET = 0.5;
+export const LEGACY_GRID_SPECIFICATION: GridSpecification = {
+  spacing: BOARD_GRID_SPACING,
+  origin: { x: 0, y: 0 },
+  pathOffset: PATH_POINT_OFFSET,
+  includeOuterBoundary: false,
+};
 /** Floating point slack used at exact contacts; it is far smaller than a pixel at board scale. */
 export const GEOMETRY_EPSILON = 1e-8;
 const HEAD_STROKE_WIDTH = 0.036;
 
 type Segment = { a: Point; b: Point };
 
-export function toBoardPoint(point: Point): Point {
-  return { x: point.x + PATH_POINT_OFFSET, y: point.y + PATH_POINT_OFFSET };
+export function toBoardPoint(point: Point, pathOffset = PATH_POINT_OFFSET): Point {
+  return { x: point.x + pathOffset, y: point.y + pathOffset };
 }
 
-export function toPathPoint(point: Point): Point {
-  return { x: point.x - PATH_POINT_OFFSET, y: point.y - PATH_POINT_OFFSET };
+export function toPathPoint(point: Point, pathOffset = PATH_POINT_OFFSET): Point {
+  return { x: point.x - pathOffset, y: point.y - pathOffset };
 }
 
-export function isBoardGridIntersection(point: Point): boolean {
-  return Math.abs(point.x / BOARD_GRID_SPACING - Math.round(point.x / BOARD_GRID_SPACING)) <= GEOMETRY_EPSILON
-    && Math.abs(point.y / BOARD_GRID_SPACING - Math.round(point.y / BOARD_GRID_SPACING)) <= GEOMETRY_EPSILON;
+export function isBoardGridIntersection(point: Point, spacing = BOARD_GRID_SPACING, origin: Point = { x: 0, y: 0 }): boolean {
+  if (!Number.isFinite(spacing) || spacing <= 0) return false;
+  return Math.abs((point.x - origin.x) / spacing - Math.round((point.x - origin.x) / spacing)) <= GEOMETRY_EPSILON
+    && Math.abs((point.y - origin.y) / spacing - Math.round((point.y - origin.y) / spacing)) <= GEOMETRY_EPSILON;
 }
 
-export function arrowHeadTriangle(path: Point[], headSizeWidth = ARROW_HEAD_WIDTH): [Point, Point, Point] {
+export function arrowHeadTriangle(path: Point[], headSizeWidth = ARROW_HEAD_WIDTH, pathOffset = PATH_POINT_OFFSET): [Point, Point, Point] {
   const head = path.at(-1);
   const previous = path.at(-2);
   if (!head || !previous) throw new Error('An arrow head needs a preceding path point');
@@ -40,7 +47,7 @@ export function arrowHeadTriangle(path: Point[], headSizeWidth = ARROW_HEAD_WIDT
   if (!length) throw new Error('An arrow head needs a nonzero direction');
   const direction = { x: dx / length, y: dy / length };
   const perpendicular = { x: -direction.y, y: direction.x };
-  const center = toBoardPoint(head);
+  const center = toBoardPoint(head, pathOffset);
   const scale = headSizeWidth / ARROW_HEAD_WIDTH;
   const tip = { x: center.x + direction.x * 0.36 * scale, y: center.y + direction.y * 0.36 * scale };
   const base = { x: center.x + direction.x * 0.07 * scale, y: center.y + direction.y * 0.07 * scale };
@@ -95,8 +102,8 @@ export function segmentDistance(left: Segment, right: Segment): number {
   );
 }
 
-export function pointToPolylineDistance(point: Point, path: Point[]): number {
-  const centerline = cellCenters(path);
+export function pointToPolylineDistance(point: Point, path: Point[], pathOffset = PATH_POINT_OFFSET): number {
+  const centerline = cellCenters(path, pathOffset);
   return Math.min(...segments(centerline).map((segment) => pointSegmentDistance(point, segment)));
 }
 
@@ -104,13 +111,13 @@ function segments(points: Point[]): Segment[] {
   return points.slice(1).map((point, index) => ({ a: points[index], b: point }));
 }
 
-function cellCenters(points: Point[]): Point[] {
-  return points.map(toBoardPoint);
+function cellCenters(points: Point[], pathOffset = PATH_POINT_OFFSET): Point[] {
+  return points.map((point) => toBoardPoint(point, pathOffset));
 }
 
-export function polylinesCollide(left: Point[], right: Point[], distance = ARROW_COLLISION_WIDTH): boolean {
-  const leftSegments = segments(cellCenters(left));
-  const rightSegments = segments(cellCenters(right));
+export function polylinesCollide(left: Point[], right: Point[], distance = ARROW_COLLISION_WIDTH, pathOffset = PATH_POINT_OFFSET): boolean {
+  const leftSegments = segments(cellCenters(left, pathOffset));
+  const rightSegments = segments(cellCenters(right, pathOffset));
   return leftSegments.some((a) => rightSegments.some((b) => segmentDistance(a, b) <= distance + GEOMETRY_EPSILON));
 }
 
@@ -124,8 +131,8 @@ export type SelfClearanceIssue = {
 };
 
 /** Finds nonadjacent body segments that violate the fixed gameplay clearance. */
-export function findSelfBodyClearanceIssue(path: Point[], extraClearance = 0): SelfClearanceIssue | undefined {
-  const body = segments(cellCenters(path));
+export function findSelfBodyClearanceIssue(path: Point[], extraClearance = 0, pathOffset = PATH_POINT_OFFSET): SelfClearanceIssue | undefined {
+  const body = segments(cellCenters(path, pathOffset));
   const threshold = ARROW_COLLISION_WIDTH + extraClearance;
   let nearest: SelfClearanceIssue | undefined;
   for (let left = 0; left < body.length; left += 1) for (let right = left + 2; right < body.length; right += 1) {
@@ -145,11 +152,11 @@ export function findSelfBodyClearanceIssue(path: Point[], extraClearance = 0): S
 }
 
 /** Checks the arrowhead against all of its own body except the attached final segment. */
-export function findSelfHeadClearanceIssue(path: Point[], extraClearance = 0): SelfClearanceIssue | undefined {
+export function findSelfHeadClearanceIssue(path: Point[], extraClearance = 0, pathOffset = PATH_POINT_OFFSET): SelfClearanceIssue | undefined {
   if (path.length < 3) return undefined;
-  const head = arrowHeadTriangle(path, ARROW_MAX_RENDERED_WIDTH);
+  const head = arrowHeadTriangle(path, ARROW_MAX_RENDERED_WIDTH, pathOffset);
   const headEdges = segments([...head, head[0]]);
-  const body = segments(cellCenters(path.slice(0, -1)));
+  const body = segments(cellCenters(path.slice(0, -1), pathOffset));
   const threshold = ARROW_COLLISION_WIDTH / 2 + HEAD_STROKE_WIDTH / 2 + extraClearance;
   let nearest: SelfClearanceIssue | undefined;
   for (let index = 0; index < body.length; index += 1) {
@@ -175,10 +182,10 @@ function pointInPolygon(point: Point, polygon: Point[]): boolean {
   return inside;
 }
 
-function polylineHitsPolygon(path: Point[], polygon: Point[]): boolean {
+function polylineHitsPolygon(path: Point[], polygon: Point[], pathOffset = PATH_POINT_OFFSET): boolean {
   const tolerance = ARROW_COLLISION_WIDTH / 2 + HEAD_STROKE_WIDTH / 2;
   const polygonEdges = segments([...polygon, polygon[0]]);
-  return segments(cellCenters(path)).some((line) => pointInPolygon(line.a, polygon)
+  return segments(cellCenters(path, pathOffset)).some((line) => pointInPolygon(line.a, polygon)
     || pointInPolygon(line.b, polygon)
     || polygonEdges.some((edge) => segmentDistance(line, edge) <= tolerance + GEOMETRY_EPSILON));
 }
@@ -192,27 +199,27 @@ function polygonsCollide(left: Point[], right: Point[], clearance = 0): boolean 
 }
 
 /** Matches visible arrow bodies and triangular heads, not just occupied grid points. */
-export function arrowsCollide(left: Arrow, right: Arrow, extraClearance = 0): boolean {
-  if (polylinesCollide(left.path, right.path, ARROW_COLLISION_WIDTH + extraClearance)) return true;
-  const leftHead = arrowHeadTriangle(left.path, ARROW_MAX_RENDERED_WIDTH);
-  const rightHead = arrowHeadTriangle(right.path, ARROW_MAX_RENDERED_WIDTH);
+export function arrowsCollide(left: Arrow, right: Arrow, extraClearance = 0, pathOffset = PATH_POINT_OFFSET): boolean {
+  if (polylinesCollide(left.path, right.path, ARROW_COLLISION_WIDTH + extraClearance, pathOffset)) return true;
+  const leftHead = arrowHeadTriangle(left.path, ARROW_MAX_RENDERED_WIDTH, pathOffset);
+  const rightHead = arrowHeadTriangle(right.path, ARROW_MAX_RENDERED_WIDTH, pathOffset);
   if (extraClearance > 0) {
     // Expand the body/head contact tolerances by the maximum travel between
     // collision samples. This makes the sampled sweep conservative.
-    return polylinesCollide(left.path, right.path, ARROW_COLLISION_WIDTH + extraClearance)
-      || sweptHeadBodyContact(left.path, rightHead, extraClearance)
-      || sweptHeadBodyContact(right.path, leftHead, extraClearance)
+    return polylinesCollide(left.path, right.path, ARROW_COLLISION_WIDTH + extraClearance, pathOffset)
+      || sweptHeadBodyContact(left.path, rightHead, extraClearance, pathOffset)
+      || sweptHeadBodyContact(right.path, leftHead, extraClearance, pathOffset)
       || polygonsCollide(leftHead, rightHead, extraClearance);
   }
-  return polylineHitsPolygon(left.path, rightHead)
-    || polylineHitsPolygon(right.path, leftHead)
+  return polylineHitsPolygon(left.path, rightHead, pathOffset)
+    || polylineHitsPolygon(right.path, leftHead, pathOffset)
     || polygonsCollide(leftHead, rightHead);
 }
 
-function sweptHeadBodyContact(path: Point[], polygon: Point[], extraClearance: number): boolean {
+function sweptHeadBodyContact(path: Point[], polygon: Point[], extraClearance: number, pathOffset = PATH_POINT_OFFSET): boolean {
   const polygonEdges = segments([...polygon, polygon[0]]);
   const tolerance = ARROW_COLLISION_WIDTH / 2 + HEAD_STROKE_WIDTH / 2 + extraClearance;
-  return segments(cellCenters(path)).some((line) => pointInPolygon(line.a, polygon)
+  return segments(cellCenters(path, pathOffset)).some((line) => pointInPolygon(line.a, polygon)
     || pointInPolygon(line.b, polygon)
     || polygonEdges.some((edge) => segmentDistance(line, edge) <= tolerance + GEOMETRY_EPSILON));
 }

@@ -40,7 +40,7 @@ export function measureBoardDensity(level: Level, sampleStep = 0.25, gapDistance
   for (let y = halfStep; y < level.height; y += sampleStep) for (let x = halfStep; x < level.width; x += sampleStep) {
     samples += 1;
     const point = { x, y };
-    const nearest = Math.min(...level.arrows.map((arrow) => pointToPolylineDistance(point, arrow.path)));
+    const nearest = Math.min(...level.arrows.map((arrow) => pointToPolylineDistance(point, arrow.path, level.grid?.pathOffset)));
     if (nearest > gapDistance) largeGapSamples += 1;
   }
   const boardArea = level.width * level.height;
@@ -70,7 +70,7 @@ export function measureFootprintDensity(entry: Pick<CuratedLevel, 'puzzle' | 'fo
   for (let y = halfStep; y < puzzle.height; y += sampleStep) for (let x = halfStep; x < puzzle.width; x += sampleStep) {
     if (!pointInFootprint({ x, y }, footprint)) continue;
     samples += 1;
-    const nearest = Math.min(...puzzle.arrows.map((arrow) => pointToPolylineDistance({ x, y }, arrow.path)));
+    const nearest = Math.min(...puzzle.arrows.map((arrow) => pointToPolylineDistance({ x, y }, arrow.path, puzzle.grid?.pathOffset)));
     if (nearest > gapDistance) largeGapSamples += 1;
   }
   for (const arrow of puzzle.arrows) for (let index = 1; index < arrow.path.length; index += 1) {
@@ -123,7 +123,8 @@ export function measureNeighborSpacing(level: Level): NeighborSpacing {
  * default 0.75 distance includes a 0.5-grid adjacent line and a 45-degree
  * neighbor (sqrt(0.5²+0.5²)); this is descriptive, not a collision rule.
  */
-export function measureComposition(level: Level): CompositionMetrics {
+export function measureComposition(level: Level, adjacentDistance = 0.75): CompositionMetrics {
+  if (!Number.isFinite(adjacentDistance) || adjacentDistance < 0) throw new Error('Composition adjacency distance must be finite and nonnegative');
   const segmentsByArrow = level.arrows.map((arrow) => arrow.path.slice(1).map((point, index) => ({
     a: arrow.path[index], b: point,
     length: Math.hypot(point.x - arrow.path[index].x, point.y - arrow.path[index].y),
@@ -152,11 +153,11 @@ export function measureComposition(level: Level): CompositionMetrics {
       for (const otherArrow of others) for (const other of otherArrow) {
         const distance = segmentDistance(segment, other);
         nearest = Math.min(nearest, distance);
-        if (distance <= 0.75 && parallelOverlapLength(segment, other) > 0) {
+        if (distance <= adjacentDistance && parallelOverlapLength(segment, other) > 0) {
           parallelCorridorLength += parallelOverlapLength(segment, other);
         }
       }
-      if (nearest <= 0.75) adjacentPathLength += segment.length;
+      if (nearest <= adjacentDistance) adjacentPathLength += segment.length;
       if (nearest <= 1.5) competingPathLength += segment.length;
     }
   }
@@ -188,7 +189,7 @@ export function footprintHeatmap(entry: Pick<CuratedLevel, 'puzzle' | 'footprint
     let row = '';
     for (let x = sampleStep / 2; x < entry.puzzle.width; x += sampleStep) {
       if (!pointInFootprint({ x, y }, entry.footprint)) row += ' ';
-      else if (Math.min(...entry.puzzle.arrows.map((arrow) => pointToPolylineDistance({ x, y }, arrow.path))) > gapDistance) row += '!';
+      else if (Math.min(...entry.puzzle.arrows.map((arrow) => pointToPolylineDistance({ x, y }, arrow.path, entry.puzzle.grid?.pathOffset))) > gapDistance) row += '!';
       else row += '#';
     }
     rows.push(row.trimEnd());

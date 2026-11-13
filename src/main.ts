@@ -2,7 +2,7 @@ import { CURATED_LEVELS, getCuratedLevel, getNextCuratedLevel } from './game/cat
 import { completeLevel, directionName, exitDirection, moveArrowDistance, nearestArrowAt, simulateMove, solveLevel } from './game/rules';
 import { createActionGate } from './game/input';
 import { advanceSession, createRun, loseHeart, shouldPersistProgress, type PrototypeSession } from './game/session';
-import { ARROW_STROKE_WIDTH, arrowHeadTriangle, toBoardPoint, toPathPoint } from './game/geometry';
+import { ARROW_STROKE_WIDTH, PATH_POINT_OFFSET, arrowHeadTriangle, toBoardPoint, toPathPoint } from './game/geometry';
 import { GameAudio } from './app/audio';
 import { movementDuration, NORMAL_MOVE_SPEED, RETURN_MOVE_SPEED } from './app/motion';
 import { loadGameSave, loadSettings, prefersDarkTheme, retireIncompatibleProgress, saveGame, saveSettings, storageKeysFor, type Appearance, type GameSave, type PlayerSettings, type StorageLike } from './app/persistence';
@@ -253,14 +253,22 @@ function prototypeHudLetter(): string {
   return index >= 0 ? String.fromCharCode(65 + index) : '?';
 }
 
-function pointString(points: Point[]): string { return points.map((point) => { const board = toBoardPoint(point); return `${board.x},${board.y}`; }).join(' '); }
+function activePathOffset(): number { return level.grid?.pathOffset ?? PATH_POINT_OFFSET; }
+function arrowHeadForActiveGrid(path: Point[]): ReturnType<typeof arrowHeadTriangle> {
+  return activePathOffset() === PATH_POINT_OFFSET
+    ? arrowHeadTriangle(path)
+    : arrowHeadTriangle(path, undefined, activePathOffset());
+}
+function pointString(points: Point[]): string { return points.map((point) => { const board = toBoardPoint(point, activePathOffset()); return `${board.x},${board.y}`; }).join(' '); }
 function qaArrowColor(id: string): string { let hash = 0; for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) >>> 0; return `hsl(${hash % 360} 65% 48%)`; }
 
 function arrowMarkup(arrow: Arrow): string {
-  const [tip, wingA, wingB] = arrowHeadTriangle(arrow.path);
+  const [tip, wingA, wingB] = activePathOffset() === PATH_POINT_OFFSET
+    ? arrowHeadTriangle(arrow.path)
+    : arrowHeadTriangle(arrow.path, undefined, activePathOffset());
   const classes = ['arrow', animatingId === arrow.id ? 'moving' : '', redArrowIds.has(arrow.id) ? 'is-red' : '', qaHighlightedArrowId === arrow.id ? 'qa-safe-highlight' : ''].filter(Boolean).join(' ');
   const points = pointString(arrow.path);
-  const tail = toBoardPoint(arrow.path[0]);
+  const tail = toBoardPoint(arrow.path[0], activePathOffset());
   const middle = arrow.path[Math.floor(arrow.path.length / 2)];
   const color = redArrowIds.has(arrow.id) ? 'var(--danger)' : diagnostics.ownership ? qaArrowColor(arrow.id) : 'var(--arrow-ink)';
   return `<g class="${classes}" data-arrow="${escapeHtml(arrow.id)}" role="button" tabindex="0" aria-label="Arrow facing ${directionName(exitDirection(arrow))}, ${Math.round(arrow.path.length - 1)} path points" style="--arrow-current-color:${color}">
@@ -268,14 +276,14 @@ function arrowMarkup(arrow: Arrow): string {
     <polyline class="arrow-line" points="${points}" />
     <circle class="tail-dot" cx="${tail.x}" cy="${tail.y}" r=".09" />
     <path class="arrow-head" d="M ${tip.x} ${tip.y} L ${wingA.x} ${wingA.y} L ${wingB.x} ${wingB.y} Z" />
-    ${diagnostics.ids ? `<text class="debug-id" x="${toBoardPoint(middle).x}" y="${toBoardPoint(middle).y}">${escapeHtml(arrow.id)}</text>` : ''}
+    ${diagnostics.ids ? `<text class="debug-id" x="${toBoardPoint(middle, activePathOffset()).x}" y="${toBoardPoint(middle, activePathOffset()).y}">${escapeHtml(arrow.id)}</text>` : ''}
   </g>`;
 }
 
 function boardMarkup(): string {
   const box = viewport.viewBox;
   return `<div class="board-wrap"><svg class="board" width="100%" height="100%" viewBox="${box.x} ${box.y} ${box.width} ${box.height}" role="group" aria-label="Puzzle board, ${arrows.length} arrows remaining" aria-roledescription="zoomable puzzle board">
-    ${boardGridMarkup(level.width, level.height, diagnostics.geometry)}${arrows.map(arrowMarkup).join('')}
+    ${boardGridMarkup(level.width, level.height, diagnostics.geometry, level.grid)}${arrows.map(arrowMarkup).join('')}
   </svg></div>`;
 }
 
@@ -285,7 +293,7 @@ function fitBoardToComposition(preserveZoom = false): void {
   if (!boardWrap || !board) return;
   const rect = boardWrap.getBoundingClientRect();
   if (rect.width < 1 || rect.height < 1) return;
-  viewport.fitToContent(arrowCompositionBounds(level.arrows), rect.width, rect.height, 0.12, preserveZoom);
+  viewport.fitToContent(arrowCompositionBounds(level.arrows, activePathOffset()), rect.width, rect.height, 0.12, preserveZoom);
   const box = viewport.viewBox;
   board.setAttribute('viewBox', `${box.x} ${box.y} ${box.width} ${box.height}`);
 }
@@ -304,10 +312,10 @@ function updateAnimatedArrow(group: SVGGElement, arrow: Arrow, path: Point[]): v
   const head = group.querySelector<SVGPathElement>('.arrow-head');
   if (!line || !tailDot || !head) return;
   line.setAttribute('points', pointString(path));
-  const tail = toBoardPoint(path[0]);
+  const tail = toBoardPoint(path[0], activePathOffset());
   tailDot.setAttribute('cx', `${tail.x}`);
   tailDot.setAttribute('cy', `${tail.y}`);
-  const [tip, wingA, wingB] = arrowHeadTriangle(path);
+  const [tip, wingA, wingB] = arrowHeadForActiveGrid(path);
   head.setAttribute('d', `M ${tip.x} ${tip.y} L ${wingA.x} ${wingA.y} L ${wingB.x} ${wingB.y} Z`);
 }
 
@@ -319,7 +327,8 @@ function animateDistance(arrow: Arrow, group: SVGGElement, startDistance: number
     if (token !== animationToken) return;
     const progress = Math.min(1, (now - startedAt) / duration);
     const traveled = startDistance + (endDistance - startDistance) * progress;
-    const path = moveArrowDistance({ ...arrow, path: original }, traveled).map(toPathPoint);
+    const pathOffset = activePathOffset();
+    const path = moveArrowDistance({ ...arrow, path: original }, traveled, pathOffset).map((point) => toPathPoint(point, pathOffset));
     updateAnimatedArrow(group, arrow, path);
     if (progress < 1) requestAnimationFrame(tick);
     else done();
@@ -340,7 +349,7 @@ function attemptMove(id: string): void {
   if (busy || screen !== 'game') return;
   const arrow = arrows.find((item) => item.id === id);
   if (!arrow || !actionGate.accept(performance.now())) return;
-  const result = simulateMove(arrow, arrows.filter((item) => item.id !== id), level.width, level.height);
+  const result = simulateMove(arrow, arrows.filter((item) => item.id !== id), level.width, level.height, level.grid);
   const group = [...app.querySelectorAll<SVGGElement>('[data-arrow]')].find((item) => item.dataset.arrow === id);
   if (!group) return;
   const original = arrow.path.map((point) => ({ ...point }));
@@ -465,7 +474,7 @@ function handleBoardPointerUp(event: PointerEvent): void {
   activePointers.delete(event.pointerId);
   if (isTap && board && screen === 'game' && !busy) {
     const point = eventBoardPoint(event, board);
-    const id = point && nearestArrowAt(point, arrows);
+    const id = point && nearestArrowAt(point, arrows, undefined, activePathOffset());
     if (id) attemptMove(id);
   }
   if (activePointers.size === 0) {
@@ -499,7 +508,7 @@ function inspectCurrentBoard(selectedArrowId?: string): QABoardSnapshot {
   const currentLevel: Level = { ...level, arrows };
   const safe = legalMoves(currentLevel).map(({ arrow }) => arrow.id);
   const solution = solveLevel(currentLevel);
-  const result = selected ? simulateMove(selected, arrows.filter(({ id }) => id !== selected.id), level.width, level.height) : undefined;
+  const result = selected ? simulateMove(selected, arrows.filter(({ id }) => id !== selected.id), level.width, level.height, level.grid) : undefined;
   return {
     levelNumber: catalogEntry.number,
     boardTitle,

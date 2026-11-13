@@ -1,5 +1,17 @@
 export type Point = { x: number; y: number };
 
+/**
+ * Per-puzzle visible grid and path-local transform. `spacing` is the distance
+ * between displayed intersections; `pathOffset` maps authored path vertices
+ * into that board coordinate frame. Omitted specs keep the legacy half-unit grid.
+ */
+export type GridSpecification = {
+  spacing: number;
+  origin: Point;
+  pathOffset: number;
+  includeOuterBoundary: boolean;
+};
+
 export type Arrow = {
   id: string;
   /** Board-grid vertices ordered from tail to arrowhead; each step is one board unit. */
@@ -11,6 +23,7 @@ export type Level = {
   width: number;
   height: number;
   arrows: Arrow[];
+  grid?: GridSpecification;
 };
 
 export type CuratedLevel = {

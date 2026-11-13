@@ -72,7 +72,7 @@ export function auditReachableStates(level: Level): StateSpaceAudit {
 /** Returns immediate safe moves using the same movement simulator as play and the solver. */
 export function legalMoves(level: Level): Array<{ arrow: Arrow; blockedBy?: string }> {
   return level.arrows.flatMap((arrow) => {
-    const result = simulateMove(arrow, level.arrows.filter(({ id }) => id !== arrow.id), level.width, level.height);
+    const result = simulateMove(arrow, level.arrows.filter(({ id }) => id !== arrow.id), level.width, level.height, level.grid);
     return result.ok ? [{ arrow }] : [];
   });
 }
@@ -81,7 +81,7 @@ function buildBlockers(level: Level): Map<string, Set<string>> {
   const blockers = new Map(level.arrows.map(({ id }) => [id, new Set<string>()]));
   for (const arrow of level.arrows) for (const other of level.arrows) {
     if (arrow.id === other.id) continue;
-    if (!simulateMove(arrow, [other], level.width, level.height).ok) blockers.get(arrow.id)!.add(other.id);
+    if (!simulateMove(arrow, [other], level.width, level.height, level.grid).ok) blockers.get(arrow.id)!.add(other.id);
   }
   return blockers;
 }

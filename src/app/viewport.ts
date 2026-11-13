@@ -5,12 +5,12 @@ export type BoardViewBox = { x: number; y: number; width: number; height: number
 export type BoardBounds = { minX: number; minY: number; maxX: number; maxY: number };
 
 /** Includes path strokes, the complete head triangle, and the tail marker. */
-export function arrowCompositionBounds(arrows: Arrow[]): BoardBounds | undefined {
+export function arrowCompositionBounds(arrows: Arrow[], pathOffset = 0.5): BoardBounds | undefined {
   if (arrows.length === 0) return undefined;
   const points: Point[] = [];
   for (const arrow of arrows) {
-    points.push(...arrow.path.map(toBoardPoint), ...arrowHeadTriangle(arrow.path));
-    const tail = toBoardPoint(arrow.path[0]);
+    points.push(...arrow.path.map((point) => toBoardPoint(point, pathOffset)), ...arrowHeadTriangle(arrow.path, ARROW_HEAD_WIDTH, pathOffset));
+    const tail = toBoardPoint(arrow.path[0], pathOffset);
     points.push({ x: tail.x - 0.09, y: tail.y - 0.09 }, { x: tail.x + 0.09, y: tail.y + 0.09 });
   }
   const padding = Math.max(ARROW_STROKE_WIDTH / 2, ARROW_HEAD_WIDTH * 0.025);
