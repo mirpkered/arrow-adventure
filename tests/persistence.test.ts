@@ -13,11 +13,17 @@ function storageFixture(initial: Record<string, string> = {}) {
 }
 
 describe('local game persistence', () => {
+  it('uses schema-v3 progress keys while keeping preferences independently versioned', () => {
+    expect(PRODUCTION_STORAGE_KEYS.game).toBe('arrow-adventure.production.game.v3');
+    expect(PRODUCTION_STORAGE_KEYS.retiredGame).toBe('arrow-adventure.production.game.v2');
+    expect(PRODUCTION_STORAGE_KEYS.settings).toBe('arrow-adventure.production.settings.v1');
+  });
+
   it('saves and restores completed levels, active arrows, hearts and persistent failure marks', () => {
     const { storage } = storageFixture();
     const first = CURATED_LEVELS[0];
     const save = {
-      version: 2 as const,
+      version: 3 as const,
       catalogVersion: first.catalogVersion,
       currentLevelId: first.id,
       completedLevelIds: [],
@@ -42,7 +48,7 @@ describe('local game persistence', () => {
   it('rejects unknown content, invalid hearts, and inconsistent completion records', () => {
     const { storage } = storageFixture();
     const level = CURATED_LEVELS[0];
-    const valid = { version: 2, catalogVersion: level.catalogVersion, currentLevelId: level.id, completedLevelIds: [], remainingArrowIds: level.puzzle.arrows.map(({ id }) => id), redArrowIds: [], hearts: 3, levelComplete: false };
+    const valid = { version: 3, catalogVersion: level.catalogVersion, currentLevelId: level.id, completedLevelIds: [], remainingArrowIds: level.puzzle.arrows.map(({ id }) => id), redArrowIds: [], hearts: 3, levelComplete: false };
     for (const invalid of [
       { ...valid, currentLevelId: 'legacy-level-040' },
       { ...valid, catalogVersion: 'retired-catalog' },
@@ -84,7 +90,7 @@ describe('local game persistence', () => {
   it('isolates QA progress and preferences from production on the shared GitHub Pages origin', () => {
     const { storage } = storageFixture();
     const level = CURATED_LEVELS[0];
-    const save = { version: 2 as const, catalogVersion: level.catalogVersion, currentLevelId: level.id, completedLevelIds: [], remainingArrowIds: level.puzzle.arrows.map(({ id }) => id), redArrowIds: [], hearts: 3, levelComplete: false };
+    const save = { version: 3 as const, catalogVersion: level.catalogVersion, currentLevelId: level.id, completedLevelIds: [], remainingArrowIds: level.puzzle.arrows.map(({ id }) => id), redArrowIds: [], hearts: 3, levelComplete: false };
     const qaSettings = { version: 1 as const, appearance: 'dark' as const, backgroundMusic: false, soundEffects: false };
     saveGame(storage, save, QA_STORAGE_KEYS);
     saveSettings(storage, qaSettings, QA_STORAGE_KEYS);
@@ -96,12 +102,13 @@ describe('local game persistence', () => {
     expect(QA_STORAGE_KEYS.settings).not.toBe(PRODUCTION_STORAGE_KEYS.settings);
   });
 
-  it('retires old Round 8 progress while preserving unrelated saved preferences', () => {
+  it('resets version-2 Adventure progress for the new catalog while preserving appearance and audio preferences', () => {
     const level = CURATED_LEVELS[0];
-    const oldSave = JSON.stringify({ version: 1, currentLevelId: 'shared-board-006', completedLevelIds: ['shared-board-001'] });
+    const oldSave = JSON.stringify({ version: 2, catalogVersion: 'first-flight-r1', currentLevelId: 'first-flight-010', completedLevelIds: ['first-flight-001'], remainingArrowIds: ['a1'], redArrowIds: [], hearts: 1, levelComplete: false });
     const settings = JSON.stringify({ version: 1, appearance: 'dark', backgroundMusic: false, soundEffects: false });
     const { storage, data } = storageFixture({
       [PRODUCTION_STORAGE_KEYS.retiredGame]: oldSave,
+      'arrow-adventure.production.game.v1': oldSave,
       'mirpworks.arrow-adventure.save.v1': oldSave,
       'mirpworks.arrow-adventure.save.v2': oldSave,
       [PRODUCTION_STORAGE_KEYS.settings]: settings,
@@ -110,10 +117,11 @@ describe('local game persistence', () => {
     retireIncompatibleProgress(storage);
     expect(loadGameSave(storage, CURATED_LEVELS)).toBeNull();
     expect(data.has(PRODUCTION_STORAGE_KEYS.retiredGame)).toBe(false);
+    expect(data.has('arrow-adventure.production.game.v1')).toBe(false);
     expect(data.has('mirpworks.arrow-adventure.save.v1')).toBe(false);
     expect(data.has('mirpworks.arrow-adventure.save.v2')).toBe(false);
     expect(data.get(PRODUCTION_STORAGE_KEYS.settings)).toBe(settings);
-    const newSave = { version: 2 as const, catalogVersion: level.catalogVersion, currentLevelId: level.id,
+    const newSave = { version: 3 as const, catalogVersion: level.catalogVersion, currentLevelId: level.id,
       completedLevelIds: [], remainingArrowIds: level.puzzle.arrows.map(({id}) => id), redArrowIds: [], hearts: 3, levelComplete: false };
     expect(saveGame(storage, newSave)).toBe(true);
     expect(loadGameSave(storage, CURATED_LEVELS)).toEqual(newSave);

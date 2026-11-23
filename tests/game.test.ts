@@ -15,27 +15,48 @@ import { movementDuration, NORMAL_MOVE_SPEED, RETURN_MOVE_SPEED } from '../src/a
 import { auditReachableStates } from '../src/game/stateAudit';
 import type { Arrow, Level, Point } from '../src/game/types';
 import { ARCHIVED_ROUND8_LEVELS } from '../src/game/archive/catalog-round8';
+import archivedRound9 from '../src/game/archive/adventure-catalog-first-flight-r1.json';
 
 const styleSource = readFileSync(fileURLToPath(new URL('../src/style.css', import.meta.url)), 'utf8');
 const titleSceneSource = readFileSync(fileURLToPath(new URL('../public/branding/arrow-adventure-title-scene.svg', import.meta.url)), 'utf8');
 const makeArrow = (id: string, path: Point[]): Arrow => ({ id, path });
 
-describe('Round 9 curated catalog', () => {
-  it('contains ten new stable IDs, seven abstract designs and three silhouettes', () => {
-    expect(CURATED_LEVELS).toHaveLength(10);
-    expect(CURATED_LEVELS.map(({number}) => number)).toEqual(Array.from({length:10}, (_, index) => index + 1));
-    expect(CURATED_LEVELS.map(({id}) => id)).toEqual(Array.from({length:10}, (_, index) => `first-flight-${String(index + 1).padStart(3, '0')}`));
-    expect(CURATED_LEVELS.filter(({composition}) => composition === 'abstract')).toHaveLength(7);
-    expect(CURATED_LEVELS.filter(({composition}) => composition === 'silhouette')).toHaveLength(3);
+describe('Round 10 curated catalog', () => {
+  it('contains five stable, ordered true-grid levels with deliberate progression metadata', () => {
+    expect(CURATED_LEVELS).toHaveLength(5);
+    expect(CURATED_LEVELS.map(({number}) => number)).toEqual([1, 2, 3, 4, 5]);
+    expect(CURATED_LEVELS.map(({id}) => id)).toEqual(Array.from({length:5}, (_, index) => `first-flight-${String(index + 1).padStart(3, '0')}`));
+    expect(CURATED_LEVELS.map(({title}) => title)).toEqual(['First Steps', 'Close Quarters', 'Winding Paths', 'The Weave', 'First Challenge']);
+    expect(CURATED_LEVELS.map(({difficulty}) => difficulty)).toEqual(['intro', 'easy', 'easy-medium', 'medium', 'medium-hard']);
+    expect(CURATED_LEVELS.every(({composition}) => composition === 'abstract')).toBe(true);
+    for (const entry of CURATED_LEVELS) {
+      expect(entry.catalogVersion).toBe('first-flight-r2-true-grid');
+      expect(entry.contentVersion).toBe(1);
+      expect(entry.puzzle.grid).toEqual({ spacing: 1, origin: { x: 0, y: 0 }, pathOffset: 0, includeOuterBoundary: true });
+      expect(entry.puzzle.width).toBeGreaterThan(0);
+      expect(entry.puzzle.height).toBeGreaterThan(0);
+      for (const arrow of entry.puzzle.arrows) for (let index = 0; index < arrow.path.length; index++) {
+        const point = arrow.path[index];
+        expect(Number.isInteger(point.x) && Number.isInteger(point.y), `${entry.id}/${arrow.id} visible-grid vertex`).toBe(true);
+        expect(point.x).toBeGreaterThanOrEqual(0); expect(point.x).toBeLessThanOrEqual(entry.puzzle.width);
+        expect(point.y).toBeGreaterThanOrEqual(0); expect(point.y).toBeLessThanOrEqual(entry.puzzle.height);
+        if (index > 0) {
+          const previous = arrow.path[index - 1];
+          const dx = Math.abs(point.x - previous.x), dy = Math.abs(point.y - previous.y);
+          expect(Math.max(dx, dy)).toBe(1);
+          expect(dx === 0 || dy === 0 || dx === dy).toBe(true);
+        }
+      }
+    }
     expect(getCuratedLevel(1)?.id).toBe('first-flight-001');
     expect(getNextCuratedLevel(CURATED_LEVELS[0])?.number).toBe(2);
     expect(getNextCuratedLevel(CURATED_LEVELS.at(-1)!)).toBeUndefined();
     expect(() => validateCuratedLevels()).not.toThrow();
   });
-  it('checks each new arrow, runtime move, solver and exact reachable-state audit', () => {
+  it('checks geometry, solver/runtime agreement, and every exact reachable-state audit', () => {
     let auditedArrows = 0;
     for (const entry of CURATED_LEVELS) {
-      expect(entry.catalogVersion).toBe('first-flight-r1');
+      expect(entry.catalogVersion).toBe('first-flight-r2-true-grid');
       expect(entry.contentVersion).toBe(1);
       expect(() => validateLevel(entry.puzzle), entry.id).not.toThrow();
       const solution = solveLevel(entry.puzzle);
@@ -43,7 +64,7 @@ describe('Round 9 curated catalog', () => {
       let remaining = [...entry.puzzle.arrows];
       for (const id of solution!) {
         const arrow = remaining.find(({id: candidate}) => candidate === id)!;
-        expect(simulateMove(arrow, remaining.filter(({id: candidate}) => candidate !== id), entry.puzzle.width, entry.puzzle.height).ok).toBe(true);
+        expect(simulateMove(arrow, remaining.filter(({id: candidate}) => candidate !== id), entry.puzzle.width, entry.puzzle.height, entry.puzzle.grid).ok).toBe(true);
         remaining = remaining.filter(({id: candidate}) => candidate !== id);
       }
       expect(remaining).toHaveLength(0);
@@ -53,7 +74,7 @@ describe('Round 9 curated catalog', () => {
       expect(report.dependencyCycles, entry.id).toEqual([]);
       expect(report.terminalStates).toBe(1);
       for (const arrow of entry.puzzle.arrows) {
-        expect(() => validateArrow(arrow, entry.puzzle.width, entry.puzzle.height, entry.number), `${entry.number}/${arrow.id}`).not.toThrow();
+        expect(() => validateArrow(arrow, entry.puzzle.width, entry.puzzle.height, entry.number, entry.puzzle.grid), `${entry.number}/${arrow.id}`).not.toThrow();
         auditedArrows += 1;
       }
     }
@@ -70,26 +91,24 @@ describe('Round 9 curated catalog', () => {
       expect(solveLevel(entry.puzzle)).toEqual(solution);
     }
   });
-  it('retains the prior six puzzles in a non-playable archive', () => {
+  it('retains the previous ten-level provisional catalog and six-level release archive outside active play', () => {
+    expect(archivedRound9.catalogVersion).toBe('first-flight-r1');
+    expect(archivedRound9.levels).toHaveLength(10);
+    expect(archivedRound9.levels.map(({id}) => id)).toEqual(Array.from({length:10}, (_, index) => `first-flight-${String(index + 1).padStart(3, '0')}`));
     expect(ARCHIVED_ROUND8_LEVELS.map(({puzzle}) => puzzle.arrows.length)).toEqual([7,12,7,10,8,16]);
     expect(CURATED_LEVELS.some(({id}) => id.startsWith('shared-board-'))).toBe(false);
   });
-  it('freezes the ten new deterministic puzzle definitions', async () => {
+  it('freezes the five deterministic puzzle definitions', async () => {
     const fingerprints = await Promise.all(CURATED_LEVELS.map(async ({puzzle}) => {
       const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(puzzle)));
       return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
     }));
     expect(fingerprints).toEqual([
-      '2c4b72464434107be82ac7b217aab4afd7bd38795d6ee62f3c46405b8c45d02f',
-      '353cf1d20646f92ee0521940fc1d52ac60f67e700538e81df34740fb1e3ac1a7',
-      'ccd0d82f825e6ae0192c47f9cd4059df32c48c38ea72067ec33966511bb6357b',
-      '91ba46c294517f0823201ed7af988786668891d20c5a185128e913c72eeff4b5',
-      'ecf21ffb72d2bd130e7c360b30554f7942eb362084b52a3603b98c9ef2249e68',
-      '27ce40a5eeb54e0df220f179c0f20df9971bf26c1c2170bb9b232bcb232e5560',
-      'bc399f6cb1d583c5a5c4a1a1cd9816d07f583dc6624c57c45edad6ff1f958d15',
-      'e654dcbc2fe2783661d91e0a3690a8d8e5ae38c6b65ed29acfe98dfc7c96d466',
-      '40a6f60fcccc5f866502e66a8c8d0f27259298ea1a4593f2ba59e230430534f8',
-      'a734cb203052cb67eacf32a8cc1c79a2a911087411f19675cca4ef3492f4d424',
+      '190b3fc27952e948ba9da079cb18392d654c026ecf6d11cd5261ff6b9d13ade4',
+      '14e6e1dcbf82e4bade2b62d5e5ad2bfe741d7bfdfa8412e972c9916eccfd8cbb',
+      'a166c2a94be373622217f26d70cef1632a04122360e308289f3b16f650562081',
+      '0f1a6dcf828a7f1cd35f6a1e7d479b683e347e26f21862afa35af8b5d1f3ba33',
+      '98e3d082ac926431258f88244fee11b0b7234546ec032c58bfb3399195360187',
     ]);
   });
   it('rejects duplicate IDs, numbering gaps and mismatched puzzle metadata', () => {
@@ -268,9 +287,9 @@ describe('shared arrow geometry and movement', () => {
 
   it('uses rendered geometry to detect a blocked move through the complete body and exit route', () => {
     const level = CURATED_LEVELS[0].puzzle;
-    const arrowA = level.arrows.find((arrow) => !simulateMove(arrow, level.arrows.filter(({id}) => id !== arrow.id), level.width, level.height).ok)!;
+    const arrowA = level.arrows.find((arrow) => !simulateMove(arrow, level.arrows.filter(({id}) => id !== arrow.id), level.width, level.height, level.grid).ok)!;
     const remaining = level.arrows.filter(({id}) => id !== arrowA.id);
-    const result = simulateMove(arrowA, remaining, level.width, level.height);
+    const result = simulateMove(arrowA, remaining, level.width, level.height, level.grid);
     expect(result.ok).toBe(false);
   });
 
@@ -300,7 +319,7 @@ describe('shared arrow geometry and movement', () => {
       let remaining = entry.puzzle.arrows;
       for (const id of solution) {
         const arrow = remaining.find((candidate) => candidate.id === id)!;
-        const result = simulateMove(arrow, remaining.filter((candidate) => candidate.id !== id), entry.puzzle.width, entry.puzzle.height);
+        const result = simulateMove(arrow, remaining.filter((candidate) => candidate.id !== id), entry.puzzle.width, entry.puzzle.height, entry.puzzle.grid);
         expect(result.ok, `${entry.id}: ${id}`).toBe(true);
         if (!result.ok) break;
         expect(result.travelDistance).toBeGreaterThan(0);
@@ -434,7 +453,7 @@ describe('QA presentation controls and mobile shell', () => {
     expect(qaSource).toContain('[1, 1.5, 2, 2.5]');
     expect(qaSource).toContain('[0.12, 0.15, 0.18]');
     for (const label of ['Arrow IDs', 'Path ownership', 'Hit targets', 'Board geometry', 'Candidate', 'Reset QA state', 'Remaining IDs', 'Solver route', 'Collision check', 'Highlight one legal arrow', 'No legal moves']) expect(qaSource).toContain(label);
-    expect(qaSource).toMatch(/\[1,2,3,4,5,6\]\.map/);
+    expect(qaSource).toContain('Array.from({ length: options.levelCount }, (_, index) => index + 1)');
     expect(qaSource).toContain('data-level="${value}"');
     expect(qaSource).toContain('2000');
     expect(appSource).toMatch(/import\.meta\.env\.DEV \|\| import\.meta\.env\.VITE_QA_MODE === 'true'/);

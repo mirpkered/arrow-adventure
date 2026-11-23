@@ -1,49 +1,50 @@
-# Round 9 Level Authoring
+# Adventure Level Authoring
 
-## Release status
+## Active catalog
 
-The Round 9 branch contains a ten-entry catalog candidate under `first-flight-r1`. Its paths are frozen as JSON and validated by the runtime movement simulator, exact reachable-state audit, and deterministic fingerprints. The current generated candidates have not all met the required visual composition review. Do not promote this branch to QA or production until all ten are deliberately curated and visually approved.
+Round 10 establishes the active development catalog at `src/game/adventure-catalog.json`, version `first-flight-r2-true-grid`. It contains five frozen First Flight entries with permanent IDs `first-flight-001` through `first-flight-005`, display numbers, content versions, chapter/difficulty metadata, titles, composition notes, authored footprint polygons, and puzzle definitions. Array positions are not identities. Adventure Mode loads the checked-in definitions; it never generates levels at runtime.
 
-The six Round 8 definitions remain in `src/game/archive/catalog-round8.ts`. That archive is never imported by the active catalog. The archived Level 6 is a visual reference only, and archived content is not restored to player progression.
+The old six-level release is preserved in `src/game/archive/catalog-round8.ts`. The ten provisional Round 9 catalog definitions are preserved structurally in `src/game/archive/adventure-catalog-first-flight-r1.json`; their canonical JSON fingerprint matches the pre-reset catalog. Round 9C–9H prototypes remain separate under `src/game/prototypes/`; Round 9H and its regression tests are unchanged.
 
-Round 9C adds three composition experiments at `src/game/prototypes/round9c-prototypes.json`. They are not catalog entries and are not available in Adventure Mode. Their composition-first workflow, puzzle metrics, exact audits, and generated previews are recorded in [Round 9C Prototypes](ROUND_9C_PROTOTYPES.md). Review those three experiments before expanding or promoting the new visual style.
+Production `main` remains on the former release until the Round 10 catalog has been played and approved on iPhone. Deploy a validated candidate to the isolated QA repository only.
 
-Round 9D adds five QA-only composition studies in `src/game/prototypes/round9d-prototypes.json`: a short-arrow field, an irregular weave, an arrow-built tree silhouette, a larger mixed weave, and a framed composition with intentional negative space. They remain separate from the Adventure catalog. See [Round 9D Design](ROUND_9D_DESIGN.md) for their frozen IDs, exact audits, measured composition results, phone-proportion previews, and current visual questions.
+## True visible-grid specification
 
-## Catalog definition
+The visible grid is authoritative for new Adventure content. A `W×H` board means exactly `W` square cells across and `H` down, with `W+1` vertical and `H+1` horizontal intersections. Use an explicit per-level grid specification:
 
-Each entry in `src/game/adventure-catalog.json` has a permanent ID (`first-flight-NNN`), display number, catalog and content versions, chapter ID, title, difficulty, composition kind, design note, intended footprint, and exact puzzle definition. Display order is metadata; array indices are not identities. Published changes require a deliberate content-version increase and an updated frozen fingerprint test.
+```json
+{"spacing":1,"origin":{"x":0,"y":0},"pathOffset":0,"includeOuterBoundary":true}
+```
 
-The target catalog is exactly seven abstract weaves and three silhouettes. For a silhouette, the arrow paths themselves must read as the intended image; a footprint polygon is only a QA measurement mask and is not rendered in play. Candidate generation is an offline aid. Adventure Mode loads only the frozen JSON definitions.
+Vertices must be integer coordinates in `[0,W]×[0,H]`. Do not author half-cell positions. Each segment is a unit horizontal, vertical, or exact 45-degree diagonal step. Diagonal movement remains supported by the shared engine, but only use it when it serves the composition; ordinary Round 10 paths are orthogonal. The grid renderer uses the same transform as arrows, heads, tails, camera fit, pointer hit testing, movement, and collision checks.
 
-## Repeatable authoring process
+Historical levels and experiments without an explicit `grid` continue using their legacy half-unit interpretation. Do not remove their grid specification or reinterpret their coordinates while authoring new content.
 
-1. Sketch the complete composition first and define its board footprint. For a maze, author the shared corridor field as a whole before splitting it into arrows; do not independently generate arrows and try to pack them afterward.
-2. Route the long nested paths through the shared visual region, then add shorter paths that occupy useful clearances or create deliberate removal choices.
-3. Make silhouettes from arrow paths themselves. Review the board without any footprint overlay.
-4. Preserve the approved half-unit display grid, cardinal and 45-degree moves, fixed collision envelope, arrowhead geometry, touch tolerance, and self-traversal checks.
-5. Run `validateCuratedLevels`, the exact reachable-state audit, and the geometry tests against the frozen JSON. Do not accept solver success alone.
-6. Render all ten starting boards, inspect full-board thumbnails and phone-sized views, and reject sparse, repetitive, or ambiguous compositions even when the metrics pass.
-7. Record the selected candidate source/seed in authoring notes, freeze the resulting puzzle JSON, and add its SHA-256 fingerprint. Never regenerate active Adventure Mode content at runtime.
-8. Play every board on mobile after the browser review; generated screenshots do not substitute for device playtesting.
-9. For experiments spanning several styles, vary the composition architecture deliberately: compact short-arrow fields, continuous irregular meshes, recognizable arrow-only images, large mixed-length arrangements, and authored frames with a defined empty region. Do not treat longer paths or bounding-box overlap as a substitute for visual coherence. Use occupied arrow bounds for the initial camera fit; preserve any intentional void in the composition itself rather than inflating the logical board just to affect the camera.
+## Repeatable curation workflow
 
-## Quality measurements
+1. Choose a stable ID, display number, chapter, content version, difficulty, title, composition kind, design note, and intended footprint. Keep IDs stable if the level moves in display order.
+2. State the visible `W×H` cell count and attach the explicit grid specification above.
+3. Plan the entire composition before splitting it into arrows. Establish the main shared corridors, center/edge use, negative space, and clear exit routes. Add short arrows only where they contribute to the composition or puzzle choices.
+4. Assign ordered points from tail to head. Keep routes simple and readable; use a deliberate mixture of straight paths, hooks, nested turns, and longer winding routes. Do not add decorative arrows or force turns to inflate metrics.
+5. Add the frozen entry to `scripts/authoring/freeze-round10-catalog.mjs` and run `node scripts/authoring/freeze-round10-catalog.mjs` to serialize the deterministic content into the runtime JSON. This helper is authoring-time only. The JSON and its fingerprints are the shipped content.
+6. Render full-board and 390×844 previews. Inspect the actual grid, arrowheads, tails, occupied bounds, phone fit, readability, and silhouette. Metrics do not certify visual quality.
+7. Run the full geometry validator. Reject self-intersections, doubled segments, self-collisions, stationary overlap, inadequate clearance, invalid exits, off-grid vertices, and invalid directions.
+8. Run `solveLevel` and the exact `auditReachableStates` on every published candidate. Verify a full solution through `simulateMove` using the same level grid specification. Every reachable nonterminal state must have a route to completion. Never turn an incomplete or capped audit into a pass.
+9. Record route lengths, total route units, occupied bounds, sampled gap ratio, minimum/median spacing, interleaved pairs, blocker links, initial legal moves, dependency depth, and state/transition counts. Use these to find weaknesses; then make a human visual and gameplay review.
+10. Freeze the final JSON and update its SHA-256 regression. Any published geometry change requires a deliberate review and content-version increase. Keep completed-level credit policy explicit if a content change occurs after public release; Round 10 itself resets retired progress rather than mapping it to new levels.
 
-`src/game/density.ts` measures path length inside the authored footprint and samples its area at 0.25-unit intervals. A sample is a large gap when it is farther than 1.5 units from every arrow centerline. `measureNeighborSpacing` reports minimum, 10th, median, and 90th-percentile segment spacing between different arrows. `analyzeLevel` reports multi-zone interleaving, close segment contacts, blocker links, safe openings, unlock counts, dependency depth, lengths, and turns.
+## Validation tools and current results
 
-These values screen candidates; they do not prove a good composition. In particular, a compact footprint or many close contacts can still hide visual separation. The Round 9 draft uses a 0.18-unit canonical body envelope and 0.18-unit maximum arrowhead envelope, independent of the visible 0.12-unit body. The narrowest authored distinct-arrow spacing in the current candidates is 0.3536 units; the game retains a generous 0.75-unit touch-pick radius and deterministically selects the nearest path. Confirm that precision at phone scale before promotion.
+`validateCuratedLevels` checks unique IDs and display numbers, contiguous progression, chapter references, metadata, true-grid specification, footprint geometry, path occupancy, collision clearance, interlocking diagnostics, solver success, and all-state solvability. `validateLevel` and `validateArrow` check the actual movement geometry. `simulateMove`, the solver, and reachable-state audit share the same collision rules.
 
-Round 9B curation can also use `measureComposition`. It reports the share of route length whose nearest distinct path is within 0.75 units (including half-unit adjacent grid lines and close diagonals), the total length of parallel neighboring corridors, short/medium/long route counts (at most 4, over 4 through 14, and over 14 units), exit-heading counts, and the share of routes within the 1.5-unit touch-competition range. Compare these measurements with neighbor-spacing percentiles and the footprint heatmap; do not optimize any one score in isolation. The current authoring helper has a regression test using parallel half-unit lines. No new candidate is considered approved by the metric alone.
+The exact state audit currently supports no more than 20 arrows per puzzle. It memoizes remaining-arrow subsets and throws if its state budget is exceeded. Round 10's largest puzzle has 15 arrows. Its five puzzles were fully enumerated across 507 states and 1,430 legal transitions, with no deadlocks or dependency cycles. See [Round 10 Foundation](ROUND_10_FOUNDATION.md) for level metrics, exact route lengths, fingerprints, and links to the previews.
 
-## Exact validation
+The authoring suite reports close-neighbor, spacing, interleaving, dependency, route, and gap metrics. A true grid often imposes one-cell nearest path spacing; do not add hidden sub-grid lanes to raise density. The visible 0.12-unit body is independent from the fixed collision envelope. Touch target tolerance and rendering scale do not alter the path or collision geometry.
 
-`validateArrow` checks continuity, unit cardinal/diagonal steps, self-intersection, body and head clearance, and the complete self-traversal and exit. `validateLevel` checks stationary collisions between different arrows. `simulateMove` checks the entire moving arrow against stationary arrows and is shared by gameplay, solver, and catalog validation. `auditReachableStates` exhaustively visits every reachable remaining-arrow subset up to 20 arrows, reports deadlock witnesses and dependency cycles, and throws if its explicit state cap is exceeded.
+## Future silhouette footprint support
 
-The current candidate validator checks stable metadata, footprint validity, path occupancy, sampled whitespace, spacing, interleaving, dependencies, solver completion, and exact state audit. A failed or incomplete audit is never a pass. Remaining authoring concerns are visual coherence and the readability of the three claimed silhouettes; these require manual selection and review before release.
+Silhouette authoring is future work. A lightweight future representation can retain the regular logical grid and attach one or more authored polygon masks or cell masks to indicate the intended visual footprint. The board grid may be clipped to that mask; arrow coordinates and movement remain in the same regular world frame. Paths must form the recognizable image themselves. Do not add uploads, automatic image tracing, irregular boundary rules, or silhouette generation without a separate design/validation task.
 
-QA-only experiments follow the same geometry and exact-state gate as catalog content. Keep prototype definitions frozen and add a content fingerprint regression when a composition is selected for review. The renderer should fit the visible composition—centerlines, arrowheads, tails, and stroke clearance—inside the measured gameplay viewport, not fit every logical board to the same square. Fit tests should cover phone portrait, compact phone, and landscape, plus a user-requested reset after zooming. Use the static SVG contact sheets and individual phone canvases as review aids; they do not replace browser interaction or physical-device checks.
+## Progress reset and save compatibility
 
-## Save compatibility
-
-Round 9 uses game save version 2 and catalog version `first-flight-r1`. A save is accepted only when its catalog version and stable level/arrow IDs match. Startup removes the retired environment-specific game key and old legacy progress key, but leaves settings in their independent storage key untouched. New saves store only stable board states, never animation frames. Changing the catalog version again requires a documented migration or a deliberate progress reset; do not infer progress by array index.
+Round 10 uses game save schema v3 and catalog version `first-flight-r2-true-grid`. Startup removes prior environment-specific game keys v1/v2 and legacy game progress keys. It preserves independent appearance and audio settings. Old completion data is not mapped to new IDs. Current saves store stable level IDs and stable board state only; animation frames are never saved. Production and QA use different local-storage namespaces. Future save changes should increment the schema version, define which IDs/content versions remain valid, reject unknown states safely, and test migration idempotence without deleting unrelated preferences.

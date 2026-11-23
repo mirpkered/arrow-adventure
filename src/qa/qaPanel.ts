@@ -19,6 +19,7 @@ export type QAPanelOptions = {
   onLevel: (level: number) => void;
   onRestart: () => void;
   onResetQAState: () => void;
+  levelCount: number;
   prototypeCount: number;
   onPrototypeReview: () => void;
   candidateSha?: string;
@@ -101,7 +102,7 @@ export function mountQAPanel(options: QAPanelOptions): { open: () => void; bind:
       <fieldset><legend>Animation speed</legend><div class="qa-options">${SPEED_PRESETS.map((value) => `<button type="button" data-speed="${value}" aria-pressed="${value === speed}">${value}×</button>`).join('')}</div></fieldset>
       <fieldset><legend>Arrow thickness</legend><div class="qa-options">${STROKE_PRESETS.map((value, index) => `<button type="button" data-stroke="${value}" aria-pressed="${value === stroke}">${['Thin', 'Medium', 'Bold'][index]}</button>`).join('')}</div></fieldset>
       <fieldset><legend>Geometry diagnostics</legend>${[['ids','Arrow IDs'],['ownership','Path ownership'],['hitTargets','Hit targets'],['geometry','Board geometry']].map(([key,label]) => `<label class="qa-toggle"><span>${label}</span><input type="checkbox" data-diagnostic="${key}" ${diagnostics[key as keyof DiagnosticFlags] ? 'checked' : ''}></label>`).join('')}</fieldset>
-      <fieldset><legend>Jump to level</legend><div class="qa-levels">${[1,2,3,4,5,6].map((value) => `<button type="button" data-level="${value}">Level ${value}</button>`).join('')}</div></fieldset>
+      <fieldset><legend>Jump to level</legend><div class="qa-levels">${Array.from({ length: options.levelCount }, (_, index) => index + 1).map((value) => `<button type="button" data-level="${value}">Level ${value}</button>`).join('')}</div></fieldset>
       <div class="qa-actions"><button type="button" data-restart>Restart current level</button><button type="button" data-reset>Reset QA state</button></div>
       <p class="qa-commit">Candidate <code>${html(options.candidateSha || 'local development build')}</code></p>
     </section></div>`;

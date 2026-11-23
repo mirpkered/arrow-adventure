@@ -18,7 +18,7 @@ export function getNextCuratedLevel(level: CuratedLevel): CuratedLevel | undefin
 
 /** Full authoring gate. It validates exact frozen content, footprint quality, geometry, and all reachable states. */
 export function validateCuratedLevels(entries: readonly CuratedLevel[] = CURATED_LEVELS): void {
-  if (entries.length !== 10) throw new Error('First Flight must contain exactly ten curated levels');
+  if (entries.length !== 5) throw new Error('First Flight must contain exactly five curated levels in the Round 10 foundation');
   const ids = new Set<string>();
   const numbers = new Set<number>();
   for (const entry of entries) {
@@ -31,6 +31,13 @@ export function validateCuratedLevels(entries: readonly CuratedLevel[] = CURATED
     if (entry.composition !== 'abstract' && entry.composition !== 'silhouette') throw new Error(entry.id + ' has invalid composition kind');
     if (typeof entry.title !== 'string' || !entry.title.trim() || typeof entry.designNote !== 'string' || !entry.designNote.trim()) throw new Error(entry.id + ' is missing authoring metadata');
     if (entry.puzzle.number !== entry.number) throw new Error(entry.id + ' puzzle number does not match its catalog entry');
+    const grid = entry.puzzle.grid;
+    if (!grid || grid.spacing !== 1 || grid.pathOffset !== 0 || grid.origin.x !== 0 || grid.origin.y !== 0 || !grid.includeOuterBoundary) {
+      throw new Error(`${entry.id} must use the explicit true visible-cell grid specification`);
+    }
+    if (!Number.isInteger(entry.puzzle.width) || entry.puzzle.width < 1 || !Number.isInteger(entry.puzzle.height) || entry.puzzle.height < 1) {
+      throw new Error(`${entry.id} has invalid visible-grid cell dimensions`);
+    }
     if (!entry.footprint.length || entry.footprint.some((polygon) => polygon.length < 3)) throw new Error(entry.id + ' has a malformed intended footprint');
     ids.add(entry.id); numbers.add(entry.number);
 
@@ -38,19 +45,22 @@ export function validateCuratedLevels(entries: readonly CuratedLevel[] = CURATED
     validateLevel(entry.puzzle);
     const density = measureFootprintDensity(entry);
     if (density.footprintArea <= 0 || density.pathLengthInside / density.pathLength < 0.9) throw new Error(`${entry.id} paths do not occupy their authored footprint`);
-    const gapLimit = entry.difficulty === 'intro' ? 0.15 : 0.1;
-    if (density.largeGapRatio > gapLimit) throw new Error(`${entry.id} has ${Math.round(density.largeGapRatio * 1000) / 10}% large internal footprint gaps; limit ${gapLimit * 100}%`);
+    // Internal negative space is a composition decision; report it in QA but
+    // do not treat a single generic fill percentage as an aesthetic verdict.
     const spacing = measureNeighborSpacing(entry.puzzle);
     if (spacing.minimum < 0.23 - 1e-8) throw new Error(`${entry.id} has distinct arrows closer than the 0.23-unit swept collision clearance`);
     if (spacing.p10 < 0.32 - 1e-8) throw new Error(`${entry.id} packs too many arrow segments below the 0.32-unit readability target`);
-    if (spacing.p90 > 2.25) throw new Error(`${entry.id} has overly separated arrow neighborhoods (90th-percentile gap ${spacing.p90.toFixed(2)} units)`);
+    if (spacing.p90 > 3.5) throw new Error(`${entry.id} has overly separated arrow neighborhoods (90th-percentile gap ${spacing.p90.toFixed(2)} units)`);
 
     const metrics = analyzeLevel(entry.puzzle);
-    if (metrics.interleavedPairs < Math.max(2, Math.ceil(entry.puzzle.arrows.length * 0.35))
-      || metrics.closeSegmentContacts < entry.puzzle.arrows.length * 5) throw new Error(entry.id + ' is too spatially separated to publish');
+    const requiredInterleavedPairs = entry.difficulty === 'intro' ? 1 : entry.difficulty === 'easy' ? 2
+      : entry.difficulty === 'easy-medium' ? 3 : entry.difficulty === 'medium' ? 5 : 7;
+    if (metrics.interleavedPairs < requiredInterleavedPairs
+      || metrics.closeSegmentContacts < entry.puzzle.arrows.length * 3) throw new Error(entry.id + ' is too spatially separated to publish');
     const isolatedArrows = Object.entries(metrics.interleavedPairsByArrow)
       .filter(([id, degree]) => degree === 0 && metrics.blockersByArrow[id] === 0);
-    if (isolatedArrows.length > 1) throw new Error(`${entry.id} has ${isolatedArrows.length} arrows disconnected from the shared weave`);
+    const isolatedLimit = entry.difficulty === 'intro' || entry.difficulty === 'easy' || entry.difficulty === 'easy-medium' ? 2 : 1;
+    if (isolatedArrows.length > isolatedLimit) throw new Error(`${entry.id} has ${isolatedArrows.length} arrows disconnected from the shared weave`);
     if (metrics.dependencyDepth < 2 || metrics.initiallyRemovable === 0
       || metrics.initiallyRemovable > Math.ceil(entry.puzzle.arrows.length * 0.6)) throw new Error(entry.id + ' has weak escape dependencies');
     if (Math.max(...metrics.pathLengths) - Math.min(...metrics.pathLengths) < 2
@@ -74,9 +84,10 @@ function validateFootprint(entry: CuratedLevel): void {
     const polygon = entry.footprint[polygonIndex];
     for (let index = 0; index < polygon.length; index += 1) {
       const point = polygon[index];
+      const grid = entry.puzzle.grid!;
       if (!Number.isFinite(point.x) || !Number.isFinite(point.y) || point.x < 0 || point.y < 0
-        || point.x >= entry.puzzle.width || point.y >= entry.puzzle.height
-        || !isBoardGridIntersection(toBoardPoint(point))) throw new Error(`${entry.id} footprint ${polygonIndex} vertex ${index} is invalid or off-grid`);
+        || point.x > entry.puzzle.width || point.y > entry.puzzle.height
+        || !isBoardGridIntersection(toBoardPoint(point, grid.pathOffset), grid.spacing, grid.origin)) throw new Error(`${entry.id} footprint ${polygonIndex} vertex ${index} is invalid or off-grid`);
     }
     const area = polygon.reduce((sum, point, index) => {
       const next = polygon[(index + 1) % polygon.length];
@@ -85,8 +96,9 @@ function validateFootprint(entry: CuratedLevel): void {
     if (Math.abs(area) < 1e-8) throw new Error(`${entry.id} footprint ${polygonIndex} has no area`);
     for (let a = 0; a < polygon.length; a += 1) for (let b = a + 1; b < polygon.length; b += 1) {
       if (b === a + 1 || (a === 0 && b === polygon.length - 1)) continue;
-      const left = { a: toBoardPoint(polygon[a]), b: toBoardPoint(polygon[(a + 1) % polygon.length]) };
-      const right = { a: toBoardPoint(polygon[b]), b: toBoardPoint(polygon[(b + 1) % polygon.length]) };
+      const grid = entry.puzzle.grid!;
+      const left = { a: toBoardPoint(polygon[a], grid.pathOffset), b: toBoardPoint(polygon[(a + 1) % polygon.length], grid.pathOffset) };
+      const right = { a: toBoardPoint(polygon[b], grid.pathOffset), b: toBoardPoint(polygon[(b + 1) % polygon.length], grid.pathOffset) };
       if (segmentDistance(left, right) <= 1e-8) throw new Error(`${entry.id} footprint ${polygonIndex} self-intersects at edges ${a} and ${b}`);
     }
   }

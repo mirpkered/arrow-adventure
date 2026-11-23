@@ -1,6 +1,6 @@
 # Round 9H — True 7×7 Grid Prototype
 
-Round 9H is one experimental composition, stored at `src/game/prototypes/round9h-square-true-7.json`. Its stable prototype ID is `prototype-square-true-7`, content version 1, and puzzle SHA-256 is `7d48e27bbb9a7d4212eefc5548549f9bd227eed0eb0d7111dac4c1341629ac8a`. It is registered as an additional QA-only Prototype Review choice and remains outside the Adventure catalog. It does not change the active ten-level catalog, save format, or production game.
+Round 9H is one experimental composition, stored at `src/game/prototypes/round9h-square-true-7.json`. Its stable prototype ID is `prototype-square-true-7`, content version 1, and puzzle SHA-256 is `7d48e27bbb9a7d4212eefc5548549f9bd227eed0eb0d7111dac4c1341629ac8a`. It is registered as a QA-only Prototype Review choice and remains outside the Adventure catalog. At introduction it did not change the then-active ten-level candidate catalog or save format. Round 10 later retired that provisional catalog on its development branch; this prototype and its frozen tests remain unchanged.
 
 ## The visible grid is the coordinate authority
 

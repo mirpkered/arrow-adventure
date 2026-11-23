@@ -23,7 +23,7 @@ describe('QA board diagnostics', () => {
     const onLevel = vi.fn(); const onRestart = vi.fn(); const onHighlightLegal = vi.fn();
     const panel = mountQAPanel({
       onSpeed: vi.fn(), onStroke: vi.fn(), onDiagnostics: vi.fn(), inspect, onHighlightLegal,
-      onLevel, onRestart, onResetQAState: vi.fn(), prototypeCount: 3, onPrototypeReview: vi.fn(), candidateSha: 'abc123',
+      onLevel, onRestart, onResetQAState: vi.fn(), levelCount: 5, prototypeCount: 3, onPrototypeReview: vi.fn(), candidateSha: 'abc123',
     });
     panel.open();
     const root = dom.document.querySelector('#qa-panel-root') as unknown as HTMLElement;
@@ -50,7 +50,7 @@ describe('QA board diagnostics', () => {
       ? { ...sampleSnapshot('a02'), legalArrowIds: [], solution: null }
       : { ...sampleSnapshot(id), legalArrowIds: [], solution: null });
     const panel = mountQAPanel({ onSpeed: vi.fn(), onStroke: vi.fn(), onDiagnostics: vi.fn(), inspect,
-      onHighlightLegal: vi.fn(), onLevel: vi.fn(), onRestart: vi.fn(), onResetQAState: vi.fn(), prototypeCount: 3, onPrototypeReview: vi.fn() });
+      onHighlightLegal: vi.fn(), onLevel: vi.fn(), onRestart: vi.fn(), onResetQAState: vi.fn(), levelCount: 5, prototypeCount: 3, onPrototypeReview: vi.fn() });
     panel.open();
     const root = dom.document.querySelector('#qa-panel-root') as unknown as HTMLElement;
     expect(root.textContent).toContain('No legal moves: every remaining arrow is blocked. This state is a deadlock.');
@@ -67,7 +67,7 @@ describe('QA board diagnostics', () => {
     vi.stubGlobal('document', dom.document);
     const onLevel = vi.fn(); const onRestart = vi.fn(); const onResetQAState = vi.fn();
     const panel = mountQAPanel({ onSpeed: vi.fn(), onStroke: vi.fn(), onDiagnostics: vi.fn(), inspect: () => sampleSnapshot(),
-      onHighlightLegal: vi.fn(), onLevel, onRestart, onResetQAState, prototypeCount: 3, onPrototypeReview: vi.fn() });
+      onHighlightLegal: vi.fn(), onLevel, onRestart, onResetQAState, levelCount: 5, prototypeCount: 3, onPrototypeReview: vi.fn() });
     panel.open();
     const root = dom.document.querySelector('#qa-panel-root') as unknown as HTMLElement;
     (root.querySelector('[data-level="4"]') as unknown as HTMLButtonElement).click();
@@ -90,7 +90,7 @@ describe('QA board diagnostics', () => {
     vi.stubGlobal('document', dom.document);
     const onPrototypeReview = vi.fn();
     const panel = mountQAPanel({ onSpeed: vi.fn(), onStroke: vi.fn(), onDiagnostics: vi.fn(), inspect: () => sampleSnapshot(),
-      onHighlightLegal: vi.fn(), onLevel: vi.fn(), onRestart: vi.fn(), onResetQAState: vi.fn(), prototypeCount: 3, onPrototypeReview });
+      onHighlightLegal: vi.fn(), onLevel: vi.fn(), onRestart: vi.fn(), onResetQAState: vi.fn(), levelCount: 5, prototypeCount: 3, onPrototypeReview });
     panel.open();
     const root = dom.document.querySelector('#qa-panel-root') as unknown as HTMLElement;
     expect(root.textContent).toContain('Prototype Review');
@@ -100,12 +100,24 @@ describe('QA board diagnostics', () => {
     expect(root.classList.contains('open')).toBe(false);
 
     const blockedPanel = mountQAPanel({ onSpeed: vi.fn(), onStroke: vi.fn(), onDiagnostics: vi.fn(), inspect: () => ({ ...sampleSnapshot(), animating: true }),
-      onHighlightLegal: vi.fn(), onLevel: vi.fn(), onRestart: vi.fn(), onResetQAState: vi.fn(), prototypeCount: 3, onPrototypeReview });
+      onHighlightLegal: vi.fn(), onLevel: vi.fn(), onRestart: vi.fn(), onResetQAState: vi.fn(), levelCount: 5, prototypeCount: 3, onPrototypeReview });
     blockedPanel.open();
     const blockedButton = dom.document.querySelector('[data-prototype-review]') as unknown as HTMLButtonElement;
     expect(blockedButton.disabled).toBe(true);
     blockedButton.click();
     expect(onPrototypeReview).toHaveBeenCalledTimes(1);
+    dom.close();
+  });
+
+  it('only offers levels in the active catalog', () => {
+    const dom = new Window();
+    vi.stubGlobal('document', dom.document);
+    mountQAPanel({ onSpeed: vi.fn(), onStroke: vi.fn(), onDiagnostics: vi.fn(), inspect: () => sampleSnapshot(),
+      onHighlightLegal: vi.fn(), onLevel: vi.fn(), onRestart: vi.fn(), onResetQAState: vi.fn(), levelCount: 5,
+      prototypeCount: 3, onPrototypeReview: vi.fn() }).open();
+    const root = dom.document.querySelector('#qa-panel-root') as unknown as HTMLElement;
+    expect(root.querySelectorAll('[data-level]')).toHaveLength(5);
+    expect(root.querySelector('[data-level="6"]')).toBeNull();
     dom.close();
   });
 });

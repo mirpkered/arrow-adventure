@@ -1,37 +1,24 @@
 # Arrow Adventure Roadmap
 
-## Round 9 development status
+## Round 10 — five-level foundation
 
-Round 9 replaces the active Adventure catalog on its development branch with ten deterministic, versioned candidate levels in `src/game/adventure-catalog.json`. The previous six-level definitions are retained only in `src/game/archive/catalog-round8.ts`. The candidate set passes the current geometry checks, solver, and exact reachable-state audit. Visual review found that several candidate layouts are too dispersed or do not read clearly as their intended silhouettes. They are not approved for QA or production deployment.
+The current development branch replaces the provisional Adventure catalog with five individually frozen First Flight puzzles using true visible-grid geometry. The levels progress from a small teaching tangle to an 8×8 challenge. The catalog is versioned `first-flight-r2-true-grid`; game-save schema v3 discards prior Adventure completion data while preserving appearance and audio preferences. The prior six-level release, ten Round 9 catalog candidates, and Round 9H reference remain preserved outside active play.
 
-The source branch is `round-9/adventure-rebuild`. Production `main` and the independent QA site remain unchanged. Round 9 should not be promoted until each of the ten compositions passes unaided visual review at phone scale and the three silhouettes read from arrow paths alone.
-
-## Round 9D composition review
-
-Round 9D adds five isolated visual experiments D–H to Prototype Review without replacing the ten Adventure candidates. The styles are a compact micro-arrow grid, dense irregular weave, tree-like arrow silhouette, larger mixed-length weave, and framed negative space. Final route definitions are frozen outside the Adventure catalog, carry stable experiment IDs, and are protected by geometry fingerprints and exact reachable-state audits. Round 9D prototypes are candidates for physical iPhone playtesting, not approved permanent levels.
-
-The QA review screen retains Round 9C A–C and offers all eight experiments. Adaptive board fitting now uses occupied arrow bounds—including head and tail marks—in the live viewport, with 12% margin. Unit checks cover phone, medium, and landscape aspect ratios, zoom, pan, and fit reset. Visual preview files and measured composition/dependency results are in [Round 9D Design](ROUND_9D_DESIGN.md). The five reference images were unavailable in the execution workspace, so this iteration used their written composition descriptions and generated path previews.
-
-The exact audit checked 1,034 reachable states and 3,094 successful-removal transitions across D–H; each board has one terminal state and no deadlock or dependency cycle. Prototype D is at the current 20-arrow exhaustive-solver limit. A larger count must not be admitted until an exact scalable proof approach is implemented and measured.
-
-## Accepted design direction
-
-- Replace the former six active boards with ten new curated levels: seven abstract arrow weaves and three arrow-built silhouettes.
-- Give every level a stable ID, catalog version, content version, chapter, difficulty, composition tag, design note, intended footprint, and frozen puzzle definition.
-- Keep candidate generation as an offline authoring aid; never generate Adventure Mode content at runtime.
-- Measure path occupancy and large gaps inside each authored footprint, closest-neighbor spacing, repeated interleaving, path and turn diversity, blocker relationships, safe openings, and dependency depth.
-- Reject illegal self-geometry and stationary intersections. Use the actual movement simulator for gameplay, solver, catalog validation, and exact reachable-state auditing.
-- Reset retired catalog progress through the versioned save boundary while preserving independent settings.
+All five boards pass path validation, stationary/swept collision checks, solver/runtime replay, and complete reachable-state audits. QA is the next review environment. Production remains unchanged until the developer plays the five levels on iPhone and approves promotion. See [Round 10 Foundation](ROUND_10_FOUNDATION.md) for level metrics, fingerprints, tests, and preview images.
 
 ## Release gates
 
-1. Manually select and refine all ten layouts; solver validity and density metrics do not substitute for composition quality.
-2. Validate all path geometry and exhaustively audit every reachable state with no truncation.
-3. Inspect complete starting arrangements at representative iPhone portrait viewports and play all ten boards on a physical iPhone.
-4. Verify Round 9 save reset and settings preservation.
-5. Run the full suite, TypeScript validation, production build, and QA-base build.
-6. Deploy the complete catalog to the independent QA site, inspect the candidate there, then update production only after all release gates pass.
+1. Run the full test suite, typecheck, production-base build, and QA-base build.
+2. Verify the five exact visible grids and exhaustive state audits; incomplete search is not a pass.
+3. Review all starting boards and portrait renders for composition, readability, and consistent camera fit.
+4. Deploy the validated candidate only to the independent QA Pages repository and confirm the source SHA and assets.
+5. Have the developer test all five levels on iPhone, including touch selection, blocked-move hearts/reversal, zoom/pan, restart, Continue, and save reset.
+6. Change production `main` only after explicit approval of the QA candidate.
 
-## Later work
+## Future direction
 
-Do not add levels beyond this ten-level opening set until its design has been playtested. Future roadmap mechanics—Free Play, black holes, switches, directional gates, and portals—remain out of scope until their movement, collision, solver, and tutorial rules have been separately specified.
+- Continue authoring a small number of curated Adventure levels at a time. Keep all geometry on the declared visible lattice and freeze approved layouts with stable IDs, content versions, and fingerprints.
+- Develop lightweight footprint masks so a future authored silhouette can clip grid rendering without changing the regular logical coordinates. Do not implement image upload or automatic silhouette generation until separately designed.
+- Free Play remains a separate future mode. Generated puzzles must be deterministic and solver-verified, and optional mechanics must be selectable without being required for a solution.
+- Black holes, switches, gates, portals, additional mechanics, and larger level collections are not part of Round 10. Specify movement/collision/solver semantics before implementing any of them.
+- Preserve the approved Round 9H prototype as the current true-grid and physical-gameplay reference; do not copy its paths into future levels without deliberate redesign and review.

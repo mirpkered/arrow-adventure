@@ -92,7 +92,7 @@ function getLevel(number: number) { return getCuratedLevel(number); }
 
 function activeSave(levelComplete = screen === 'complete'): GameSave {
   return {
-    version: 2,
+    version: 3,
     catalogVersion: catalogEntry.catalogVersion,
     currentLevelId: catalogEntry.id,
     completedLevelIds: [...completedIds],
@@ -722,6 +722,7 @@ if (QA_MODE) {
       onLevel: (number) => startLevel(number, true),
       onRestart: () => activePrototype ? startPrototypeReview(activePrototype.id) : startLevel(catalogEntry.number, true),
       onResetQAState: () => { qaHighlightedArrowId = null; },
+      levelCount: CURATED_LEVELS.length,
       prototypeCount: prototypeReview.PROTOTYPE_REVIEWS.length,
       onPrototypeReview: enterPrototypeReview,
       candidateSha: import.meta.env.VITE_CANDIDATE_SHA,

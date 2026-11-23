@@ -34,7 +34,7 @@ describe('isolated prototype review mode', () => {
     expect(PROTOTYPE_REVIEWS[8].puzzle.grid).toEqual({
       spacing: 1, origin: { x: 0, y: 0 }, pathOffset: 0, includeOuterBoundary: true,
     });
-    expect(CURATED_LEVELS).toHaveLength(10);
+    expect(CURATED_LEVELS).toHaveLength(5);
     expect(CURATED_LEVELS.some(({ id }) => id.startsWith('round9c-') || id.startsWith('round9d-') || id === 'prototype-square-true-7')).toBe(false);
     const selection = renderPrototypeReviewSelection();
     expect((selection.match(/data-prototype-id=/g) ?? [])).toHaveLength(9);
