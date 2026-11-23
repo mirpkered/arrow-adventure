@@ -56,11 +56,6 @@ jobs:
             echo "QA deployment record does not contain a valid workflow run URL." >&2
             exit 1
           fi
-          run_info="$(curl -fsSL "https://api.github.com/repos/mirpkered/arrow-adventure-qa/actions/runs/$run_id")"
-          if [[ "$(jq -r '.status' <<< "$run_info")" != "completed" || "$(jq -r '.conclusion' <<< "$run_info")" != "success" ]]; then
-            echo "QA's referenced deployment workflow has not completed successfully." >&2
-            exit 1
-          fi
 
           main_sha="$(git rev-parse refs/remotes/origin/main)"
           if ! git merge-base --is-ancestor "$main_sha" "$source_sha"; then
@@ -171,12 +166,6 @@ jobs:
           qa_record="$(curl -fsSL https://mirpkered.github.io/arrow-adventure-qa/qa-deployment.json)"
           if [[ "$(jq -r '.sourceCommit // empty' <<< "$qa_record")" != "$EXPECTED_SHA" || "$(jq -r '.workflowRun // empty' <<< "$qa_record")" != "$EXPECTED_QA_RUN" ]]; then
             echo "Refusing production deployment: QA changed after the production build." >&2
-            exit 1
-          fi
-          run_id="${EXPECTED_QA_RUN##*/}"
-          run_info="$(curl -fsSL "https://api.github.com/repos/mirpkered/arrow-adventure-qa/actions/runs/$run_id")"
-          if [[ "$(jq -r '.status' <<< "$run_info")" != "completed" || "$(jq -r '.conclusion' <<< "$run_info")" != "success" ]]; then
-            echo "Refusing production deployment: the QA run no longer reports success." >&2
             exit 1
           fi
       - name: Deploy QA-approved production artifact

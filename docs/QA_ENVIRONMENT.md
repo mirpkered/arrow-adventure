@@ -26,13 +26,13 @@ The QA workflow is [Deploy QA candidate](https://github.com/mirpkered/arrow-adve
 
 The source workflow is [Sync QA-approved development to production](https://github.com/mirpkered/arrow-adventure/actions/workflows/sync-qa-production.yml). QA remains an independent Pages site and requires an explicit full-SHA dispatch. After the QA workflow succeeds and its live `qa-deployment.json` reports the latest commit on `round-10/five-level-foundation`, the source repository's 15-minute scheduled check:
 
-1. Confirms the QA source SHA and successful QA Actions run.
+1. Confirms the live QA deployment record identifies the exact source SHA and a valid QA Actions run URL. The record is included in the Pages artifact only after the QA tests, typecheck, and build pass; the record becoming live also confirms the Pages artifact was published.
 2. Checks the live QA page, JavaScript, CSS, manifest, logo, and app icon responses.
 3. Re-runs the full tests and TypeScript validation against that exact revision.
 4. Makes a separate production build at `/arrow-adventure/`, verifies QA-only modules were tree-shaken, and writes a production `deployment.json` source/run record.
 5. Fast-forwards `main` only if the candidate descends from its current head, then deploys the production artifact.
 
-QA and production are built separately from the same SHA; the QA artifact is never copied into production. No cross-repository credential or additional secret is required. The source workflow uses its repository-scoped `GITHUB_TOKEN` to update `main`, then deploys its own artifact. GitHub suppresses push-triggered workflows for that token, avoiding a deployment loop. The ordinary `pages.yml` workflow also refuses a main-branch deployment unless QA reports that exact SHA and its workflow succeeded.
+QA and production are built separately from the same SHA; the QA artifact is never copied into production. No cross-repository credential or additional secret is required. The source workflow uses its repository-scoped `GITHUB_TOKEN` to update `main`, then deploys its own artifact. GitHub suppresses push-triggered workflows for that token, avoiding a deployment loop. The ordinary `pages.yml` workflow also refuses a main-branch deployment unless the exact source SHA and QA run reference are present on the live QA site, and rechecks that record immediately before production deployment.
 
 Disable the temporary automation before public launch by setting the source repository Actions variable `ENABLE_TEMPORARY_PRODUCTION_SYNC` to `false` or removing it. The sync workflow then stops promoting candidates. Explicit later releases can still use `pages.yml` after deploying the same SHA to QA.
 

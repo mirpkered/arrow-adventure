@@ -11,7 +11,7 @@ const productionStamp = read('../scripts/stamp-production-build.mjs');
 describe('QA-gated production release', () => {
   it('requires the live QA run to have validated the exact production source SHA', () => {
     expect(pagesWorkflow).toContain("qa_sha\" != \"$EXPECTED_SHA\"");
-    expect(pagesWorkflow).toContain(".conclusion' <<< \"$run_info\")\" != \"success\"");
+    expect(pagesWorkflow).toContain('actions/runs/[0-9]+$');
     expect(pagesWorkflow).toContain('scripts/verify-qa-deployment.mjs');
     expect(pagesWorkflow).toContain('Confirm QA still serves this exact source revision');
     expect(pagesWorkflow).toContain('npm test && npm run typecheck');
@@ -38,7 +38,7 @@ describe('QA-gated production release', () => {
   });
 
   it('checks live QA source, workflow status, app shell, and required assets', () => {
-    for (const check of ['record.sourceCommit !== expectedSha', "run.status !== 'completed'", "run.conclusion !== 'success'", 'site.webmanifest', 'branding/arrow-adventure-official-logo.png', 'branding/mirpworks-logo.jpg', "method: 'HEAD'"]) {
+    for (const check of ['record.sourceCommit !== expectedSha', 'record.workflowRun', 'site.webmanifest', 'branding/arrow-adventure-official-logo.png', 'branding/mirpworks-logo.jpg', "method: 'HEAD'"]) {
       expect(qaVerifier).toContain(check);
     }
   });

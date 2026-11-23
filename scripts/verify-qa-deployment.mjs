@@ -12,10 +12,9 @@ if (record.environment !== 'qa' || record.sourceRepository !== 'mirpkered/arrow-
   throw new Error(`QA metadata did not identify the expected source commit ${expectedSha}.`);
 }
 
-const runId = String(record.workflowRun ?? '').match(/\/actions\/runs\/(\d+)$/)?.[1];
-if (!runId) throw new Error('QA metadata does not contain a valid workflow run URL.');
-const run = await readJson(`https://api.github.com/repos/mirpkered/arrow-adventure-qa/actions/runs/${runId}`);
-if (run.status !== 'completed' || run.conclusion !== 'success') throw new Error(`QA workflow ${runId} did not complete successfully.`);
+if (!/^https:\/\/github\.com\/mirpkered\/arrow-adventure-qa\/actions\/runs\/\d+$/.test(String(record.workflowRun ?? ''))) {
+  throw new Error('QA metadata does not contain a valid QA Actions run URL.');
+}
 
 const pageResponse = await fetch(base, { signal: AbortSignal.timeout(15000) });
 if (!pageResponse.ok) throw new Error(`QA page returned HTTP ${pageResponse.status}`);

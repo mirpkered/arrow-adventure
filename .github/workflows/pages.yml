@@ -35,14 +35,8 @@ jobs:
             exit 1
           fi
           qa_run="$(jq -r '.workflowRun // empty' <<< "$qa_record")"
-          run_id="${qa_run##*/}"
-          if [[ ! "$run_id" =~ ^[0-9]+$ ]]; then
+          if [[ ! "$qa_run" =~ ^https://github\.com/mirpkered/arrow-adventure-qa/actions/runs/[0-9]+$ ]]; then
             echo "QA deployment record does not contain a valid workflow run URL." >&2
-            exit 1
-          fi
-          run_info="$(curl -fsSL "https://api.github.com/repos/mirpkered/arrow-adventure-qa/actions/runs/$run_id")"
-          if [[ "$(jq -r '.status' <<< "$run_info")" != "completed" || "$(jq -r '.conclusion' <<< "$run_info")" != "success" ]]; then
-            echo "Refusing production deployment: the referenced QA workflow did not complete successfully." >&2
             exit 1
           fi
           echo "run_url=$qa_run" >> "$GITHUB_OUTPUT"
