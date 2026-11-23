@@ -2,9 +2,9 @@
 
 ## Round 10 — five-level foundation
 
-The current development branch replaces the provisional Adventure catalog with five individually frozen First Flight puzzles using true visible-grid geometry. The levels progress from a small teaching tangle to an 8×8 challenge. The catalog is versioned `first-flight-r2-true-grid`; game-save schema v3 discards prior Adventure completion data while preserving appearance and audio preferences. The prior six-level release, ten Round 9 catalog candidates, and Round 9H reference remain preserved outside active play.
+Round 10 replaces the prior Adventure catalog with five individually frozen First Flight puzzles using true visible-grid geometry. The levels progress from a small teaching tangle to an 8×8 challenge. The catalog is versioned `first-flight-r2-true-grid`; game-save schema v3 discards prior Adventure completion data while preserving appearance and audio preferences. The prior six-level release, ten Round 9 catalog candidates, and Round 9H reference remain preserved outside active play.
 
-All five boards pass path validation, stationary/swept collision checks, solver/runtime replay, and complete reachable-state audits. QA is the next review environment. Production remains unchanged until the developer plays the five levels on iPhone and approves promotion. See [Round 10 Foundation](ROUND_10_FOUNDATION.md) for level metrics, fingerprints, tests, and preview images.
+All five boards pass path validation, stationary/swept collision checks, solver/runtime replay, and complete reachable-state audits. QA and production are separately built from the same QA-validated source SHA. The developer should still play the five levels on iPhone; physical-device review is not automated. See [Round 10 Foundation](ROUND_10_FOUNDATION.md) for level metrics, fingerprints, tests, and preview images.
 
 ## Release gates
 

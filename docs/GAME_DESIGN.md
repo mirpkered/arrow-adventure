@@ -1,6 +1,6 @@
 # Shared-Board Game Design
 
-> **Round 10 status:** The active development catalog now contains five frozen First Flight levels using the Round 9H-approved true visible-grid convention. The old six-level production set and ten provisional Round 9 definitions remain archived. Round 10 is a QA candidate only; production remains unchanged pending developer iPhone review. See [Roadmap](ROADMAP.md) and [Round 10 Foundation](ROUND_10_FOUNDATION.md).
+> **Round 10 status:** Production and QA use five frozen First Flight levels with the Round 9H-approved true visible-grid convention. The old six-level production set and ten provisional Round 9 definitions remain archived. Temporary QA-gated synchronization is active; each environment is built separately from the same validated source SHA. See [Roadmap](ROADMAP.md) and [Round 10 Foundation](ROUND_10_FOUNDATION.md).
 
 ## Active prototype rules
 

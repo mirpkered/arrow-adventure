@@ -66,8 +66,8 @@ The [Round 10 foundation report](docs/ROUND_10_FOUNDATION.md) documents the five
 
 ## Current scope and limitations
 
-- Production remains unchanged on the six-level release. The Round 10 development catalog contains five levels and 50 arrows; the total exact audit covered 507 reachable states and 1,430 legal transitions.
+- Round 10 replaces the six-level production catalog with five true-grid levels and 50 arrows; the total exact audit covered 507 reachable states and 1,430 legal transitions. A temporary QA-gated sync keeps production aligned with the configured development branch.
 - Round 10 resets old Adventure completion records through the v3 save boundary and preserves local appearance/audio settings.
-- Round 10 portrait images are renderer-generated. The developer's earlier Round 9H physical iPhone test passed; these five levels still require physical iPhone playtesting before production promotion.
-- The five catalog levels are separate from QA-only A–H and Round 9H review prototypes. This candidate is for isolated QA only; production has not been changed.
+- Round 10 portrait images are renderer-generated. The developer's earlier Round 9H physical iPhone test passed; these five levels still need their own physical iPhone playtesting.
+- The five catalog levels are separate from QA-only A–H and Round 9H review prototypes. Production synchronization validates the active catalog and tree-shakes QA-only tools.
 - Free Play, tutorials, black holes, switches, gates, portals, and additional chapters are future work.

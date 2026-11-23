@@ -1,0 +1,184 @@
+name: Sync QA-approved development to production
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/15 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: arrow-adventure-pages
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    if: vars.ENABLE_TEMPORARY_PRODUCTION_SYNC == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    outputs:
+      ready: ${{ steps.candidate.outputs.ready }}
+      source_sha: ${{ steps.candidate.outputs.sha }}
+      qa_run_url: ${{ steps.candidate.outputs.qa_run_url }}
+    steps:
+      - name: Checkout current production source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require latest development commit to be deployed successfully on QA
+        id: candidate
+        env:
+          SOURCE_BRANCH: round-10/five-level-foundation
+          QA_RECORD_URL: https://mirpkered.github.io/arrow-adventure-qa/qa-deployment.json
+          PRODUCTION_RECORD_URL: https://mirpkered.github.io/arrow-adventure/deployment.json
+        shell: bash
+        run: |
+          git fetch origin \
+            refs/heads/main:refs/remotes/origin/main \
+            "refs/heads/$SOURCE_BRANCH:refs/remotes/origin/$SOURCE_BRANCH"
+          source_sha="$(git rev-parse "refs/remotes/origin/$SOURCE_BRANCH")"
+          qa_record="$(curl -fsSL "$QA_RECORD_URL")"
+          qa_sha="$(jq -r '.sourceCommit // empty' <<< "$qa_record")"
+          if [[ "$qa_sha" != "$source_sha" ]]; then
+            echo "Latest development commit $source_sha has not yet been deployed to QA; production sync will retry on the next schedule."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          qa_run="$(jq -r '.workflowRun // empty' <<< "$qa_record")"
+          run_id="${qa_run##*/}"
+          if [[ ! "$run_id" =~ ^[0-9]+$ ]]; then
+            echo "QA deployment record does not contain a valid workflow run URL." >&2
+            exit 1
+          fi
+          run_info="$(curl -fsSL "https://api.github.com/repos/mirpkered/arrow-adventure-qa/actions/runs/$run_id")"
+          if [[ "$(jq -r '.status' <<< "$run_info")" != "completed" || "$(jq -r '.conclusion' <<< "$run_info")" != "success" ]]; then
+            echo "QA's referenced deployment workflow has not completed successfully." >&2
+            exit 1
+          fi
+
+          main_sha="$(git rev-parse refs/remotes/origin/main)"
+          if ! git merge-base --is-ancestor "$main_sha" "$source_sha"; then
+            echo "Refusing to synchronize: development is not a fast-forward of current main." >&2
+            exit 1
+          fi
+
+          production_record="$(curl -fsSL "$PRODUCTION_RECORD_URL" 2>/dev/null || true)"
+          production_sha="$(jq -r '.sourceCommit // empty' <<< "$production_record" 2>/dev/null || true)"
+          if [[ "$production_sha" == "$source_sha" ]]; then
+            echo "Production already reports $source_sha; no deployment is needed."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "sha=$source_sha" >> "$GITHUB_OUTPUT"
+          echo "qa_run_url=$qa_run" >> "$GITHUB_OUTPUT"
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout exact QA-approved source
+        if: steps.candidate.outputs.ready == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.candidate.outputs.sha }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        if: steps.candidate.outputs.ready == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Verify live QA assets and source traceability
+        if: steps.candidate.outputs.ready == 'true'
+        run: node scripts/verify-qa-deployment.mjs "${{ steps.candidate.outputs.sha }}"
+
+      - name: Install dependencies
+        if: steps.candidate.outputs.ready == 'true'
+        run: npm ci
+
+      - name: Revalidate exact QA-approved source
+        if: steps.candidate.outputs.ready == 'true'
+        run: npm test && npm run typecheck
+
+      - name: Build production base path
+        if: steps.candidate.outputs.ready == 'true'
+        run: npm run build -- --base=/arrow-adventure/
+
+      - name: Verify QA modules are absent from production
+        if: steps.candidate.outputs.ready == 'true'
+        run: |
+          if compgen -G 'dist/assets/qaPanel-*.js' >/dev/null || compgen -G 'dist/assets/prototypeReview-*.js' >/dev/null; then
+            echo "Production build unexpectedly includes a QA-only JavaScript module." >&2
+            exit 1
+          fi
+          if grep -R -E -q 'Prototype Review|prototype-square-true-7|qa-deployment\.json' dist --include='*.js' --include='*.html' --include='*.json'; then
+            echo "Production build unexpectedly includes QA-only prototype content or metadata." >&2
+            exit 1
+          fi
+
+      - name: Stamp production source and QA traceability
+        if: steps.candidate.outputs.ready == 'true'
+        env:
+          SOURCE_SHA: ${{ steps.candidate.outputs.sha }}
+          QA_RUN_URL: ${{ steps.candidate.outputs.qa_run_url }}
+          PRODUCTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/stamp-production-build.mjs dist "$SOURCE_SHA" "$QA_RUN_URL" "$PRODUCTION_RUN_URL"
+
+      - name: Configure GitHub Pages
+        if: steps.candidate.outputs.ready == 'true'
+        uses: actions/configure-pages@v5
+
+      - name: Upload production site artifact
+        if: steps.candidate.outputs.ready == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Fast-forward main to the deployed QA candidate
+        if: steps.candidate.outputs.ready == 'true'
+        env:
+          SOURCE_SHA: ${{ steps.candidate.outputs.sha }}
+        run: |
+          git fetch origin refs/heads/main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor refs/remotes/origin/main "$SOURCE_SHA"; then
+            echo "main moved during synchronization; refusing to update it or deploy production." >&2
+            exit 1
+          fi
+          git push origin "$SOURCE_SHA:refs/heads/main"
+
+  deploy-production:
+    if: needs.promote.outputs.ready == 'true'
+    needs: promote
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Confirm QA still serves this exact source revision
+        env:
+          EXPECTED_SHA: ${{ needs.promote.outputs.source_sha }}
+          EXPECTED_QA_RUN: ${{ needs.promote.outputs.qa_run_url }}
+        run: |
+          qa_record="$(curl -fsSL https://mirpkered.github.io/arrow-adventure-qa/qa-deployment.json)"
+          if [[ "$(jq -r '.sourceCommit // empty' <<< "$qa_record")" != "$EXPECTED_SHA" || "$(jq -r '.workflowRun // empty' <<< "$qa_record")" != "$EXPECTED_QA_RUN" ]]; then
+            echo "Refusing production deployment: QA changed after the production build." >&2
+            exit 1
+          fi
+          run_id="${EXPECTED_QA_RUN##*/}"
+          run_info="$(curl -fsSL "https://api.github.com/repos/mirpkered/arrow-adventure-qa/actions/runs/$run_id")"
+          if [[ "$(jq -r '.status' <<< "$run_info")" != "completed" || "$(jq -r '.conclusion' <<< "$run_info")" != "success" ]]; then
+            echo "Refusing production deployment: the QA run no longer reports success." >&2
+            exit 1
+          fi
+      - name: Deploy QA-approved production artifact
+        id: deployment
+        uses: actions/deploy-pages@v4

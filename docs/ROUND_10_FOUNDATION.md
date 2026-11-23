@@ -2,7 +2,7 @@
 
 ## Status
 
-Round 10 replaces the active development Adventure catalog with five new frozen levels under catalog version `first-flight-r2-true-grid`. It is prepared for isolated QA review. Production `main` remains at the previous six-level release and must not be updated until the developer reviews these five levels on an iPhone.
+Round 10 replaces the prior six-level Adventure catalog with five frozen levels under catalog version `first-flight-r2-true-grid`. The developer authorized direct production promotion and a temporary QA-gated synchronization workflow. The five new levels still need physical iPhone playtesting; future promotion behavior can be disabled before public launch.
 
 The retired ten-level Round 9 candidate catalog is preserved at `src/game/archive/adventure-catalog-first-flight-r1.json`; its canonical JSON fingerprint matches the pre-reset active catalog. The older six-level reference catalog remains in `src/game/archive/catalog-round8.ts`. Round 9H remains an unchanged QA prototype at `src/game/prototypes/round9h-square-true-7.json` with its original fingerprint and regression tests.
 
