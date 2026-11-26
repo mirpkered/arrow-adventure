@@ -6,7 +6,8 @@
 | --- | --- | --- | --- |
 | Production | `mirpkered/arrow-adventure`, `main` | <https://mirpkered.github.io/arrow-adventure/> | Temporary sync promotes only the latest development-branch SHA after that exact revision succeeds and deploys on QA. |
 | QA | `mirpkered/arrow-adventure-qa`, workflow on its `main` | <https://mirpkered.github.io/arrow-adventure-qa/> | Manual dispatch with a full candidate SHA from `mirpkered/arrow-adventure`. |
-| Development candidate | `round-10/five-level-foundation` in `mirpkered/arrow-adventure` | QA, then production after a successful QA record | Experimental work stays on other branches. Only a fast-forward candidate from this branch can synchronize. |
+| Development release branch | `round-10/five-level-foundation` in `mirpkered/arrow-adventure` | QA, then production after a successful QA record | The temporary production synchronizer monitors this exact branch only. |
+| Round 11 experiment | `round-11/compactness-refinement` in `mirpkered/arrow-adventure` | Manual QA candidate only | Not read by the automatic production synchronizer; do not merge to `main` or the monitored branch before approval. |
 
 The QA repository has its own GitHub Pages project and `github-pages` deployment environment. Its workflow uses the QA repository's `GITHUB_TOKEN`, and its Pages action can publish only to that repository. It has no token, secret, workflow dispatch, or repository write permission in the production repository. Updating or rolling back QA therefore cannot trigger or overwrite production.
 
@@ -24,7 +25,7 @@ The QA workflow is [Deploy QA candidate](https://github.com/mirpkered/arrow-adve
 
 ## Temporary QA-to-production synchronization
 
-The source workflow is [Sync QA-approved development to production](https://github.com/mirpkered/arrow-adventure/actions/workflows/sync-qa-production.yml). QA remains an independent Pages site and requires an explicit full-SHA dispatch. After the QA workflow succeeds and its live `qa-deployment.json` reports the latest commit on `round-10/five-level-foundation`, the source repository's 15-minute scheduled check:
+The source workflow is [Sync QA-approved development to production](https://github.com/mirpkered/arrow-adventure/actions/workflows/sync-qa-production.yml). QA remains an independent Pages site and requires an explicit full-SHA dispatch. After the QA workflow succeeds and its live `qa-deployment.json` reports the latest commit on `round-10/five-level-foundation`, the source repository's 15-minute scheduled check. Round 11 commits are on a different branch and are not considered by this check:
 
 1. Confirms the live QA deployment record identifies the exact source SHA and a valid QA Actions run URL. The record is included in the Pages artifact only after the QA tests, typecheck, and build pass; the record becoming live also confirms the Pages artifact was published.
 2. Checks the live QA page, JavaScript, CSS, manifest, logo, and app icon responses.
@@ -74,7 +75,7 @@ During the temporary sync period, QA deployment of the configured development-br
 
 Production builds with `/arrow-adventure/`; QA builds the selected candidate with `/arrow-adventure-qa/`. Vite uses this base for the JavaScript/CSS chunks, title logo, favicon, Apple icon, and manifest. Manifest icon URLs are relative to the manifest URL, so they remain in the matching project path.
 
-Both Pages URLs share the `mirpkered.github.io` origin. The game namespaces local progress and settings as `arrow-adventure.production.*` and `arrow-adventure.qa.*`; the QA build flag controls the namespace. Round 10 progress is schema v3, and startup retires old Adventure game keys without removing appearance/audio preferences. This keeps QA saves and preferences separate despite the shared origin. There is no service worker or offline cache. If one is added later, cache names must also be environment-specific.
+Both Pages URLs share the `mirpkered.github.io` origin. The game namespaces local progress and settings as `arrow-adventure.production.*` and `arrow-adventure.qa.*`; the QA build flag controls the namespace. Round 11 progress uses schema v4 and includes the current level content version. It migrates the prior Round 10 schema-v3 save while keeping production and QA data separate; theme/audio preferences remain untouched. This keeps QA saves and preferences isolated despite the shared origin. There is no service worker or offline cache. If one is added later, cache names must also be environment-specific.
 
 ## Deployment history and live record
 

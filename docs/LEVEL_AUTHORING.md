@@ -2,11 +2,11 @@
 
 ## Active catalog
 
-Round 10 establishes the active development catalog at `src/game/adventure-catalog.json`, version `first-flight-r2-true-grid`. It contains five frozen First Flight entries with permanent IDs `first-flight-001` through `first-flight-005`, display numbers, content versions, chapter/difficulty metadata, titles, composition notes, authored footprint polygons, and puzzle definitions. Array positions are not identities. Adventure Mode loads the checked-in definitions; it never generates levels at runtime.
+Round 11 establishes the active development catalog at `src/game/adventure-catalog.json`, version `first-flight-r3-compact-weave`. It retains the five permanent IDs `first-flight-001` through `first-flight-005`, display numbers, chapter/difficulty metadata, authored footprints, and board dimensions, while incrementing each content version to 2. The unchanged Round 10 definitions are preserved at `src/game/archive/adventure-catalog-first-flight-r2.json`. Array positions are not identities. Adventure Mode loads checked-in definitions; it never generates levels at runtime.
 
 The old six-level release is preserved in `src/game/archive/catalog-round8.ts`. The ten provisional Round 9 catalog definitions are preserved structurally in `src/game/archive/adventure-catalog-first-flight-r1.json`; their canonical JSON fingerprint matches the pre-reset catalog. Round 9C–9H prototypes remain separate under `src/game/prototypes/`; Round 9H and its regression tests are unchanged.
 
-Production `main` remains on the former release until the Round 10 catalog has been played and approved on iPhone. Deploy a validated candidate to the isolated QA repository only.
+Round 11 work is developed on `round-11/compactness-refinement` and can be manually deployed to the isolated QA repository. The temporary production synchronization workflow monitors only `round-10/five-level-foundation`; it does not consider this Round 11 branch. Keep production at the approved Round 10 revision until the developer reviews the new layouts.
 
 ## True visible-grid specification
 
@@ -26,7 +26,7 @@ Historical levels and experiments without an explicit `grid` continue using thei
 2. State the visible `W×H` cell count and attach the explicit grid specification above.
 3. Plan the entire composition before splitting it into arrows. Establish the main shared corridors, center/edge use, negative space, and clear exit routes. Add short arrows only where they contribute to the composition or puzzle choices.
 4. Assign ordered points from tail to head. Keep routes simple and readable; use a deliberate mixture of straight paths, hooks, nested turns, and longer winding routes. Do not add decorative arrows or force turns to inflate metrics.
-5. Add the frozen entry to `scripts/authoring/freeze-round10-catalog.mjs` and run `node scripts/authoring/freeze-round10-catalog.mjs` to serialize the deterministic content into the runtime JSON. This helper is authoring-time only. The JSON and its fingerprints are the shipped content.
+5. Add or revise the frozen entry using the deterministic authoring helper for the current round. Round 11's `scripts/authoring/freeze-round11-catalog.mjs` creates a seeded linear forest across the visible lattice as an offline composition aid. The serializer writes explicit paths to runtime JSON; the game never generates this content. The checked-in JSON and fingerprints are the shipped content.
 6. Render full-board and 390×844 previews. Inspect the actual grid, arrowheads, tails, occupied bounds, phone fit, readability, and silhouette. Metrics do not certify visual quality.
 7. Run the full geometry validator. Reject self-intersections, doubled segments, self-collisions, stationary overlap, inadequate clearance, invalid exits, off-grid vertices, and invalid directions.
 8. Run `solveLevel` and the exact `auditReachableStates` on every published candidate. Verify a full solution through `simulateMove` using the same level grid specification. Every reachable nonterminal state must have a route to completion. Never turn an incomplete or capped audit into a pass.
@@ -37,7 +37,7 @@ Historical levels and experiments without an explicit `grid` continue using thei
 
 `validateCuratedLevels` checks unique IDs and display numbers, contiguous progression, chapter references, metadata, true-grid specification, footprint geometry, path occupancy, collision clearance, interlocking diagnostics, solver success, and all-state solvability. `validateLevel` and `validateArrow` check the actual movement geometry. `simulateMove`, the solver, and reachable-state audit share the same collision rules.
 
-The exact state audit currently supports no more than 20 arrows per puzzle. It memoizes remaining-arrow subsets and throws if its state budget is exceeded. Round 10's largest puzzle has 15 arrows. Its five puzzles were fully enumerated across 507 states and 1,430 legal transitions, with no deadlocks or dependency cycles. See [Round 10 Foundation](ROUND_10_FOUNDATION.md) for level metrics, exact route lengths, fingerprints, and links to the previews.
+The exact state audit currently supports no more than 20 arrows per puzzle. It memoizes remaining-arrow subsets and throws if its state budget is exceeded. Round 11's largest puzzle has 15 arrows. All five current puzzles are fully enumerated with the actual gameplay collision simulator; no state is truncated, and no deadlocks or dependency cycles remain. See [Round 11 Compactness](ROUND_11_COMPACTNESS.md) for before/after metrics, route lengths, fingerprints, and previews.
 
 The authoring suite reports close-neighbor, spacing, interleaving, dependency, route, and gap metrics. A true grid often imposes one-cell nearest path spacing; do not add hidden sub-grid lanes to raise density. The visible 0.12-unit body is independent from the fixed collision envelope. Touch target tolerance and rendering scale do not alter the path or collision geometry.
 
@@ -47,4 +47,4 @@ Silhouette authoring is future work. A lightweight future representation can ret
 
 ## Progress reset and save compatibility
 
-Round 10 uses game save schema v3 and catalog version `first-flight-r2-true-grid`. Startup removes prior environment-specific game keys v1/v2 and legacy game progress keys. It preserves independent appearance and audio settings. Old completion data is not mapped to new IDs. Current saves store stable level IDs and stable board state only; animation frames are never saved. Production and QA use different local-storage namespaces. Future save changes should increment the schema version, define which IDs/content versions remain valid, reject unknown states safely, and test migration idempotence without deleting unrelated preferences.
+Round 11 uses game save schema v4 and catalog version `first-flight-r3-compact-weave`. The save includes the current level content version. A v3 save from Round 10 preserves known completion IDs and the selected stable level ID. If that level is unfinished, its remaining arrows, red marks, and hearts are reset because the route geometry changed; a completed level retains completion credit. The v3 source is removed only after the v4 write succeeds. Appearance/audio preferences are untouched, and QA/production keys remain namespaced separately. Future content edits should increment content versions and test the same compatibility rules.

@@ -1,8 +1,14 @@
 # Arrow Adventure Roadmap
 
-## Round 10 — five-level foundation
+## Round 11 — compactness refinement (in QA review)
 
-Round 10 replaces the prior Adventure catalog with five individually frozen First Flight puzzles using true visible-grid geometry. The levels progress from a small teaching tangle to an 8×8 challenge. The catalog is versioned `first-flight-r2-true-grid`; game-save schema v3 discards prior Adventure completion data while preserving appearance and audio preferences. The prior six-level release, ten Round 9 catalog candidates, and Round 9H reference remain preserved outside active play.
+Round 11 refines the same five First Flight IDs, board dimensions, arrow counts, movement rules, and true visible-grid convention. The level definitions use catalog `first-flight-r3-compact-weave`, with content version 2. The compositions are frozen, deterministic path forests arranged across each complete lattice. The original Round 10 catalog is archived at `src/game/archive/adventure-catalog-first-flight-r2.json` for comparison. The active production site remains at the approved Round 10 revision until the developer reviews Round 11 on iPhone.
+
+The candidate increases route length and interleaving in every level, preserves the original initial safe-move counts, and passes individual geometry plus exact reachable-state audits. Previews and before/after measurements are in [Round 11 Compactness](ROUND_11_COMPACTNESS.md). This branch is isolated from the temporary production synchronization branch; only a manual QA candidate deployment is intended.
+
+## Round 10 — five-level foundation (historical)
+
+Round 10 established the five-level First Flight foundation on true visible-grid geometry. Its catalog is versioned `first-flight-r2-true-grid`; its save schema v3 is migrated by Round 11 schema v4. The prior six-level release, ten Round 9 catalog candidates, and Round 9H reference remain preserved outside active play.
 
 All five boards pass path validation, stationary/swept collision checks, solver/runtime replay, and complete reachable-state audits. QA and production are separately built from the same QA-validated source SHA. The developer should still play the five levels on iPhone; physical-device review is not automated. See [Round 10 Foundation](ROUND_10_FOUNDATION.md) for level metrics, fingerprints, tests, and preview images.
 

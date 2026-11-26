@@ -92,8 +92,9 @@ function getLevel(number: number) { return getCuratedLevel(number); }
 
 function activeSave(levelComplete = screen === 'complete'): GameSave {
   return {
-    version: 3,
+    version: 4,
     catalogVersion: catalogEntry.catalogVersion,
+    contentVersion: catalogEntry.contentVersion,
     currentLevelId: catalogEntry.id,
     completedLevelIds: [...completedIds],
     remainingArrowIds: levelComplete ? [] : arrows.map(({ id }) => id),

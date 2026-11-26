@@ -6,16 +6,18 @@ import { measureNeighborSpacing } from '../src/game/density';
 import { analyzeLevel, simulateMove, solveLevel, validateLevel } from '../src/game/rules';
 import { auditReachableStates } from '../src/game/stateAudit';
 import retiredR1Catalog from '../src/game/archive/adventure-catalog-first-flight-r1.json';
+import round10Catalog from '../src/game/archive/adventure-catalog-first-flight-r2.json';
 
-const routeLengths = (level: typeof CURATED_LEVELS[number]) => level.puzzle.arrows.map(({ path }) =>
-  path.slice(1).reduce((sum, point, index) => sum + Math.hypot(point.x - path[index].x, point.y - path[index].y), 0));
-
-describe('Round 10 five-level foundation', () => {
-  it('preserves the complete ten-level Round 9 catalog in the archive', () => {
+describe('Round 11 active catalog and preserved Round 10 content', () => {
+  it('preserves the Round 9 and exact Round 10 catalogs in their archives', () => {
     expect(retiredR1Catalog.catalogVersion).toBe('first-flight-r1');
     expect(retiredR1Catalog.levels).toHaveLength(10);
     expect(createHash('sha256').update(JSON.stringify(retiredR1Catalog)).digest('hex'))
       .toBe('0cff244d130159eea2ce6e4f294927317aa14d466bb35af672ca9e8d392b68de');
+    expect(round10Catalog.catalogVersion).toBe('first-flight-r2-true-grid');
+    expect(round10Catalog.levels).toHaveLength(5);
+    expect(createHash('sha256').update(JSON.stringify(round10Catalog)).digest('hex'))
+      .toBe('ec345f51cdf681be57f044c9bd62c88600715ff0efd65c55c05979a48a6ba8c0');
   });
 
   it('uses stable IDs and exactly five frozen levels on true visible grids', () => {
@@ -53,18 +55,19 @@ describe('Round 10 five-level foundation', () => {
     expect(getCuratedLevelById('first-flight-005')?.number).toBe(5);
     expect(getNextCuratedLevel(CURATED_LEVELS[3])?.id).toBe('first-flight-005');
     expect(getNextCuratedLevel(CURATED_LEVELS[4])).toBeUndefined();
+    expect(CURATED_LEVELS.every(({ catalogVersion, contentVersion }) => catalogVersion === 'first-flight-r3-compact-weave' && contentVersion === 2)).toBe(true);
     expect(() => validateCuratedLevels()).not.toThrow();
   });
 
-  it('freezes authored route lengths and distinct fingerprints', async () => {
-    expect(CURATED_LEVELS.map(routeLengths)).toEqual([
+  it('keeps Round 10 route definitions unchanged in its archive', () => {
+    expect(round10Catalog.levels.map((entry) => entry.puzzle.arrows.map(({ path }) => path.length - 1))).toEqual([
       [5, 2, 6, 3, 5],
       [6, 4, 4, 2, 3, 3, 2, 2],
       [5, 3, 4, 5, 3, 3, 2, 3, 6, 2],
       [7, 3, 2, 4, 3, 5, 5, 7, 4, 2, 3, 2],
       [7, 3, 2, 5, 3, 5, 5, 7, 4, 2, 3, 2, 2, 2, 3],
     ]);
-    const fingerprints = CURATED_LEVELS.map(({ puzzle }) => createHash('sha256').update(JSON.stringify(puzzle)).digest('hex'));
+    const fingerprints = round10Catalog.levels.map(({ puzzle }) => createHash('sha256').update(JSON.stringify(puzzle)).digest('hex'));
     expect(fingerprints).toEqual([
       '190b3fc27952e948ba9da079cb18392d654c026ecf6d11cd5261ff6b9d13ade4',
       '14e6e1dcbf82e4bade2b62d5e5ad2bfe741d7bfdfa8412e972c9916eccfd8cbb',
@@ -75,8 +78,8 @@ describe('Round 10 five-level foundation', () => {
   });
 
   it('completes exact reachable-state and gameplay-simulator audits for every arrow', () => {
-    const expectedStates = [10, 52, 34, 172, 239];
-    const expectedTransitions = [13, 128, 63, 512, 714];
+    const expectedStates = [8, 21, 70, 56, 66];
+    const expectedTransitions = [9, 35, 165, 124, 137];
     for (const [index, entry] of CURATED_LEVELS.entries()) {
       const puzzle = entry.puzzle;
       const solution = solveLevel(puzzle);

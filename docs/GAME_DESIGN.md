@@ -1,6 +1,6 @@
 # Shared-Board Game Design
 
-> **Round 10 status:** Production and QA use five frozen First Flight levels with the Round 9H-approved true visible-grid convention. The old six-level production set and ten provisional Round 9 definitions remain archived. Temporary QA-gated synchronization is active; each environment is built separately from the same validated source SHA. See [Roadmap](ROADMAP.md) and [Round 10 Foundation](ROUND_10_FOUNDATION.md).
+> **Round 11 status:** The active development catalog contains five compactness-refined First Flight levels under `first-flight-r3-compact-weave`. Round 10 layouts remain archived; the active production deployment is not changed by this development branch. The candidate is deployed only to isolated QA for review. See [Roadmap](ROADMAP.md) and [Round 11 Compactness](ROUND_11_COMPACTNESS.md).
 
 ## Active prototype rules
 
@@ -52,7 +52,7 @@ These metrics screen weak boards but do not prove readability. Inspect the full 
 
 ## Menus, saves and appearance
 
-The title screen provides Play, Continue, Settings and Credits. The in-game pause sheet offers Resume, Restart, Settings and Return to Title. Round 10 uses save schema v3 and catalog `first-flight-r2-true-grid`; startup removes old environment-specific game progress keys from schemas v1/v2 rather than mapping completion records to new levels, while preserving appearance and audio preferences. New saves store stable IDs, remaining arrows, red failure marks, hearts and completion state, never intermediate animation frames. Invalid or unknown saves are ignored. The retired `mirpworks.arrow-adventure.save.v1/v2` records are never imported.
+The title screen provides Play, Continue, Settings and Credits. The in-game pause sheet offers Resume, Restart, Settings and Return to Title. Round 11 uses save schema v4 and catalog `first-flight-r3-compact-weave`; saves record the active level content version. Migration from Round 10 schema v3 preserves completed IDs and the selected level, resets only an unfinished board whose geometry changed, and leaves appearance/audio preferences untouched. The source save is removed only after a successful v4 write. New saves store stable IDs, remaining arrows, red failure marks, hearts and completion state, never intermediate animation frames. Invalid or unknown saves are ignored. The retired `mirpworks.arrow-adventure.save.v1/v2` records are never imported.
 
 Production uses `arrow-adventure.production.*` keys. QA uses `arrow-adventure.qa.*` keys because GitHub Pages project URLs share the `github.io` origin; path separation alone would not isolate `localStorage`. Appearance and audio settings have the same environment separation. Light is the default only when no valid preference is saved; explicit Light, Dark, and Automatic preferences remain respected. Automatic follows the system appearance, and theme changes rerender the current screen without restarting the board. Optional synthesized music is off by default; original sound effects can be toggled separately. Audio settings do not pause or interrupt other apps' music.
 

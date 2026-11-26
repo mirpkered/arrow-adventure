@@ -21,7 +21,7 @@ const styleSource = readFileSync(fileURLToPath(new URL('../src/style.css', impor
 const titleSceneSource = readFileSync(fileURLToPath(new URL('../public/branding/arrow-adventure-title-scene.svg', import.meta.url)), 'utf8');
 const makeArrow = (id: string, path: Point[]): Arrow => ({ id, path });
 
-describe('Round 10 curated catalog', () => {
+describe('Round 11 curated catalog', () => {
   it('contains five stable, ordered true-grid levels with deliberate progression metadata', () => {
     expect(CURATED_LEVELS).toHaveLength(5);
     expect(CURATED_LEVELS.map(({number}) => number)).toEqual([1, 2, 3, 4, 5]);
@@ -30,8 +30,8 @@ describe('Round 10 curated catalog', () => {
     expect(CURATED_LEVELS.map(({difficulty}) => difficulty)).toEqual(['intro', 'easy', 'easy-medium', 'medium', 'medium-hard']);
     expect(CURATED_LEVELS.every(({composition}) => composition === 'abstract')).toBe(true);
     for (const entry of CURATED_LEVELS) {
-      expect(entry.catalogVersion).toBe('first-flight-r2-true-grid');
-      expect(entry.contentVersion).toBe(1);
+      expect(entry.catalogVersion).toBe('first-flight-r3-compact-weave');
+      expect(entry.contentVersion).toBe(2);
       expect(entry.puzzle.grid).toEqual({ spacing: 1, origin: { x: 0, y: 0 }, pathOffset: 0, includeOuterBoundary: true });
       expect(entry.puzzle.width).toBeGreaterThan(0);
       expect(entry.puzzle.height).toBeGreaterThan(0);
@@ -56,8 +56,8 @@ describe('Round 10 curated catalog', () => {
   it('checks geometry, solver/runtime agreement, and every exact reachable-state audit', () => {
     let auditedArrows = 0;
     for (const entry of CURATED_LEVELS) {
-      expect(entry.catalogVersion).toBe('first-flight-r2-true-grid');
-      expect(entry.contentVersion).toBe(1);
+      expect(entry.catalogVersion).toBe('first-flight-r3-compact-weave');
+      expect(entry.contentVersion).toBe(2);
       expect(() => validateLevel(entry.puzzle), entry.id).not.toThrow();
       const solution = solveLevel(entry.puzzle);
       expect(solution, entry.id).not.toBeNull();
@@ -104,11 +104,11 @@ describe('Round 10 curated catalog', () => {
       return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
     }));
     expect(fingerprints).toEqual([
-      '190b3fc27952e948ba9da079cb18392d654c026ecf6d11cd5261ff6b9d13ade4',
-      '14e6e1dcbf82e4bade2b62d5e5ad2bfe741d7bfdfa8412e972c9916eccfd8cbb',
-      'a166c2a94be373622217f26d70cef1632a04122360e308289f3b16f650562081',
-      '0f1a6dcf828a7f1cd35f6a1e7d479b683e347e26f21862afa35af8b5d1f3ba33',
-      '98e3d082ac926431258f88244fee11b0b7234546ec032c58bfb3399195360187',
+      '37cbe680ff4584bb62ce00e0b339cccfcba84b684e2067e9c785f9cc3f2d9faa',
+      '9d1363d47f6ab4fe8f3ac389037123f94491934739fe5c23af31bbcad6b0515e',
+      '508038279aa37369989999aa52fcfc4708677541af6ae9fa6c293c32f24d0583',
+      '80ecd915ed11398c641c227aa20ccab6a72d633a3cfa0d6cc45af5fda796a66d',
+      '0889f74c4ebe063b8d864607e518ea6141fd3ca6227c32cb494e1b8f61e87381',
     ]);
   });
   it('rejects duplicate IDs, numbering gaps and mismatched puzzle metadata', () => {

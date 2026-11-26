@@ -2,7 +2,7 @@
 
 ## Status
 
-Round 10 replaces the prior six-level Adventure catalog with five frozen levels under catalog version `first-flight-r2-true-grid`. The developer authorized direct production promotion and a temporary QA-gated synchronization workflow. The five new levels still need physical iPhone playtesting; future promotion behavior can be disabled before public launch.
+Round 10 established the five frozen levels under catalog version `first-flight-r2-true-grid`. It is preserved as a historical content snapshot; Round 11 reauthors the same five stable IDs under catalog version `first-flight-r3-compact-weave`. The Round 10 production release was physically reviewed and approved by the developer.
 
 The retired ten-level Round 9 candidate catalog is preserved at `src/game/archive/adventure-catalog-first-flight-r1.json`; its canonical JSON fingerprint matches the pre-reset active catalog. The older six-level reference catalog remains in `src/game/archive/catalog-round8.ts`. Round 9H remains an unchanged QA prototype at `src/game/prototypes/round9h-square-true-7.json` with its original fingerprint and regression tests.
 
@@ -51,7 +51,7 @@ The portraits are renderer-generated static previews using the gameplay stroke, 
 
 ## Save reset
 
-Round 10 changes Adventure progress to save schema v3 and catalog version `first-flight-r2-true-grid`. Startup removes only the previous environment-specific game keys (`arrow-adventure.{production|qa}.game.v1/.v2`) and the retired legacy game-save keys. It does not remove appearance or audio preferences. Old level completions are not mapped to the new levels. New stable board states continue to save by level ID; animation frames are never persisted. QA and production use different storage namespaces.
+Round 10 used Adventure progress schema v3. Round 11 moves to schema v4 and records each active level's content version. When schema v3 progress loads against the revised catalog, completed-level credit and the selected level are retained. An unfinished board with changed geometry restarts at full hearts; the old v3 save is removed only after the v4 write succeeds. Appearance and audio preferences remain separate and unchanged.
 
 ## Reproducible authoring and limits
 

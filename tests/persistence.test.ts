@@ -13,8 +13,9 @@ function storageFixture(initial: Record<string, string> = {}) {
 }
 
 describe('local game persistence', () => {
-  it('uses schema-v3 progress keys while keeping preferences independently versioned', () => {
-    expect(PRODUCTION_STORAGE_KEYS.game).toBe('arrow-adventure.production.game.v3');
+  it('uses schema-v4 progress keys while keeping preferences independently versioned', () => {
+    expect(PRODUCTION_STORAGE_KEYS.game).toBe('arrow-adventure.production.game.v4');
+    expect(PRODUCTION_STORAGE_KEYS.previousGame).toBe('arrow-adventure.production.game.v3');
     expect(PRODUCTION_STORAGE_KEYS.retiredGame).toBe('arrow-adventure.production.game.v2');
     expect(PRODUCTION_STORAGE_KEYS.settings).toBe('arrow-adventure.production.settings.v1');
   });
@@ -23,8 +24,9 @@ describe('local game persistence', () => {
     const { storage } = storageFixture();
     const first = CURATED_LEVELS[0];
     const save = {
-      version: 3 as const,
+      version: 4 as const,
       catalogVersion: first.catalogVersion,
+      contentVersion: first.contentVersion,
       currentLevelId: first.id,
       completedLevelIds: [],
       remainingArrowIds: first.puzzle.arrows.map((arrow) => arrow.id),
@@ -48,7 +50,7 @@ describe('local game persistence', () => {
   it('rejects unknown content, invalid hearts, and inconsistent completion records', () => {
     const { storage } = storageFixture();
     const level = CURATED_LEVELS[0];
-    const valid = { version: 3, catalogVersion: level.catalogVersion, currentLevelId: level.id, completedLevelIds: [], remainingArrowIds: level.puzzle.arrows.map(({ id }) => id), redArrowIds: [], hearts: 3, levelComplete: false };
+    const valid = { version: 4, catalogVersion: level.catalogVersion, contentVersion: level.contentVersion, currentLevelId: level.id, completedLevelIds: [], remainingArrowIds: level.puzzle.arrows.map(({ id }) => id), redArrowIds: [], hearts: 3, levelComplete: false };
     for (const invalid of [
       { ...valid, currentLevelId: 'legacy-level-040' },
       { ...valid, catalogVersion: 'retired-catalog' },
@@ -90,7 +92,7 @@ describe('local game persistence', () => {
   it('isolates QA progress and preferences from production on the shared GitHub Pages origin', () => {
     const { storage } = storageFixture();
     const level = CURATED_LEVELS[0];
-    const save = { version: 3 as const, catalogVersion: level.catalogVersion, currentLevelId: level.id, completedLevelIds: [], remainingArrowIds: level.puzzle.arrows.map(({ id }) => id), redArrowIds: [], hearts: 3, levelComplete: false };
+    const save = { version: 4 as const, catalogVersion: level.catalogVersion, contentVersion: level.contentVersion, currentLevelId: level.id, completedLevelIds: [], remainingArrowIds: level.puzzle.arrows.map(({ id }) => id), redArrowIds: [], hearts: 3, levelComplete: false };
     const qaSettings = { version: 1 as const, appearance: 'dark' as const, backgroundMusic: false, soundEffects: false };
     saveGame(storage, save, QA_STORAGE_KEYS);
     saveSettings(storage, qaSettings, QA_STORAGE_KEYS);
@@ -121,9 +123,126 @@ describe('local game persistence', () => {
     expect(data.has('mirpworks.arrow-adventure.save.v1')).toBe(false);
     expect(data.has('mirpworks.arrow-adventure.save.v2')).toBe(false);
     expect(data.get(PRODUCTION_STORAGE_KEYS.settings)).toBe(settings);
-    const newSave = { version: 3 as const, catalogVersion: level.catalogVersion, currentLevelId: level.id,
+    const newSave = { version: 4 as const, catalogVersion: level.catalogVersion, contentVersion: level.contentVersion, currentLevelId: level.id,
       completedLevelIds: [], remainingArrowIds: level.puzzle.arrows.map(({id}) => id), redArrowIds: [], hearts: 3, levelComplete: false };
     expect(saveGame(storage, newSave)).toBe(true);
     expect(loadGameSave(storage, CURATED_LEVELS)).toEqual(newSave);
+  });
+
+  it('migrates v3 in-progress state safely, preserving completed credit and selection while restarting changed geometry', () => {
+    const current = CURATED_LEVELS[2];
+    const previous = {
+      version: 3,
+      catalogVersion: 'first-flight-r2-true-grid',
+      currentLevelId: current.id,
+      completedLevelIds: [CURATED_LEVELS[0].id, CURATED_LEVELS[1].id],
+      remainingArrowIds: [current.puzzle.arrows[0].id],
+      redArrowIds: [current.puzzle.arrows[0].id],
+      hearts: 1,
+      levelComplete: false,
+    };
+    const prefs = JSON.stringify({ version: 1, appearance: 'dark', backgroundMusic: true, soundEffects: false });
+    const { storage, data } = storageFixture({
+      [PRODUCTION_STORAGE_KEYS.previousGame]: JSON.stringify(previous),
+      [PRODUCTION_STORAGE_KEYS.settings]: prefs,
+    });
+    retireIncompatibleProgress(storage);
+    const migrated = loadGameSave(storage, CURATED_LEVELS)!;
+    expect(migrated).toEqual({
+      version: 4,
+      catalogVersion: current.catalogVersion,
+      contentVersion: current.contentVersion,
+      currentLevelId: current.id,
+      completedLevelIds: previous.completedLevelIds,
+      remainingArrowIds: current.puzzle.arrows.map(({ id }) => id),
+      redArrowIds: [],
+      hearts: 3,
+      levelComplete: false,
+    });
+    expect(data.has(PRODUCTION_STORAGE_KEYS.previousGame)).toBe(false);
+    expect(JSON.parse(data.get(PRODUCTION_STORAGE_KEYS.game)!)).toEqual(migrated);
+    expect(data.get(PRODUCTION_STORAGE_KEYS.settings)).toBe(prefs);
+    expect(loadGameSave(storage, CURATED_LEVELS)).toEqual(migrated);
+  });
+
+  it('keeps completed-level credit when migrating a v3 completion', () => {
+    const current = CURATED_LEVELS[1];
+    const previous = {
+      version: 3,
+      catalogVersion: 'first-flight-r2-true-grid',
+      currentLevelId: current.id,
+      completedLevelIds: [current.id],
+      remainingArrowIds: [],
+      redArrowIds: [],
+      hearts: 2,
+      levelComplete: true,
+    };
+    const { storage } = storageFixture({ [PRODUCTION_STORAGE_KEYS.previousGame]: JSON.stringify(previous) });
+    expect(loadGameSave(storage, CURATED_LEVELS)).toEqual({
+      version: 4,
+      catalogVersion: current.catalogVersion,
+      contentVersion: current.contentVersion,
+      currentLevelId: current.id,
+      completedLevelIds: [current.id],
+      remainingArrowIds: [],
+      redArrowIds: [],
+      hearts: 2,
+      levelComplete: true,
+    });
+  });
+
+  it('never removes the v3 source save when writing the migrated v4 record fails', () => {
+    const level = CURATED_LEVELS[0];
+    const oldSave = JSON.stringify({
+      version: 3,
+      catalogVersion: 'first-flight-r2-true-grid',
+      currentLevelId: level.id,
+      completedLevelIds: [],
+      remainingArrowIds: [level.puzzle.arrows[0].id],
+      redArrowIds: [],
+      hearts: 1,
+      levelComplete: false,
+    });
+    const data = new Map([[PRODUCTION_STORAGE_KEYS.previousGame, oldSave]]);
+    const storage: StorageLike = {
+      getItem: (key) => data.get(key) ?? null,
+      setItem: (key, value) => { if (key === PRODUCTION_STORAGE_KEYS.game) throw new Error('quota'); data.set(key, value); },
+      removeItem: (key) => { data.delete(key); },
+    };
+    expect(loadGameSave(storage, CURATED_LEVELS)?.version).toBe(4);
+    expect(data.get(PRODUCTION_STORAGE_KEYS.previousGame)).toBe(oldSave);
+    expect(data.has(PRODUCTION_STORAGE_KEYS.game)).toBe(false);
+  });
+
+  it('leaves malformed v3 progress untouched and resets only an incompatible v4 active board', () => {
+    const current = CURATED_LEVELS[0];
+    const malformed = '{bad v3';
+    const { storage, data } = storageFixture({ [PRODUCTION_STORAGE_KEYS.previousGame]: malformed });
+    expect(loadGameSave(storage, CURATED_LEVELS)).toBeNull();
+    expect(data.get(PRODUCTION_STORAGE_KEYS.previousGame)).toBe(malformed);
+
+    const stale = {
+      version: 4,
+      catalogVersion: 'first-flight-r2-true-grid',
+      contentVersion: 1,
+      currentLevelId: current.id,
+      completedLevelIds: [CURATED_LEVELS[0].id, CURATED_LEVELS[1].id],
+      remainingArrowIds: [current.puzzle.arrows[0].id],
+      redArrowIds: [],
+      hearts: 1,
+      levelComplete: false,
+    };
+    data.set(PRODUCTION_STORAGE_KEYS.game, JSON.stringify(stale));
+    expect(loadGameSave(storage, CURATED_LEVELS)).toEqual({
+      version: 4,
+      catalogVersion: current.catalogVersion,
+      contentVersion: current.contentVersion,
+      currentLevelId: current.id,
+      completedLevelIds: stale.completedLevelIds,
+      remainingArrowIds: current.puzzle.arrows.map(({ id }) => id),
+      redArrowIds: [],
+      hearts: 3,
+      levelComplete: false,
+    });
   });
 });
