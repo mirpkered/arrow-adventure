@@ -2,7 +2,7 @@
 
 ## Active catalog
 
-Round 11 establishes the active development catalog at `src/game/adventure-catalog.json`, version `first-flight-r3-compact-weave`. It retains the five permanent IDs `first-flight-001` through `first-flight-005`, display numbers, chapter/difficulty metadata, authored footprints, and board dimensions, while incrementing each content version to 2. The unchanged Round 10 definitions are preserved at `src/game/archive/adventure-catalog-first-flight-r2.json`. Array positions are not identities. Adventure Mode loads checked-in definitions; it never generates levels at runtime.
+Round 11 establishes the active development catalog at `src/game/adventure-catalog.json`, version `first-flight-r3-compact-weave`. It retains the five permanent IDs `first-flight-001` through `first-flight-005`, display numbers, chapter/difficulty metadata, authored footprints, and board dimensions. Levels 1, 2, 4, and 5 are content version 2; Level 3 is content version 3 after the Round 11A c05 orientation correction. The unchanged Round 10 definitions are preserved at `src/game/archive/adventure-catalog-first-flight-r2.json`. Array positions are not identities. Adventure Mode loads checked-in definitions; it never generates levels at runtime.
 
 The old six-level release is preserved in `src/game/archive/catalog-round8.ts`. The ten provisional Round 9 catalog definitions are preserved structurally in `src/game/archive/adventure-catalog-first-flight-r1.json`; their canonical JSON fingerprint matches the pre-reset catalog. Round 9C–9H prototypes remain separate under `src/game/prototypes/`; Round 9H and its regression tests are unchanged.
 

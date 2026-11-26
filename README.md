@@ -1,6 +1,6 @@
 # Arrow Adventure
 
-Arrow Adventure is a mobile-first, advertisement-free puzzle game from MIRPWORKS. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. The Round 11 development candidate refines the five approved Adventure levels into denser, more interwoven true-grid compositions. The approved Round 10 layout remains in production during Round 11 iPhone review.
+Arrow Adventure is a mobile-first, advertisement-free puzzle game from MIRPWORKS. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. The Round 11 development candidate refines the five approved Adventure levels into denser, more interwoven true-grid compositions. Round 11A also corrects Level 3's c05 head direction after physical playtest feedback; Round 10 remains in production pending review.
 
 Production: <https://mirpkered.github.io/arrow-adventure/>
 
@@ -68,6 +68,7 @@ The [Round 11 compactness report](docs/ROUND_11_COMPACTNESS.md) documents the be
 
 - Round 11 keeps five levels and 50 arrows; all five use the same board dimensions and true-grid rules as the physically approved Round 10 foundation. The exact audit covers every reachable state in the candidate catalog.
 - Round 11 uses schema v4 content-version migration and preserves completed-level credit and unrelated appearance/audio settings.
+- Round 11A's c05 investigation, correction, and motion-frame previews are in [docs/ROUND_11A_C05.md](docs/ROUND_11A_C05.md).
 - Round 11 previews are renderer-generated, not browser captures. The candidate still requires physical iPhone review before production promotion.
 - The five catalog levels are separate from QA-only A–H and Round 9H review prototypes. Production synchronization validates the active catalog and tree-shakes QA-only tools.
 - Free Play, tutorials, black holes, switches, gates, portals, and additional chapters are future work.

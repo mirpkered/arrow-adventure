@@ -69,15 +69,15 @@ function makeForest(width, height, arrowCount, seed) {
 }
 
 const designs = [
-  { number: 1, width: 5, height: 5, title: 'First Steps', difficulty: 'intro', prefix: 'a', count: 5, seed: 1128, reversedArrows: [0, 1, 3], note: 'A small mixed-orientation route field keeps the first exits readable while sharing the center and perimeter corridors.' },
-  { number: 2, width: 6, height: 6, title: 'Close Quarters', difficulty: 'easy', prefix: 'b', count: 8, seed: 2249, reversedArrows: [3, 5, 7], note: 'Eight short-to-medium routes fill adjacent corridors with offset bends and several early escape choices.' },
-  { number: 3, width: 7, height: 7, title: 'Winding Paths', difficulty: 'easy-medium', prefix: 'c', count: 10, seed: 3301, reversedArrows: [3, 4, 9], note: 'A compact seven-cell route field mixes nested hooks with longer paths and several coordinated interior bends.' },
-  { number: 4, width: 7, height: 8, title: 'The Weave', difficulty: 'medium', prefix: 'd', count: 12, seed: 4421, reversedArrows: [2, 4, 9], note: 'A taller packed route composition adds crossing exit dependencies while maintaining distinct, non-touching centerlines.' },
-  { number: 5, width: 8, height: 8, title: 'First Challenge', difficulty: 'medium-hard', prefix: 'e', count: 15, seed: 5521, reversedArrows: [3, 6, 7, 11], note: 'The densest board combines short pockets and longer irregular paths across the full square footprint.' },
+  { number: 1, width: 5, height: 5, title: 'First Steps', difficulty: 'intro', prefix: 'a', count: 5, seed: 1128, reversedArrows: [0, 1, 3], contentVersion: 2, note: 'A small mixed-orientation route field keeps the first exits readable while sharing the center and perimeter corridors.' },
+  { number: 2, width: 6, height: 6, title: 'Close Quarters', difficulty: 'easy', prefix: 'b', count: 8, seed: 2249, reversedArrows: [3, 5, 7], contentVersion: 2, note: 'Eight short-to-medium routes fill adjacent corridors with offset bends and several early escape choices.' },
+  { number: 3, width: 7, height: 7, title: 'Winding Paths', difficulty: 'easy-medium', prefix: 'c', count: 10, seed: 3301, reversedArrows: [3, 9], contentVersion: 3, note: 'A compact seven-cell route field mixes nested hooks with longer paths and several coordinated interior bends.' },
+  { number: 4, width: 7, height: 8, title: 'The Weave', difficulty: 'medium', prefix: 'd', count: 12, seed: 4421, reversedArrows: [2, 4, 9], contentVersion: 2, note: 'A taller packed route composition adds crossing exit dependencies while maintaining distinct, non-touching centerlines.' },
+  { number: 5, width: 8, height: 8, title: 'First Challenge', difficulty: 'medium-hard', prefix: 'e', count: 15, seed: 5521, reversedArrows: [3, 6, 7, 11], contentVersion: 2, note: 'The densest board combines short pockets and longer irregular paths across the full square footprint.' },
 ];
 
 const catalogVersion = 'first-flight-r3-compact-weave';
-const levels = designs.map(({ number, width, height, title, difficulty, prefix, count, seed, reversedArrows, note }) => {
+const levels = designs.map(({ number, width, height, title, difficulty, prefix, count, seed, reversedArrows, contentVersion, note }) => {
   const arrows = makeForest(width, height, count, seed).map((rawPath, index) => {
     const path = reversedArrows.includes(index) ? [...rawPath].reverse() : rawPath;
     return { id: `${prefix}${String(index + 1).padStart(2, '0')}`, path };
@@ -86,7 +86,7 @@ const levels = designs.map(({ number, width, height, title, difficulty, prefix, 
     id: `first-flight-${String(number).padStart(3, '0')}`,
     number,
     catalogVersion,
-    contentVersion: 2,
+    contentVersion,
     chapterId: 'first-flight',
     title,
     difficulty,

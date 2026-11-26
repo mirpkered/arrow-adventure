@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-Round 11 refines the five approved First Flight puzzles without changing their stable IDs, display numbers, visible-grid dimensions, arrow counts, movement rules, or opening safe-move counts. New paths are frozen under catalog `first-flight-r3-compact-weave`, with content version 2. The Round 10 catalog remains unchanged in `src/game/archive/adventure-catalog-first-flight-r2.json`; production stays on the approved Round 10 source until the developer reviews this candidate on iPhone.
+Round 11 refines the five approved First Flight puzzles without changing their stable IDs, display numbers, visible-grid dimensions, arrow counts, or movement rules. This document records the initial Round 11 snapshot at commit `e9b3cdde7faf37589f4af98331e73c1048c22a30`, where all five content versions were 2. Round 11A subsequently changed only Level 3 arrow c05's orientation and bumped that level to content version 3; the focused diagnosis is in [Round 11A c05 correction](ROUND_11A_C05.md). The Round 10 catalog remains unchanged in `src/game/archive/adventure-catalog-first-flight-r2.json`; production stays on the approved Round 10 source pending physical review.
 
 The design follows the supplied density principles: short, medium, and winding routes share a compact field, with neighboring paths turning near each other. The accepted catalog is original; no exact screenshot layout, interface, monetization, or artwork was copied.
 

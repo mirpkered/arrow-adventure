@@ -245,4 +245,38 @@ describe('local game persistence', () => {
       levelComplete: false,
     });
   });
+
+  it('restarts only an in-progress Level 3 save after the c05 content-version bump and preserves preferences', () => {
+    const level3 = CURATED_LEVELS[2];
+    expect(level3.contentVersion).toBe(3);
+    const prior = {
+      version: 4,
+      catalogVersion: level3.catalogVersion,
+      contentVersion: 2,
+      currentLevelId: level3.id,
+      completedLevelIds: [CURATED_LEVELS[0].id, CURATED_LEVELS[1].id],
+      remainingArrowIds: ['c05', 'c06', 'c09'],
+      redArrowIds: ['c05'],
+      hearts: 1,
+      levelComplete: false,
+    };
+    const settings = JSON.stringify({ version: 1, appearance: 'dark', backgroundMusic: false, soundEffects: true });
+    const { storage, data } = storageFixture({
+      [PRODUCTION_STORAGE_KEYS.game]: JSON.stringify(prior),
+      [PRODUCTION_STORAGE_KEYS.settings]: settings,
+    });
+
+    expect(loadGameSave(storage, CURATED_LEVELS)).toEqual({
+      version: 4,
+      catalogVersion: level3.catalogVersion,
+      contentVersion: 3,
+      currentLevelId: level3.id,
+      completedLevelIds: prior.completedLevelIds,
+      remainingArrowIds: level3.puzzle.arrows.map(({ id }) => id),
+      redArrowIds: [],
+      hearts: 3,
+      levelComplete: false,
+    });
+    expect(data.get(PRODUCTION_STORAGE_KEYS.settings)).toBe(settings);
+  });
 });

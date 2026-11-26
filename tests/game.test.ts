@@ -31,7 +31,7 @@ describe('Round 11 curated catalog', () => {
     expect(CURATED_LEVELS.every(({composition}) => composition === 'abstract')).toBe(true);
     for (const entry of CURATED_LEVELS) {
       expect(entry.catalogVersion).toBe('first-flight-r3-compact-weave');
-      expect(entry.contentVersion).toBe(2);
+      expect(entry.contentVersion).toBe(entry.number === 3 ? 3 : 2);
       expect(entry.puzzle.grid).toEqual({ spacing: 1, origin: { x: 0, y: 0 }, pathOffset: 0, includeOuterBoundary: true });
       expect(entry.puzzle.width).toBeGreaterThan(0);
       expect(entry.puzzle.height).toBeGreaterThan(0);
@@ -57,7 +57,7 @@ describe('Round 11 curated catalog', () => {
     let auditedArrows = 0;
     for (const entry of CURATED_LEVELS) {
       expect(entry.catalogVersion).toBe('first-flight-r3-compact-weave');
-      expect(entry.contentVersion).toBe(2);
+      expect(entry.contentVersion).toBe(entry.number === 3 ? 3 : 2);
       expect(() => validateLevel(entry.puzzle), entry.id).not.toThrow();
       const solution = solveLevel(entry.puzzle);
       expect(solution, entry.id).not.toBeNull();
@@ -106,7 +106,7 @@ describe('Round 11 curated catalog', () => {
     expect(fingerprints).toEqual([
       '37cbe680ff4584bb62ce00e0b339cccfcba84b684e2067e9c785f9cc3f2d9faa',
       '9d1363d47f6ab4fe8f3ac389037123f94491934739fe5c23af31bbcad6b0515e',
-      '508038279aa37369989999aa52fcfc4708677541af6ae9fa6c293c32f24d0583',
+      'fbdf1b1a9a9d0c4bf770fa3c4d998ebdcc82524a2290588b4f45375963361dd1',
       '80ecd915ed11398c641c227aa20ccab6a72d633a3cfa0d6cc45af5fda796a66d',
       '0889f74c4ebe063b8d864607e518ea6141fd3ca6227c32cb494e1b8f61e87381',
     ]);

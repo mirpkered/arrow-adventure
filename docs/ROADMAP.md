@@ -2,9 +2,9 @@
 
 ## Round 11 — compactness refinement (in QA review)
 
-Round 11 refines the same five First Flight IDs, board dimensions, arrow counts, movement rules, and true visible-grid convention. The level definitions use catalog `first-flight-r3-compact-weave`, with content version 2. The compositions are frozen, deterministic path forests arranged across each complete lattice. The original Round 10 catalog is archived at `src/game/archive/adventure-catalog-first-flight-r2.json` for comparison. The active production site remains at the approved Round 10 revision until the developer reviews Round 11 on iPhone.
+Round 11 refines the same five First Flight IDs, board dimensions, arrow counts, movement rules, and true visible-grid convention. The level definitions use catalog `first-flight-r3-compact-weave`; Levels 1, 2, 4, and 5 are content version 2, while Level 3 is version 3 after the focused c05 heading correction in Round 11A. The compositions are frozen, deterministic path forests arranged across each complete lattice. The original Round 10 catalog is archived at `src/game/archive/adventure-catalog-first-flight-r2.json` for comparison. The active production site remains at the approved Round 10 revision until the developer reviews the updated candidate on iPhone.
 
-The candidate increases route length and interleaving in every level, preserves the original initial safe-move counts, and passes individual geometry plus exact reachable-state audits. Previews and before/after measurements are in [Round 11 Compactness](ROUND_11_COMPACTNESS.md). This branch is isolated from the temporary production synchronization branch; only a manual QA candidate deployment is intended.
+The candidate increases route length and interleaving in every level, preserves the original initial safe-move counts before the targeted Level 3 adjustment, and passes individual geometry plus exact reachable-state audits. Round 11A documents the c05 movement diagnosis, corrected content version, save compatibility, and QA review requirements in [Round 11A c05 correction](ROUND_11A_C05.md). Compactness previews and baseline measurements are in [Round 11 Compactness](ROUND_11_COMPACTNESS.md). This branch is isolated from the temporary production synchronization branch; only manual QA candidate deployments are intended.
 
 ## Round 10 — five-level foundation (historical)
 

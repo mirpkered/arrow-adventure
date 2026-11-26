@@ -515,7 +515,7 @@
       "id": "first-flight-003",
       "number": 3,
       "catalogVersion": "first-flight-r3-compact-weave",
-      "contentVersion": 2,
+      "contentVersion": 3,
       "chapterId": "first-flight",
       "title": "Winding Paths",
       "difficulty": "easy-medium",
@@ -680,35 +680,35 @@
             "path": [
               {
                 "x": 7,
-                "y": 4
-              },
-              {
-                "x": 6,
-                "y": 4
-              },
-              {
-                "x": 5,
-                "y": 4
-              },
-              {
-                "x": 5,
                 "y": 3
-              },
-              {
-                "x": 6,
-                "y": 3
-              },
-              {
-                "x": 6,
-                "y": 2
               },
               {
                 "x": 7,
                 "y": 2
               },
               {
-                "x": 7,
+                "x": 6,
+                "y": 2
+              },
+              {
+                "x": 6,
                 "y": 3
+              },
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 5,
+                "y": 4
+              },
+              {
+                "x": 6,
+                "y": 4
+              },
+              {
+                "x": 7,
+                "y": 4
               }
             ]
           },

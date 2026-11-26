@@ -55,7 +55,7 @@ describe('Round 11 active catalog and preserved Round 10 content', () => {
     expect(getCuratedLevelById('first-flight-005')?.number).toBe(5);
     expect(getNextCuratedLevel(CURATED_LEVELS[3])?.id).toBe('first-flight-005');
     expect(getNextCuratedLevel(CURATED_LEVELS[4])).toBeUndefined();
-    expect(CURATED_LEVELS.every(({ catalogVersion, contentVersion }) => catalogVersion === 'first-flight-r3-compact-weave' && contentVersion === 2)).toBe(true);
+    expect(CURATED_LEVELS.every(({ catalogVersion, contentVersion, number }) => catalogVersion === 'first-flight-r3-compact-weave' && contentVersion === (number === 3 ? 3 : 2))).toBe(true);
     expect(() => validateCuratedLevels()).not.toThrow();
   });
 
@@ -78,8 +78,8 @@ describe('Round 11 active catalog and preserved Round 10 content', () => {
   });
 
   it('completes exact reachable-state and gameplay-simulator audits for every arrow', () => {
-    const expectedStates = [8, 21, 70, 56, 66];
-    const expectedTransitions = [9, 35, 165, 124, 137];
+    const expectedStates = [8, 21, 84, 56, 66];
+    const expectedTransitions = [9, 35, 212, 124, 137];
     for (const [index, entry] of CURATED_LEVELS.entries()) {
       const puzzle = entry.puzzle;
       const solution = solveLevel(puzzle);
