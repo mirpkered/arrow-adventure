@@ -1,8 +1,8 @@
 # Round 13 Large-Grid Previews
 
-These are static SVG renders of the exact frozen catalog coordinates using Arrow Adventure's light palette, visible unit grid, 0.12-unit arrow body, arrowhead geometry, and tail marker. Phone previews are fitted to a 390×622 play area inside a 390×844 portrait mock viewport using the same occupied-bounds fit calculation as the BoardViewport class; they are renderer previews, not Safari captures or physical-device screenshots. PNGs are derived from these SVGs.
+These are static renders of the exact frozen catalog coordinates using Arrow Adventure's light palette, visible unit grid, 0.12-unit arrow body, arrowhead geometry, and tail marker. Phone previews are fitted to a 390×622 play area inside a 390×844 portrait mock viewport using the same occupied-bounds fit calculation as the BoardViewport class; they are renderer previews, not Safari captures or physical-device screenshots. SVGs are the source previews; companion PNGs are raster renders of the same frozen coordinates.
 
-[7-level campaign contact sheet](./contact-sheet.svg) · [PNG](./contact-sheet.png)
+[8-level campaign contact sheet](./contact-sheet.svg) · [PNG](./contact-sheet.png)
 
 ### Level 6 — Larger Weave
 
@@ -27,3 +27,15 @@ These are static SVG renders of the exact frozen catalog coordinates using Arrow
 - [Density comparison with Level 6](./level-7-density-summary.svg) · [PNG](./level-7-density-summary.png)
 
 **Composition:** 24 interleaved pairs; 461 close segment contacts; 66 blocking links; dependency depth 7; 4 initial legal moves; 98.6% adjacent-grid path coverage; 0.00% large-gap area.
+
+### Level 8 — Grand Weave
+
+14×14 visible cells · 40 arrows · 185 route units · IDs first-flight-008 · content v1 · seed 17727.
+
+- [Full-board preview](./level-8-full.svg) · [PNG](./level-8-full.png)
+- [390×844 portrait preview](./level-8-iphone-390x844.svg) · [PNG](./level-8-iphone-390x844.png)
+- [Arrow-ID diagnostic](./level-8-arrow-ids.svg) · [PNG](./level-8-arrow-ids.png)
+- [Grid and route-coverage diagnostic](./level-8-grid-coverage.svg) · [PNG](./level-8-grid-coverage.png)
+- [Density comparison with Level 7](./level-8-density-summary.svg) · [PNG](./level-8-density-summary.png)
+
+**Composition:** 36 interleaved pairs; 629 close segment contacts; 95 blocking links; dependency depth 11; 9 initial legal moves; 99.5% adjacent-grid path coverage; 0.00% large-gap area. One one-unit route (`g05`) has no measured interleaving or blocker edge; it is an immediate legal exit and is disclosed in the content report.

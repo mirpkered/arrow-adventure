@@ -1,6 +1,6 @@
 # Arrow Adventure
 
-Arrow Adventure is a mobile-first, advertisement-free puzzle game from MIRPWORKS. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. The approved Round 11A foundation now continues into larger First Flight boards: Levels 1–5 are preserved, with a dense 10×10 Level 6 and 12×12 Level 7.
+Arrow Adventure is a mobile-first, advertisement-free puzzle game from MIRPWORKS. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. The approved Round 11A foundation now continues into larger First Flight boards: Levels 1–5 are preserved, followed by a dense 10×10 Level 6, 12×12 Level 7, and 14×14 Level 8.
 
 Production: <https://mirpkered.github.io/arrow-adventure/>
 
@@ -47,7 +47,7 @@ Validated changes are developed on feature branches, then safely fast-forwarded 
 
 ## Architecture
 
-- `src/game/catalog.ts` and `src/game/adventure-catalog.json` — seven frozen First Flight levels: the Round 11A opening five, 10×10 Level 6, and 12×12 Level 7. Stable IDs, per-level content versions, explicit true-grid specifications, metadata, geometry checks, and solvability certification are preserved. Levels through 6 receive exhaustive state audits; Level 7 uses the complete static blocker-DAG proof. Round 10 definitions are frozen in `src/game/archive/adventure-catalog-first-flight-r2.json`.
+- `src/game/catalog.ts` and `src/game/adventure-catalog.json` — eight frozen First Flight levels: the Round 11A opening five, 10×10 Level 6, 12×12 Level 7, and 14×14 Level 8. Stable IDs, per-level content versions, explicit true-grid specifications, metadata, geometry checks, and solvability certification are preserved. Levels through 6 receive exhaustive state audits; Levels 7–8 use the complete static blocker-DAG proof. Round 10 definitions are frozen in `src/game/archive/adventure-catalog-first-flight-r2.json`.
 - `src/game/prototypes/round9c-prototypes.json`, `round9d-prototypes.json`, `round9e-square-15.json`, `round9f-square-7.json`, `round9g-square-7-weave.json`, and `round9h-square-true-7.json` — eight Round 9C/D QA review boards plus separate, frozen Round 9E–9H experiments; A–H and the explicit Round 9H choice are loaded only by QA Prototype Review, never by Adventure Mode.
 - `src/game/archive/catalog-round8.ts` and `adventure-catalog-first-flight-r1.json` — non-playable archives of the former six-level release definitions and ten provisional Round 9 levels.
 - `src/game/geometry.ts`, `src/game/rules.ts`, `src/game/density.ts`, `src/game/stateAudit.ts` — shared board-coordinate transforms, fixed collision envelopes, grid and segment validation, distance-based body movement, solver, exact reachable-state audit through 20 arrows, and a static blocker-graph proof for the current removal-only rules.
@@ -66,10 +66,10 @@ The [Round 11 compactness report](docs/ROUND_11_COMPACTNESS.md) documents the fi
 
 ## Current scope and limitations
 
-- The Round 11A opening five retain their stable IDs, dimensions, routes, and content versions; Level 3 c05 uses the corrected exit orientation. Levels 6 and 7 are appended as separate frozen 10×10 and 12×12 puzzles.
+- The Round 11A opening five retain their stable IDs, dimensions, routes, and content versions; Level 3 c05 uses the corrected exit orientation. Levels 6–8 are appended as separate frozen 10×10, 12×12, and 14×14 puzzles.
 - Round 11 uses schema v4 content-version migration and preserves completed-level credit and unrelated appearance/audio settings.
 - Round 11A's c05 investigation, correction, and motion-frame previews are in [docs/ROUND_11A_C05.md](docs/ROUND_11A_C05.md).
 - Round 11 previews are renderer-generated, not browser captures. The five-level foundation and c05 correction were physically reviewed on iPhone before this production transition.
 - Historical prototypes remain outside the Adventure catalog. The production build verifies that QA modules, prototype selection, and QA metadata are absent.
-- New Level 6 and Level 7 content has automated geometry, solvability, viewport, and selection checks; physical iPhone playtesting of these two new boards remains outstanding.
+- New Levels 6–8 have automated geometry, solvability, viewport, selection, and simulator-replay checks; physical iPhone playtesting of these new boards remains outstanding.
 - Free Play, tutorials, black holes, switches, gates, portals, and additional chapters are future work.

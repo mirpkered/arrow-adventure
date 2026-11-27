@@ -1,6 +1,6 @@
 # Shared-Board Game Design
 
-> **Round 13 baseline:** Production's active catalog is `first-flight-r4-large-grid`: the five approved Round 11A First Flight levels plus frozen 10×10 Level 6 and 12×12 Level 7. Level 3 is content version 3 after the targeted c05 orientation correction; other opening levels remain version 2; Levels 6 and 7 are content version 1. Round 10 layouts remain archived. QA Pages and the temporary synchronization workflow are paused; production releases use the independent validation workflow. See [Roadmap](ROADMAP.md), [Round 11 Compactness](ROUND_11_COMPACTNESS.md), [Round 11A c05 correction](ROUND_11A_C05.md), and [Round 13 Large-Grid Expansion](ROUND_13_LARGE_GRID_EXPANSION.md).
+> **Round 13 baseline:** Production's active catalog is `first-flight-r4-large-grid`: the five approved Round 11A First Flight levels plus frozen 10×10 Level 6, 12×12 Level 7, and 14×14 Level 8. Level 3 is content version 3 after the targeted c05 orientation correction; other opening levels remain version 2; Levels 6–8 are content version 1. Round 10 layouts remain archived. QA Pages and the temporary synchronization workflow are paused; production releases use the independent validation workflow. See [Roadmap](ROADMAP.md), [Round 11 Compactness](ROUND_11_COMPACTNESS.md), [Round 11A c05 correction](ROUND_11A_C05.md), and [Round 13 Large-Grid Expansion](ROUND_13_LARGE_GRID_EXPANSION.md).
 
 ## Active prototype rules
 
@@ -52,11 +52,11 @@ These metrics screen weak boards but do not prove readability. Inspect the full 
 
 ## Menus, saves and appearance
 
-The title screen provides Play, Continue, Settings and Credits. The in-game pause sheet offers Resume, Restart, Settings and Return to Title. Round 11 uses save schema v4 and catalog `first-flight-r3-compact-weave`; saves record the active level content version. Migration from Round 10 schema v3 preserves completed IDs and the selected level, resets only an unfinished board whose geometry changed, and leaves appearance/audio preferences untouched. The source save is removed only after a successful v4 write. New saves store stable IDs, remaining arrows, red failure marks, hearts and completion state, never intermediate animation frames. Invalid or unknown saves are ignored. The retired `mirpworks.arrow-adventure.save.v1/v2` records are never imported.
+The title screen provides Play, Continue, Settings and Credits. The in-game pause sheet offers Resume, Restart, Settings and Return to Title. The current game uses save schema v4 and catalog `first-flight-r4-large-grid`; saves record the active level content version. Migration from Round 10 schema v3 preserves completed IDs and the selected level, resets only an unfinished board whose geometry changed, and leaves appearance/audio preferences untouched. The source save is removed only after a successful v4 write. New saves store stable IDs, remaining arrows, red failure marks, hearts and completion state, never intermediate animation frames. Invalid or unknown saves are ignored. The retired `mirpworks.arrow-adventure.save.v1/v2` records are never imported.
 
 Production uses `arrow-adventure.production.*` keys. QA uses `arrow-adventure.qa.*` keys because GitHub Pages project URLs share the `github.io` origin; path separation alone would not isolate `localStorage`. Appearance and audio settings have the same environment separation. Light is the default only when no valid preference is saved; explicit Light, Dark, and Automatic preferences remain respected. Automatic follows the system appearance, and theme changes rerender the current screen without restarting the board. Optional synthesized music is off by default; original sound effects can be toggled separately. Audio settings do not pause or interrupt other apps' music.
 
-Three hearts, restart, and numbered progression remain the only gameplay rules. Adventure Mode loads five frozen true-grid levels. There is no Free Play, runtime Adventure generator, black holes, switches, gates, portals, undo, timer or monetization. Future silhouette support should keep a regular logical grid and clip its rendering to an authored footprint; it is not implemented.
+Three hearts, restart, and numbered progression remain the only gameplay rules. Adventure Mode loads eight frozen true-grid levels. There is no Free Play, runtime Adventure generator, black holes, switches, gates, portals, undo, timer or monetization. Future silhouette support should keep a regular logical grid and clip its rendering to an authored footprint; it is not implemented.
 
 ## Launch splash
 
@@ -64,4 +64,4 @@ The app reuses `public/branding/mirpworks-logo.jpg` and timing adapted from Word
 
 ## Branding and delivery
 
-The approved logo master remains at `public/branding/arrow-adventure-official-logo.png`; icon derivatives are in `public/icons/` and PWA metadata is in `public/site.webmanifest`. QA deploys only by selecting a source SHA in the independent QA repository. The production Pages deployment and `main` remain separate.
+The approved logo master remains at `public/branding/arrow-adventure-official-logo.png`; icon derivatives are in `public/icons/` and PWA metadata is in `public/site.webmanifest`. QA Pages and its deployment workflow are paused; QA code and repository history are retained for a later restoration. Production Pages deploys from validated commits on `main` and does not wait for QA.

@@ -9,15 +9,16 @@ const largeLevels = CURATED_LEVELS.slice(5);
 const expectedRouteLengths = [
   [1, 8, 7, 6, 5, 1, 5, 7, 8, 8, 1, 7, 3, 2, 8, 7, 4, 8, 2, 3],
   [1, 7, 4, 3, 3, 3, 3, 7, 5, 7, 3, 2, 3, 7, 6, 7, 2, 6, 6, 1, 4, 5, 7, 3, 7, 6, 6, 5, 7, 3],
+  [6, 3, 3, 3, 1, 5, 5, 1, 1, 3, 7, 5, 5, 1, 5, 7, 3, 7, 5, 4, 6, 7, 4, 4, 5, 3, 6, 7, 4, 3, 6, 7, 7, 6, 4, 5, 7, 5, 6, 3],
 ];
 
 describe('Round 13 larger Adventure Mode content', () => {
-  it('adds frozen, deterministic true-grid Levels 6 and 7 without changing the opening five', () => {
-    expect(CURATED_LEVELS).toHaveLength(7);
+  it('adds frozen, deterministic true-grid Levels 6 through 8 without changing the opening five', () => {
+    expect(CURATED_LEVELS).toHaveLength(8);
     expect(largeLevels.map(({ id, number, authoringSeed, contentVersion }) => [id, number, authoringSeed, contentVersion])).toEqual([
-      ['first-flight-006', 6, 13309, 1], ['first-flight-007', 7, 14825, 1],
+      ['first-flight-006', 6, 13309, 1], ['first-flight-007', 7, 14825, 1], ['first-flight-008', 8, 17727, 1],
     ]);
-    expect(largeLevels.map(({ puzzle }) => [puzzle.width, puzzle.height, puzzle.arrows.length])).toEqual([[10, 10, 20], [12, 12, 30]]);
+    expect(largeLevels.map(({ puzzle }) => [puzzle.width, puzzle.height, puzzle.arrows.length])).toEqual([[10, 10, 20], [12, 12, 30], [14, 14, 40]]);
     for (const [levelIndex, entry] of largeLevels.entries()) {
       const { puzzle } = entry;
       expect(puzzle.grid).toEqual({ spacing: 1, origin: { x: 0, y: 0 }, pathOffset: 0, includeOuterBoundary: true });
@@ -37,40 +38,49 @@ describe('Round 13 larger Adventure Mode content', () => {
       expect(() => validateLevel(puzzle), entry.id).not.toThrow();
     }
     expect(getCuratedLevel(6)?.id).toBe('first-flight-006');
+    expect(getCuratedLevel(8)?.id).toBe('first-flight-008');
     expect(getNextCuratedLevel(CURATED_LEVELS[4])?.id).toBe('first-flight-006');
     expect(getNextCuratedLevel(CURATED_LEVELS[5])?.id).toBe('first-flight-007');
-    expect(getNextCuratedLevel(CURATED_LEVELS[6])).toBeUndefined();
+    expect(getNextCuratedLevel(CURATED_LEVELS[6])?.id).toBe('first-flight-008');
+    expect(getNextCuratedLevel(CURATED_LEVELS[7])).toBeUndefined();
     expect(() => validateCuratedLevels()).not.toThrow();
   });
 
-  it('exhaustively audits Level 6 and uses the complete graph proof plus simulator replay for Level 7', () => {
+  it('exhaustively audits Level 6 and uses complete graph proofs plus simulator replay above the exact cap', () => {
     const level6 = CURATED_LEVELS[5].puzzle;
     const exact = auditReachableStates(level6);
     expect(exact).toMatchObject({ exact: true, reachableStates: 2206, legalTransitions: 9163, terminalStates: 1, deadlocks: [], dependencyCycles: [] });
 
-    const level7 = CURATED_LEVELS[6].puzzle;
-    const graph = auditBlockerGraph(level7);
-    expect(graph).toMatchObject({ method: 'static-blocker-dag', stateEnumeration: false, completeGuarantee: true,
-      arrowCount: 30, blockerEdges: 66, initialLegalMoves: ['g02', 'g04', 'g05', 'g29'], dependencyCycles: [] });
-    expect(graph.removalSequence).toHaveLength(30);
-    expect(() => auditReachableStates(level7)).toThrow(/bounded to 20 arrows/i);
+    for (const [levelIndex, entry] of largeLevels.slice(1).entries()) {
+      const puzzle = entry.puzzle;
+      const graph = auditBlockerGraph(puzzle);
+      expect(graph).toMatchObject({ method: 'static-blocker-dag', stateEnumeration: false, completeGuarantee: true,
+        arrowCount: levelIndex === 0 ? 30 : 40, blockerEdges: levelIndex === 0 ? 66 : 95,
+        dependencyCycles: [] });
+      expect(graph.initialLegalMoves).toEqual(levelIndex === 0
+        ? ['g02', 'g04', 'g05', 'g29']
+        : ['g02', 'g05', 'g06', 'g07', 'g15', 'g25', 'g35', 'g37', 'g38']);
+      expect(graph.removalSequence).toHaveLength(puzzle.arrows.length);
+      expect(() => auditReachableStates(puzzle)).toThrow(/bounded to 20 arrows/i);
 
-    const solution = solveLevel(level7);
-    expect(solution).not.toBeNull();
-    let remaining = [...level7.arrows];
-    for (const id of solution!) {
-      const moving = remaining.find(({ id: candidate }) => candidate === id)!;
-      const stationary = remaining.filter(({ id: candidate }) => candidate !== id);
-      expect(simulateMove(moving, stationary, level7.width, level7.height, level7.grid).ok, id).toBe(true);
-      remaining = stationary;
+      const solution = solveLevel(puzzle);
+      expect(solution).not.toBeNull();
+      let remaining = [...puzzle.arrows];
+      for (const id of solution!) {
+        const moving = remaining.find(({ id: candidate }) => candidate === id)!;
+        const stationary = remaining.filter(({ id: candidate }) => candidate !== id);
+        expect(simulateMove(moving, stationary, puzzle.width, puzzle.height, puzzle.grid).ok, `${entry.id}/${id}`).toBe(true);
+        remaining = stationary;
+      }
+      expect(remaining).toEqual([]);
     }
-    expect(remaining).toEqual([]);
   });
 
   it('measures full-board occupancy, path variety, dependencies, and close-path selection', () => {
     const expectations = [
       { routeUnits: 101, interleaved: 17, contacts: 317, edges: 31, depth: 5, opening: 5, coverage: 0.9801980198019802 },
       { routeUnits: 139, interleaved: 24, contacts: 461, edges: 66, depth: 7, opening: 4, coverage: 0.9856115107913669 },
+      { routeUnits: 185, interleaved: 36, contacts: 629, edges: 95, depth: 11, opening: 9, coverage: 0.9945945945945946 },
     ];
     largeLevels.forEach((entry, index) => {
       const { puzzle } = entry; const expected = expectations[index];
@@ -83,7 +93,7 @@ describe('Round 13 larger Adventure Mode content', () => {
       expect(metrics.initiallyRemovable).toBe(expected.opening);
       const isolated = Object.entries(metrics.interleavedPairsByArrow)
         .filter(([id, degree]) => degree === 0 && metrics.blockersByArrow[id] === 0);
-      expect(isolated).toEqual([]);
+      expect(isolated.map(([id]) => id)).toEqual(entry.number === 8 ? ['g05'] : []);
       expect(measureComposition(puzzle, 1.01).adjacentGridPathRatio).toBeCloseTo(expected.coverage, 6);
       expect(measureNeighborSpacing(puzzle).p10).toBe(1);
       expect(measureFootprintDensity(entry).largeGapRatio).toBe(0);

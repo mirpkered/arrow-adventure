@@ -23,10 +23,10 @@ describe('Round 11 active catalog and preserved Round 10 content', () => {
   it('preserves the five opening IDs and appends larger true visible-grid levels', () => {
     expect(CURATED_LEVELS.map(({ id }) => id)).toEqual([
       'first-flight-001', 'first-flight-002', 'first-flight-003', 'first-flight-004', 'first-flight-005',
-      'first-flight-006', 'first-flight-007',
+      'first-flight-006', 'first-flight-007', 'first-flight-008',
     ]);
     expect(CURATED_LEVELS.map(({ puzzle }) => [puzzle.width, puzzle.height, puzzle.arrows.length])).toEqual([
-      [5, 5, 5], [6, 6, 8], [7, 7, 10], [7, 8, 12], [8, 8, 15], [10, 10, 20], [12, 12, 30],
+      [5, 5, 5], [6, 6, 8], [7, 7, 10], [7, 8, 12], [8, 8, 15], [10, 10, 20], [12, 12, 30], [14, 14, 40],
     ]);
     for (const { puzzle } of CURATED_LEVELS) {
       expect(puzzle.grid).toEqual({ spacing: 1, origin: { x: 0, y: 0 }, pathOffset: 0, includeOuterBoundary: true });
@@ -57,7 +57,8 @@ describe('Round 11 active catalog and preserved Round 10 content', () => {
     expect(getNextCuratedLevel(CURATED_LEVELS[3])?.id).toBe('first-flight-005');
     expect(getNextCuratedLevel(CURATED_LEVELS[4])?.id).toBe('first-flight-006');
     expect(getNextCuratedLevel(CURATED_LEVELS[5])?.id).toBe('first-flight-007');
-    expect(getNextCuratedLevel(CURATED_LEVELS[6])).toBeUndefined();
+    expect(getNextCuratedLevel(CURATED_LEVELS[6])?.id).toBe('first-flight-008');
+    expect(getNextCuratedLevel(CURATED_LEVELS[7])).toBeUndefined();
     expect(CURATED_LEVELS.every(({ catalogVersion, contentVersion, number }) => catalogVersion === 'first-flight-r4-large-grid' && contentVersion === (number === 3 ? 3 : number <= 5 ? 2 : 1))).toBe(true);
     expect(() => validateCuratedLevels()).not.toThrow();
   });

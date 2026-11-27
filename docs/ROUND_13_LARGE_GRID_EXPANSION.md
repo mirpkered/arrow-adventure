@@ -2,11 +2,13 @@
 
 ## Scope and release status
 
-Round 13 makes `main` the sole production release source and expands the approved Round 11A First Flight campaign without replacing its opening puzzles. The first larger-board release appends a frozen Level 6. A 12×12 Level 7 candidate is being developed separately and is not included in the six-level production catalog at this milestone.
+Round 13 keeps the approved Round 11A opening five, retires QA as the current test host, and makes `main` the only production deployment source. Levels 6 and 7 have been released to production. Level 8 — Grand Weave is the 14×14 stretch level; it remains a development candidate until its production gate and live verification complete.
 
-The QA Pages site is paused, its repository retained, and the scheduled QA-to-production synchronizer disabled. Feature work remains on `round-13/large-grid-expansion`; production releases occur only after validation and a normal promotion to `main`. See [baseline/recovery record](ROUND_13_BASELINE.md) and [release procedure](QA_ENVIRONMENT.md).
+The QA Pages site and scheduled QA-to-production synchronizer are paused. The QA repository and history are retained. `ENABLE_TEMPORARY_PRODUCTION_SYNC` is `false`, and its workflow is disabled. Feature work stays on `round-13/large-grid-expansion`; direct production release occurs only after validation and normal fast-forward promotion to `main`. See [baseline and recovery record](ROUND_13_BASELINE.md) and [release procedure](QA_ENVIRONMENT.md).
 
-## Level 6 — Larger Weave
+## Active production levels
+
+### Level 6 — Larger Weave
 
 | Property | Result |
 | --- | ---: |
@@ -19,43 +21,13 @@ The QA Pages site is paused, its repository retained, and the scheduled QA-to-pr
 | Occupied intersections | 121 / 121 |
 | Adjacent-grid path coverage | 98.02% |
 | Nearest distinct-path spacing | minimum 1; median 1 unit |
-| Interleaved arrow pairs / close segment contacts | 17 / 317 |
+| Interleaved pairs / close segment contacts | 17 / 317 |
 | Blocking links / dependency depth | 31 / 5 |
 | Initially removable | 5 |
 | Large-gap ratio | 0% at the authoring sampler threshold |
-| Exact reachable-state audit | 2,206 states; 9,163 legal transitions; 1 terminal; 0 deadlocks; 0 cycles |
-| Geometry / solver replay | passed; each arrow is grid-aligned and orthogonal; solution replayed with `simulateMove` |
+| Solvability method | Exact reachable-state audit: 2,206 states, 9,163 legal transitions, 1 terminal, 0 deadlocks, 0 cycles |
 
-The puzzle is authored as a deterministic partition of the complete 10×10-cell visible intersection lattice into 20 orthogonal routes, then oriented to form an acyclic blocker structure. The generator is an offline candidate aid only; runtime Adventure Mode reads the frozen JSON routes. Metrics screen weak arrangements but do not replace visual review.
-
-## Solver scalability and guarantees
-
-The exact enumerator remains explicitly capped at 20 arrows. At the cap it explores reachable subsets (Level 6 visits 2,206 of the possible 1,048,576 subsets), recording legal transitions and deadlocks. It throws above the cap rather than silently truncating.
-
-Round 13 adds a second, distinct complete method for the current static-obstacle removal-only rules. The blocker graph is built by calling the same `simulateMove` used by gameplay for every ordered pair of arrows. There is an edge A→B when B alone prevents A from leaving. A move against a set of stationary arrows is blocked exactly when at least one individual arrow blocks it, because collision against static geometry is a union. Successful moves only remove obstacles. Therefore a blocker DAG has a sink in every nonempty induced remaining graph; every legal removal leaves an induced DAG, so all reachable removal orders still complete. A cyclic graph yields a deadlock witness after repeatedly removing legal sinks. This is a complete graph proof, not a subset enumeration or a heuristic. It is invalid for gates, switches, portals, moving hazards, or other state-changing rules until separately proved.
-
-Regression tests compare graph legality with full multi-obstacle simulation for all reachable subsets of a representative authored level, verify cycle/deadlock witnesses, and validate a 21-arrow graph fixture without enumerating `2^21` states. Level 6 itself remains under the old cap and receives the exact audit.
-
-## Authoring and visual previews
-
-The deterministic full-grid route partition and orientation helper live under `src/game/authoring/`. They are offline-only candidate tools. Frozen definitions remain in `src/game/adventure-catalog.json` with stable IDs, content versions, explicit true-grid specifications, and regression fingerprints.
-
-Renderer-produced previews use the committed coordinates and approved thin monochrome styling. SVG files are the source previews; available PNGs are derived renders. Phone previews are static renderer output, not Safari screenshots.
-
-- [Level 6 full board](previews/round-13-large-grid/level-6-full.svg)
-- [Level 6 390×844 portrait](previews/round-13-large-grid/level-6-iphone-390x844.svg)
-- [Level 6 arrow IDs](previews/round-13-large-grid/level-6-arrow-ids.svg)
-- [Level 6 grid / route coverage](previews/round-13-large-grid/level-6-grid-coverage.svg)
-- [Level 5 → Level 6 density comparison](previews/round-13-large-grid/level-6-density-summary.svg)
-- [Current campaign contact sheet](previews/round-13-large-grid/contact-sheet.svg)
-
-The checked-in preview README gives the complete list and states the rendering limitations. [Level Authoring](LEVEL_AUTHORING.md) documents large-grid composition and proof requirements.
-
-## Validation and release record
-
-The Level 6 release gate includes `npm ci`, all Vitest tests, `npm run typecheck`, the production build at `/arrow-adventure/`, production artifact exclusion checks, catalog/geometry validation, the exact Level 6 state audit, save/progression tests, and `git diff --check`. Detailed command results, commit SHAs, production run, and viewports are recorded in the Round 13 delivery report after each promotion. New large content still requires physical iPhone playtesting after deployment; automated fitting and touch selection do not claim a physical-device test.
-
-## Level 7 — The Deep Weave (development candidate)
+### Level 7 — The Deep Weave
 
 | Property | Result |
 | --- | ---: |
@@ -64,32 +36,82 @@ The Level 6 release gate includes `npm ci`, all Vitest tests, `npm run typecheck
 | Arrows | 30 |
 | Authoring seed | 14825 |
 | Total route length | 139 units |
-| Sorted route-length distribution | 1, 1, 2, 2, eight routes of length 3, 4, 4, 5, 5, 5, five routes of length 6, eight routes of length 7 |
+| Route-length distribution | 1, 1, 2, 2, eight routes of length 3, 4, 4, three routes of length 5, five routes of length 6, eight routes of length 7 |
 | Occupied intersections | 169 / 169 |
 | Adjacent-grid path coverage | 98.56% |
 | Nearest distinct-path spacing | minimum / median 1 unit |
-| Interleaved arrow pairs / close segment contacts | 24 / 461 |
+| Interleaved pairs / close segment contacts | 24 / 461 |
 | Blocking links / dependency depth | 66 / 7 |
 | Initially removable | 4 |
 | Large-gap ratio | 0% at the authoring sampler threshold |
-| Solvability certificate | complete static blocker DAG; 30-move witness replayed through `simulateMove`; no cycles |
+| Solvability method | Complete static blocker-DAG certificate; 30-step witness replayed through gameplay simulation |
 
-The 30-route composition occupies the complete 12×12 visible lattice with mixed short, medium and longer orthogonal paths. It was generated offline from seed 14825, geometrically validated, and frozen in the development catalog. It remains a development candidate until the production milestone gate and live deployment complete.
+### Level 8 — Grand Weave (14×14 stretch release)
+
+| Property | Result |
+| --- | ---: |
+| Stable ID / content version | `first-flight-008` / 1 |
+| Visible grid | 14×14 cells (15×15 intersections) |
+| Arrows | 40 |
+| Authoring seed | 17727 |
+| Total route length | 185 units |
+| Route-length distribution | 4 of length 1, 8 of length 3, 5 of length 4, 9 of length 5, 6 of length 6, 8 of length 7 |
+| Exit directions | 11 east, 10 west, 6 north, 13 south; no diagonal segments |
+| Occupied intersections | 225 / 225 |
+| Adjacent-grid path coverage | 99.46% |
+| Nearest distinct-path spacing | minimum, 10th percentile, median and 90th percentile all 1 unit |
+| Interleaved pairs / close segment contacts | 36 / 629 |
+| Blocking links / dependency depth | 95 / 11 |
+| Initially removable | 9 |
+| Large-gap ratio | 0% at the authoring sampler threshold |
+| Isolated short route | `g05` is a one-unit immediate exit with no measured interleaving/blocker link; disclosed rather than hidden |
+| Solvability method | Complete static blocker-DAG certificate; 40-step witness replayed through gameplay simulation; no cycles |
+
+All three large boards are authored as deterministic partitions of their full visible intersection lattice into orthogonal paths, then oriented to form static blocker structures. The generator is an offline candidate aid only; runtime Adventure Mode reads frozen JSON routes. The five Round 11A openings remain unchanged.
+
+## Solver scalability and guarantees
+
+The exact reachable-state enumerator remains capped at 20 arrows. It explores all reachable remaining-arrow subsets, records legal transitions and deadlocks, and throws above the cap rather than silently truncating. Level 6 remains under the cap and gets the exact audit. Levels 7 and 8 do **not** receive an exact subset enumeration.
+
+For the current static-obstacle, whole-arrow removal rules, the blocker graph is a complete alternative proof. An edge A→B exists when the gameplay `simulateMove` says B alone prevents A from exiting. Collision against multiple stationary arrows is the union of their individual swept collisions, so a move is legal exactly when its remaining induced graph has no outgoing blocker edge. Successful movement only removes an obstacle. A blocker DAG has a sink in every nonempty induced subgraph; removing any legal sink leaves another DAG, so every legal removal order can still complete. A cycle yields a reachable deadlock witness by repeatedly peeling legal sinks. This proof does not cover switches, gates, portals, moving hazards, or future state-changing rules without a new proof.
+
+Regression tests compare the graph legality model against multi-obstacle simulation across reachable subsets of representative small levels, test cycles and deadlock witnesses, and validate larger fixtures without enumerating `2^n` subsets. The active 30- and 40-arrow definitions receive full geometry validation, graph construction, complete removal witnesses, gameplay-simulator replay, frozen fingerprints, progression and viewport tests. The graph method remains a mathematical certificate, not a heuristic, but is distinct from exhaustive state counts.
 
 ## Benchmark snapshot
 
-Single-process Windows authoring measurements (Node/Vite SSR, no browser session):
+Single-process Windows Node/Vite authoring measurements (not a browser or iPhone benchmark):
 
-| Level | Blocker graph build | Complete graph certificate + replay | Exact audit | Solver witness | 100 full-board move simulations |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| 5 — 15 arrows | 0.33 s | 0.16 s | 0.5 ms, 66 states | 0.11 ms | 0.30 s |
-| 6 — 20 arrows | 0.91 s | 0.35 s | 11.5 ms, 2,206 states | 0.27 ms | 0.14 s |
-| 7 — 30 arrows | 1.58 s | 0.72 s | not run (above cap) | 0.11 ms | 0.63 s |
+| Level | Grid / arrows | Blocker graph construction | Certificate + replay | Exact audit | Solver witness | 100 full-board move checks |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| 5 | 8×8 / 15 | 0.40 s | 0.20 s | 0.49 ms / 66 states | 0.10 ms | 216 ms |
+| 6 | 10×10 / 20 | 0.86 s | 0.35 s | 11.53 ms / 2,206 states | 0.21 ms | 115 ms |
+| 7 | 12×12 / 30 | 1.75 s | 0.81 s | not run; above cap | 0.12 ms | 527 ms |
+| 8 | 14×14 / 40 | 3.18 s | 1.29 s | not run; above cap | 0.27 ms | 763 ms |
 
-All current catalog levels together took 9.31 seconds for this benchmark. RSS sampled before/after the harness rose from about 94 MB to 154 MB; this is process-level Vite/Node memory, not an isolated browser heap measurement or a peak guarantee. A Level 7 gameplay move simulation averaged about 6.3 ms over the repeated 100-call sample. Cache-cold blocker construction is offline validation; production does not run the full authoring audit on every frame or tap.
+All eight catalog levels took 14.56 seconds for the benchmark validation pass. Process RSS sampled before/after the harness was about 95 MB / 156 MB; this is not a peak guarantee or a browser heap measurement. Level 8 full-board simulation averaged about 7.63 ms per call over 100 calls on this Windows Node environment. Cache-cold graph construction is an offline authoring validation; production does not run it on every animation frame. Physical mobile performance still requires device testing.
 
-The Level 7 proof is a DAG certificate, not exhaustive subset enumeration. The exact auditor still rejects more than 20 arrows. The 14×14 experiment remains deferred until the Level 7 candidate has passed production and physical play review.
+## Production-only release transition
 
-## Next milestone
+- Initial production/main: `84089f88ff1edddd4776435984c94c0a220e825f`.
+- Approved Round 11A base: `7bf997aecab181eb42eef4f35332e5ae4129878a`.
+- Checkpoint before workflow transition: `checkpoint/round-13-before-production-transition`.
+- Milestone A production-only workflow + Round 11A deployment: `56de1742b739fc8d2f78cd73d9faaebf2c7aa505`, [run 45938736123](https://github.com/mirpkered/arrow-adventure/actions/runs/45938736123).
+- Checkpoint before Level 6 release: `checkpoint/round-13-before-level-6-production`.
+- Milestone B Level 6 deployment: `b924ba7a1272b6ca7014a8419987c8afb1327d9e`, [run 45944238296](https://github.com/mirpkered/arrow-adventure/actions/runs/45944238296).
+- Checkpoint before Level 7 release: `checkpoint/round-13-before-level-7-production`.
+- Milestone C Level 7 deployment: `688232a0e0c51f1dea05cea89a12ed270560a475`, [run 45945656708](https://github.com/mirpkered/arrow-adventure/actions/runs/45945656708).
+- Checkpoint before Level 8: `checkpoint/round-13-before-level-8-experiment`.
+- Level 8 release SHA and Pages run will be recorded after its production gate completes.
 
-Promote Level 7 only after its complete suite, TypeScript, production build, artifact exclusion checks, geometry/certificate tests, viewport checks, and source traceability all pass. A 14×14 board is a stretch experiment after that milestone stabilizes. A 16×16 board is research; no support guarantee is claimed yet.
+The production workflow checks the exact source revision, installs with `npm ci`, runs the full tests, typecheck and `/arrow-adventure/` build, verifies QA-only code is absent, stamps source metadata, deploys Pages, then checks the live page and assets. No QA deployment record or workflow is required. The separate QA repository and run history are retained for possible restoration.
+
+## Previews
+
+All files in [`docs/previews/round-13-large-grid/`](previews/round-13-large-grid/README.md) use the frozen catalog routes and current monochrome styling. The SVG previews are generated by `scripts/authoring/render-round13-previews.mjs`; the companion PNGs are static renderer renders from the same coordinates, not Safari screenshots.
+
+- [Eight-level contact sheet (SVG)](previews/round-13-large-grid/contact-sheet.svg) · [PNG](previews/round-13-large-grid/contact-sheet.png)
+- Level 6: [full](previews/round-13-large-grid/level-6-full.svg), [390×844](previews/round-13-large-grid/level-6-iphone-390x844.svg), [IDs](previews/round-13-large-grid/level-6-arrow-ids.svg), [grid coverage](previews/round-13-large-grid/level-6-grid-coverage.svg), [density](previews/round-13-large-grid/level-6-density-summary.svg)
+- Level 7: [full](previews/round-13-large-grid/level-7-full.svg), [390×844](previews/round-13-large-grid/level-7-iphone-390x844.svg), [IDs](previews/round-13-large-grid/level-7-arrow-ids.svg), [grid coverage](previews/round-13-large-grid/level-7-grid-coverage.svg), [density](previews/round-13-large-grid/level-7-density-summary.svg)
+- Level 8: [full](previews/round-13-large-grid/level-8-full.svg), [390×844](previews/round-13-large-grid/level-8-iphone-390x844.svg), [IDs](previews/round-13-large-grid/level-8-arrow-ids.svg), [grid coverage](previews/round-13-large-grid/level-8-grid-coverage.svg), [density](previews/round-13-large-grid/level-8-density-summary.svg)
+
+The renderer preview is a static, geometry-faithful rendering. Browser automation was unavailable in this run; no Safari screenshot or physical iPhone verification is claimed for Levels 6–8.
