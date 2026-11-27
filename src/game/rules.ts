@@ -219,7 +219,11 @@ function puzzleKey(level: Level): string {
   return JSON.stringify([level.width, level.height, level.grid ?? LEGACY_GRID_SPECIFICATION, level.arrows]);
 }
 
-function buildExitBlockers(level: Level): Map<string, Set<string>> {
+/**
+ * Build the complete static-obstacle dependency graph using the gameplay move
+ * simulator. An edge A → B means A cannot leave while B remains stationary.
+ */
+export function buildExitBlockers(level: Level): Map<string, Set<string>> {
   const key = puzzleKey(level);
   const cached = blockerCache.get(key);
   if (cached) return cached;
@@ -237,25 +241,19 @@ export function solveLevel(level: Level): string[] | null {
   const cacheKey = puzzleKey(level);
   if (solutionCache.has(cacheKey)) return solutionCache.get(cacheKey)?.slice() ?? null;
   const blockers = buildExitBlockers(level);
-  const memo = new Set<string>();
-  const search = (remaining: Set<string>): string[] | null => {
-    if (remaining.size === 0) return [];
-    const key = [...remaining].sort().join('|');
-    if (memo.has(key)) return null;
-    memo.add(key);
-    for (const id of remaining) {
-      if ([...blockers.get(id)!].some((blocker) => remaining.has(blocker))) continue;
-      const next = new Set(remaining);
-      next.delete(id);
-      const tail = search(next);
-      if (tail) return [id, ...tail];
-    }
-    return null;
-  };
-  const solution = search(new Set(level.arrows.map(({ id }) => id)));
+  const remaining = new Set(level.arrows.map(({ id }) => id));
+  const solution: string[] = [];
+  while (remaining.size > 0) {
+    const next = level.arrows.find(({ id }) => remaining.has(id)
+      && [...blockers.get(id)!].every((blockedBy) => !remaining.has(blockedBy)));
+    if (!next) break;
+    solution.push(next.id);
+    remaining.delete(next.id);
+  }
+  const completeSolution = remaining.size === 0 ? solution : null;
   if (solutionCache.size >= 64) solutionCache.clear();
-  solutionCache.set(cacheKey, solution);
-  return solution?.slice() ?? null;
+  solutionCache.set(cacheKey, completeSolution);
+  return completeSolution?.slice() ?? null;
 }
 
 export type LevelMetrics = {

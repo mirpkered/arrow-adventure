@@ -1,4 +1,4 @@
-import { simulateMove } from './rules';
+import { buildExitBlockers, simulateMove } from './rules';
 import type { Arrow, Level } from './types';
 
 export const MAX_EXACT_AUDIT_ARROWS = 20;
@@ -15,6 +15,72 @@ export type StateSpaceAudit = {
   dependencyCycles: string[][];
 };
 
+export type BlockerGraphAudit = {
+  method: 'static-blocker-dag';
+  stateEnumeration: false;
+  completeGuarantee: boolean;
+  arrowCount: number;
+  blockerEdges: number;
+  initialLegalMoves: string[];
+  removalSequence: string[];
+  dependencyCycles: string[][];
+  deadlockWitness?: DeadlockWitness;
+};
+
+/**
+ * Certifies all-state solvability for the current static, removal-only rules.
+ * Pairwise edges are built with the same swept-body simulator used by play.
+ * In this ruleset, a move is legal against a set of stationary arrows iff it
+ * is legal against every arrow individually (collision is the union of static
+ * obstacles). Removing an arrow only removes obstacles. Therefore an acyclic
+ * blocker graph remains acyclic in every remaining subset; every nonempty
+ * induced DAG has a sink (an arrow with no remaining blockers), and every
+ * legal move leaves another induced DAG. A cycle yields a reachable sinkless
+ * residual after repeatedly removing legal sinks. This proof is specific to
+ * static obstacles and must not be reused for switches, gates, portals, or
+ * other state-changing mechanics.
+ */
+export function auditBlockerGraph(level: Level): BlockerGraphAudit {
+  const blockers = buildExitBlockers(level);
+  const audit = analyzeBlockerDependencies(level.arrows.map(({ id }) => id), blockers);
+  const remaining = new Set(level.arrows.map(({ id }) => id));
+  for (const id of audit.removalSequence) {
+    const arrow = level.arrows.find((candidate) => candidate.id === id)!;
+    const result = simulateMove(arrow, level.arrows.filter((candidate) => candidate.id !== id && remaining.has(candidate.id)), level.width, level.height, level.grid);
+    if (!result.ok) throw new Error(`Blocker graph disagrees with gameplay simulator for ${id}; blocked by ${result.blockedBy}`);
+    remaining.delete(id);
+  }
+  return audit;
+}
+
+/** Pure graph certificate helper, also used to regression-test cycle witnesses. */
+export function analyzeBlockerDependencies(arrowIds: string[], blockers: Map<string, Set<string>>): BlockerGraphAudit {
+  const cycles = findDependencyCycles(arrowIds, blockers);
+  const edgeCount = [...blockers.values()].reduce((sum, set) => sum + set.size, 0);
+  const remaining = new Set(arrowIds);
+  const initialLegalMoves = arrowIds.filter((id) => [...(blockers.get(id) ?? [])].every((blocker) => !remaining.has(blocker)));
+  const removalSequence: string[] = [];
+  while (remaining.size > 0) {
+    const legal = arrowIds.find((id) => remaining.has(id)
+      && [...(blockers.get(id) ?? [])].every((blocker) => !remaining.has(blocker)));
+    if (!legal) {
+      return {
+        method: 'static-blocker-dag', stateEnumeration: false, completeGuarantee: false,
+        arrowCount: arrowIds.length, blockerEdges: edgeCount, initialLegalMoves,
+        removalSequence, dependencyCycles: cycles,
+        deadlockWitness: { remainingArrowIds: arrowIds.filter((id) => remaining.has(id)), removalSequence },
+      };
+    }
+    removalSequence.push(legal);
+    remaining.delete(legal);
+  }
+  return {
+    method: 'static-blocker-dag', stateEnumeration: false, completeGuarantee: cycles.length === 0,
+    arrowCount: arrowIds.length, blockerEdges: edgeCount, initialLegalMoves,
+    removalSequence, dependencyCycles: cycles,
+  };
+}
+
 /**
  * Exhaustively visits every successful-removal subset, bounded to 20 arrows.
  * Pairwise blocker edges are computed by the real full-body simulator. This is
@@ -27,8 +93,8 @@ export function auditReachableStates(level: Level): StateSpaceAudit {
     throw new Error(`Exact state audit is bounded to ${MAX_EXACT_AUDIT_ARROWS} arrows; received ${count}`);
   }
 
-  const blockers = buildBlockers(level);
-  const cycles = findDependencyCycles(level.arrows, blockers);
+  const blockers = buildExitBlockers(level);
+  const cycles = findDependencyCycles(level.arrows.map(({ id }) => id), blockers);
   const fullMask = (1 << count) - 1;
   const pending: Array<{ mask: number; sequence: string[] }> = [{ mask: fullMask, sequence: [] }];
   const seen = new Set<number>();
@@ -77,16 +143,7 @@ export function legalMoves(level: Level): Array<{ arrow: Arrow; blockedBy?: stri
   });
 }
 
-function buildBlockers(level: Level): Map<string, Set<string>> {
-  const blockers = new Map(level.arrows.map(({ id }) => [id, new Set<string>()]));
-  for (const arrow of level.arrows) for (const other of level.arrows) {
-    if (arrow.id === other.id) continue;
-    if (!simulateMove(arrow, [other], level.width, level.height, level.grid).ok) blockers.get(arrow.id)!.add(other.id);
-  }
-  return blockers;
-}
-
-function findDependencyCycles(arrows: Arrow[], blockers: Map<string, Set<string>>): string[][] {
+function findDependencyCycles(arrowIds: string[], blockers: Map<string, Set<string>>): string[][] {
   let nextIndex = 0;
   const indexes = new Map<string, number>();
   const lowLinks = new Map<string, number>();
@@ -108,6 +165,6 @@ function findDependencyCycles(arrows: Arrow[], blockers: Map<string, Set<string>
     do { member = stack.pop()!; onStack.delete(member); component.push(member); } while (member !== id);
     if (component.length > 1 || blockers.get(id)?.has(id)) cycles.push(component.sort());
   };
-  for (const { id } of arrows) if (!indexes.has(id)) visit(id);
+  for (const id of arrowIds) if (!indexes.has(id)) visit(id);
   return cycles;
 }

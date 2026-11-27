@@ -279,4 +279,28 @@ describe('local game persistence', () => {
     });
     expect(data.get(PRODUCTION_STORAGE_KEYS.settings)).toBe(settings);
   });
+
+  it('upgrades the catalog revision without resetting an unchanged saved board', () => {
+    const level = CURATED_LEVELS[2];
+    const previous = {
+      version: 4,
+      catalogVersion: 'first-flight-r3-compact-weave',
+      contentVersion: level.contentVersion,
+      currentLevelId: level.id,
+      completedLevelIds: [CURATED_LEVELS[0].id, CURATED_LEVELS[1].id],
+      remainingArrowIds: ['c05', 'c06', 'c09'],
+      redArrowIds: ['c05'],
+      hearts: 1,
+      levelComplete: false,
+    };
+    const preferences = JSON.stringify({ version: 1, appearance: 'dark', backgroundMusic: true, soundEffects: false });
+    const { storage, data } = storageFixture({
+      [PRODUCTION_STORAGE_KEYS.game]: JSON.stringify(previous),
+      [PRODUCTION_STORAGE_KEYS.settings]: preferences,
+    });
+    const upgraded = loadGameSave(storage, CURATED_LEVELS)!;
+    expect(upgraded).toEqual({ ...previous, catalogVersion: 'first-flight-r4-large-grid' });
+    expect(JSON.parse(data.get(PRODUCTION_STORAGE_KEYS.game)!)).toEqual(upgraded);
+    expect(data.get(PRODUCTION_STORAGE_KEYS.settings)).toBe(preferences);
+  });
 });

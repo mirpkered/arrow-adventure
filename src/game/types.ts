@@ -38,6 +38,8 @@ export type CuratedLevel = {
   composition: 'abstract' | 'silhouette';
   /** One or more simple polygons in path-local board coordinates; authored, never inferred from arrow bounds. */
   footprint: Point[][];
+  /** Optional deterministic offline candidate seed; runtime uses only frozen paths. */
+  authoringSeed?: number;
   puzzle: Level;
 };
 

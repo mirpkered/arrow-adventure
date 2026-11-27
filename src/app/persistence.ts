@@ -109,12 +109,16 @@ function normalizeCurrentSave(data: Record<string, unknown>, catalog: readonly C
     || typeof data.levelComplete !== 'boolean') return null;
   const level = catalog.find(({ id }) => id === data.currentLevelId);
   if (!level) return null;
-  if (data.catalogVersion !== level.catalogVersion && data.catalogVersion !== 'first-flight-r2-true-grid') return null;
+  if (data.catalogVersion !== level.catalogVersion
+    && data.catalogVersion !== 'first-flight-r3-compact-weave'
+    && data.catalogVersion !== 'first-flight-r2-true-grid') return null;
   const knownLevels = new Set(catalog.map(({ id }) => id));
   const completedLevelIds = (data.completedLevelIds as string[]).filter((id) => knownLevels.has(id));
   if (data.levelComplete && ((data.remainingArrowIds as string[]).length > 0 || !completedLevelIds.includes(level.id))) return null;
   if (!data.levelComplete && (data.remainingArrowIds as string[]).length === 0) return null;
-  const staleContent = data.catalogVersion !== level.catalogVersion || data.contentVersion !== level.contentVersion;
+  // Catalog additions alone do not invalidate a saved board. The stable level
+  // identity and per-level content version decide whether its geometry changed.
+  const staleContent = data.contentVersion !== level.contentVersion;
   if (staleContent) {
     const save: GameSave = data.levelComplete
       ? { version: 4, catalogVersion: level.catalogVersion, contentVersion: level.contentVersion, currentLevelId: level.id,
@@ -136,7 +140,7 @@ function normalizeCurrentSave(data: Record<string, unknown>, catalog: readonly C
     redArrowIds: [...data.redArrowIds as string[]],
     hearts: data.hearts as number,
     levelComplete: data.levelComplete,
-  }, migrated: false };
+  }, migrated: data.catalogVersion !== level.catalogVersion };
 }
 
 export function saveGame(storage: StorageLike, save: GameSave, keys = PRODUCTION_STORAGE_KEYS): boolean {

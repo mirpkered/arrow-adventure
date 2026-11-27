@@ -20,12 +20,13 @@ describe('Round 11 active catalog and preserved Round 10 content', () => {
       .toBe('ec345f51cdf681be57f044c9bd62c88600715ff0efd65c55c05979a48a6ba8c0');
   });
 
-  it('uses stable IDs and exactly five frozen levels on true visible grids', () => {
+  it('preserves the five opening IDs and appends larger true visible-grid levels', () => {
     expect(CURATED_LEVELS.map(({ id }) => id)).toEqual([
       'first-flight-001', 'first-flight-002', 'first-flight-003', 'first-flight-004', 'first-flight-005',
+      'first-flight-006',
     ]);
     expect(CURATED_LEVELS.map(({ puzzle }) => [puzzle.width, puzzle.height, puzzle.arrows.length])).toEqual([
-      [5, 5, 5], [6, 6, 8], [7, 7, 10], [7, 8, 12], [8, 8, 15],
+      [5, 5, 5], [6, 6, 8], [7, 7, 10], [7, 8, 12], [8, 8, 15], [10, 10, 20],
     ]);
     for (const { puzzle } of CURATED_LEVELS) {
       expect(puzzle.grid).toEqual({ spacing: 1, origin: { x: 0, y: 0 }, pathOffset: 0, includeOuterBoundary: true });
@@ -54,8 +55,9 @@ describe('Round 11 active catalog and preserved Round 10 content', () => {
     expect(getCuratedLevel(5)?.id).toBe('first-flight-005');
     expect(getCuratedLevelById('first-flight-005')?.number).toBe(5);
     expect(getNextCuratedLevel(CURATED_LEVELS[3])?.id).toBe('first-flight-005');
-    expect(getNextCuratedLevel(CURATED_LEVELS[4])).toBeUndefined();
-    expect(CURATED_LEVELS.every(({ catalogVersion, contentVersion, number }) => catalogVersion === 'first-flight-r3-compact-weave' && contentVersion === (number === 3 ? 3 : 2))).toBe(true);
+    expect(getNextCuratedLevel(CURATED_LEVELS[4])?.id).toBe('first-flight-006');
+    expect(getNextCuratedLevel(CURATED_LEVELS[5])).toBeUndefined();
+    expect(CURATED_LEVELS.every(({ catalogVersion, contentVersion, number }) => catalogVersion === 'first-flight-r4-large-grid' && contentVersion === (number === 3 ? 3 : number <= 5 ? 2 : 1))).toBe(true);
     expect(() => validateCuratedLevels()).not.toThrow();
   });
 
@@ -80,7 +82,7 @@ describe('Round 11 active catalog and preserved Round 10 content', () => {
   it('completes exact reachable-state and gameplay-simulator audits for every arrow', () => {
     const expectedStates = [8, 21, 84, 56, 66];
     const expectedTransitions = [9, 35, 212, 124, 137];
-    for (const [index, entry] of CURATED_LEVELS.entries()) {
+    for (const [index, entry] of CURATED_LEVELS.slice(0, 5).entries()) {
       const puzzle = entry.puzzle;
       const solution = solveLevel(puzzle);
       expect(solution, entry.id).not.toBeNull();

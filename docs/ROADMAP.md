@@ -1,30 +1,32 @@
 # Arrow Adventure Roadmap
 
-## Current foundation — Round 11A
+## Current foundation — Round 13, Milestone B
 
-The approved First Flight catalog contains five stable IDs under `first-flight-r3-compact-weave`. It preserves the true visible-grid system, compactness refinements, and corrected Level 3 c05 direction. The physical iPhone playtest approved these levels and core movement. The old Round 10 catalog remains archived for history; Round 12's heart is an isolated experiment and is not Adventure Mode content.
+The production-only release workflow is active. QA Pages and the temporary QA-to-production synchronizer are paused; validated development branches move to `main`, where Actions independently validates and deploys the production build. Recovery and restoration instructions are in [QA environment and release procedures](QA_ENVIRONMENT.md).
 
-## Round 13 — production-only workflow and larger boards
+First Flight keeps the five physically approved Round 11A levels and adds Level 6, a frozen 10×10 board with 20 arrows. The new puzzle passes the exhaustive reachable-state audit. Catalog additions preserve existing save credit and in-progress boards; only an explicit per-level content-version change invalidates that board.
 
-Round 13 pauses the separate QA Pages environment and removes the temporary scheduled QA-to-production synchronizer. Feature branches still isolate unfinished work; validated commits fast-forward to `main`, where production Actions independently tests, typechecks, audits, builds, deploys, and verifies the exact source revision.
+## Round 13 — larger boards and proof scalability
 
-The gameplay work expands First Flight with curated, frozen, dense true-grid boards. Initial targets are a 10×10 Level 6, a 12×12 Level 7 if scalable solvability proof is established, and a 14×14 stretch experiment only after those milestones pass. The existing five puzzles, identities, content versions, save data and migration behavior remain intact as levels are appended.
+Level 7 is the next milestone: a dense 12×12 board with 30 arrows. Its current candidate passes geometry validation and the complete static blocker-graph proof for the current removal-only rules. It remains on the development branch until the proof/regression suite, full production release gate, and phone-scale visual review pass.
 
-The current exact reachable-state audit limit is 20 arrows. Round 13 is evaluating a static blocker-graph certificate for larger boards. Any such certificate must be proved for removal-only static obstacles, compared against exact enumeration on small boards, and clearly distinguished from exhaustive state enumeration. Do not use graph certification for future moving mechanics without a new proof.
+The exact reachable-state enumerator remains capped at 20 arrows and reports actual subset and transition totals. Above that cap, a static blocker DAG can establish all-state completion without enumerating subsets because a move is legal exactly when no remaining arrow individually blocks it, and successful moves only remove static obstacles. The graph certificate is complete only for these rules. Future moving obstacles, switches, gates, portals, or other state changes need a separate proof or exact method.
+
+A 14×14 board is a stretch experiment after Level 7 is stable. Do not enlarge boards just to hit a target arrow count; visual cohesion, geometry, and proof are release conditions.
 
 ## Release gates
 
-For every production promotion:
+For each production promotion:
 
-1. Keep the experiment on its development branch until geometry, solver/runtime agreement, solvability validation, progression and persistence tests pass.
-2. Inspect full-board and 390×844 portraits at 320×568, 390×844, 430×932, and a desktop viewport.
-3. Run the full suite, TypeScript checks, production build and `git diff --check`.
-4. Create a rollback checkpoint at the currently deployed `main` revision.
-5. Fast-forward or safely merge the validated branch into `main`; never force-push.
-6. Confirm the Pages workflow succeeds and the live `deployment.json`, page and assets report the expected revision.
+1. Keep unfinished work on a development branch.
+2. Run tests, typecheck, production build, build-content exclusion checks, geometry validation, and the appropriate exact or graph proof.
+3. Inspect full-board and renderer-generated 390×844 previews; also check 320×568, 430×932, and desktop fit. Distinguish static previews from browser and physical-device tests.
+4. Create a rollback checkpoint at the current production `main` revision.
+5. Fast-forward or safely merge; never force-push.
+6. Confirm the production Pages workflow and live `deployment.json`, page, and assets report the intended source revision.
 
-Production is the current playtest environment, not permission to bypass validation. Physical iPhone testing should be distinguished from automated viewport and touch simulation.
+Production is the current playtest environment, not permission to bypass validation. The developer physically approved the Round 11A five-level foundation and Round 9H movement/grid behavior. New levels still require physical iPhone review after the validated production deployment.
 
 ## Historical and deferred direction
 
-Round 10 established the five-level true-grid foundation, and Round 11 refined its compactness. Earlier prototype sets, six-level release archives and provisional catalogs remain in version control. Generic image-to-puzzle generation, silhouette authoring, Free Play, black holes, switches, gates, portals, monetization and advertising remain deferred.
+Round 10 established the true-grid foundation; Round 11 refined compactness and corrected Level 3 c05. Earlier six-level, provisional ten-level, and prototype catalogs remain preserved in history and archives. Round 12's heart is isolated from Adventure Mode. Generic silhouette authoring, image uploads, Free Play, black holes, switches, gates, portals, monetization, and advertising remain deferred.

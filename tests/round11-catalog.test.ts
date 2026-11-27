@@ -4,7 +4,7 @@ import { CURATED_LEVELS, validateCuratedLevels } from '../src/game/catalog';
 import { boardGridMarkup } from '../src/app/boardGrid';
 import { measureComposition, measureFootprintDensity, measureNeighborSpacing } from '../src/game/density';
 import { analyzeLevel, completeLevel, simulateMove, solveLevel, validateLevel } from '../src/game/rules';
-import { auditReachableStates } from '../src/game/stateAudit';
+import { auditBlockerGraph, auditReachableStates } from '../src/game/stateAudit';
 import type { CuratedLevel } from '../src/game/types';
 import round10 from '../src/game/archive/adventure-catalog-first-flight-r2.json';
 
@@ -13,14 +13,15 @@ const fingerprint = (value: unknown) => createHash('sha256').update(JSON.stringi
 
 describe('Round 11 compactness refinement', () => {
   it('keeps the approved five level IDs, dimensions, arrow counts, and true-grid rules', () => {
-    expect(CURATED_LEVELS.map(({ id }) => id)).toEqual([
+    expect(CURATED_LEVELS.slice(0, 5).map(({ id }) => id)).toEqual([
       'first-flight-001', 'first-flight-002', 'first-flight-003', 'first-flight-004', 'first-flight-005',
     ]);
-    expect(CURATED_LEVELS.map(({ puzzle }) => [puzzle.width, puzzle.height, puzzle.arrows.length])).toEqual([
+    expect(CURATED_LEVELS.slice(0, 5).map(({ puzzle }) => [puzzle.width, puzzle.height, puzzle.arrows.length])).toEqual([
       [5, 5, 5], [6, 6, 8], [7, 7, 10], [7, 8, 12], [8, 8, 15],
     ]);
-    expect(CURATED_LEVELS.every(({ catalogVersion }) => catalogVersion === 'first-flight-r3-compact-weave')).toBe(true);
-    expect(CURATED_LEVELS.map(({ contentVersion }) => contentVersion)).toEqual([2, 2, 3, 2, 2]);
+    expect(CURATED_LEVELS).toHaveLength(6);
+    expect(CURATED_LEVELS.every(({ catalogVersion }) => catalogVersion === 'first-flight-r4-large-grid')).toBe(true);
+    expect(CURATED_LEVELS.map(({ contentVersion }) => contentVersion)).toEqual([2, 2, 3, 2, 2, 1]);
     expect(fingerprint(round10)).toBe('ec345f51cdf681be57f044c9bd62c88600715ff0efd65c55c05979a48a6ba8c0');
     for (const entry of CURATED_LEVELS) {
       const { puzzle } = entry;
@@ -59,7 +60,7 @@ describe('Round 11 compactness refinement', () => {
     const priorRouteUnits = [21, 26, 36, 47, 55];
     const priorInterleaved = [1, 2, 4, 6, 7];
     const priorContacts = [45, 49, 72, 122, 144];
-    CURATED_LEVELS.forEach((entry, index) => {
+    CURATED_LEVELS.slice(0, 5).forEach((entry, index) => {
       const { puzzle } = entry;
       expect(routeLengths(entry)).toEqual(expectedLengths[index]);
       expect(fingerprint(puzzle)).toBe(expectedHashes[index]);
@@ -96,6 +97,39 @@ describe('Round 11 compactness refinement', () => {
       expect(spacing.p90).toBe(1);
       expect(composition.adjacentGridPathRatio).toBeGreaterThan(0.8);
       expect(density.largeGapRatio).toBe(0);
+    });
+  });
+
+  it('adds the dense 10×10 Level 6 with an exact audit and stable fingerprint', () => {
+    const large = CURATED_LEVELS.slice(5);
+    expect(large.map(({ id, authoringSeed, contentVersion }) => [id, authoringSeed, contentVersion])).toEqual([
+      ['first-flight-006', 13309, 1],
+    ]);
+    expect(large.map(({ puzzle }) => [puzzle.width, puzzle.height, puzzle.arrows.length])).toEqual([[10, 10, 20]]);
+    const expectedHash = '45c271cfd0f4ee3e06861df354beae8268563ea74985da621231a5428761447e';
+    const expectedRoutes = [1, 8, 7, 6, 5, 1, 5, 7, 8, 8, 1, 7, 3, 2, 8, 7, 4, 8, 2, 3];
+    large.forEach((entry) => {
+      const { puzzle } = entry;
+      expect(fingerprint(puzzle)).toBe(expectedHash);
+      expect(routeLengths(entry)).toEqual(expectedRoutes);
+      expect(new Set(puzzle.arrows.flatMap(({ path }) => path.map(({ x, y }) => `${x},${y}`))).size)
+        .toBe((puzzle.width + 1) * (puzzle.height + 1));
+      validateLevel(puzzle);
+      const graph = auditBlockerGraph(puzzle);
+      expect(graph.completeGuarantee).toBe(true);
+      expect(graph.stateEnumeration).toBe(false);
+      expect(graph.removalSequence).toHaveLength(puzzle.arrows.length);
+      expect(graph.dependencyCycles).toEqual([]);
+      const metrics = analyzeLevel(puzzle);
+      const isolated = Object.entries(metrics.interleavedPairsByArrow)
+        .filter(([id, degree]) => degree === 0 && metrics.blockersByArrow[id] === 0).map(([id]) => id);
+      expect(isolated, `${entry.id} isolated arrows`).toEqual([]);
+      expect(metrics.blockingDependencies).toBe(31);
+      expect(metrics.dependencyDepth).toBe(5);
+      expect(metrics.initiallyRemovable).toBe(5);
+      const exact = auditReachableStates(puzzle);
+      expect(exact).toMatchObject({ reachableStates: 2206, legalTransitions: 9163, terminalStates: 1, deadlocks: [], dependencyCycles: [] });
+      expect(exact.initialLegalMoves).toHaveLength(5);
     });
   });
 });

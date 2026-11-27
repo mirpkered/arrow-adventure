@@ -22,6 +22,12 @@ Checked before Round 13 implementation on 2026-11-26/27:
 
 Production was independently confirmed from the live `deployment.json`. The Round 11A revision descends from the production main baseline. No newer source branch superseded the approved Round 11A commit at inspection time. Local tracked changes were absent before the Round 13 branch was created; existing untracked `dist-*` validation output folders were left untouched.
 
+## Milestone A — production-only transition
+
+The approved Round 11A foundation and production-only release workflow were promoted together as `56de1742b739fc8d2f78cd73d9faaebf2c7aa505`. The production workflow completed at [run 45938736123](https://github.com/mirpkered/arrow-adventure/actions/runs/45938736123), and the live production `deployment.json`, page, and required assets were verified against that SHA. QA Pages was suspended (repository retained); the sync repository variable was set false, the scheduled workflow disabled, and no queued/in-progress sync run remained. This action preceded larger-grid catalog edits.
+
+At the start of large-grid authoring, `main`, the live production deployment record, and `round-13/production-transition` all pointed to `56de174…`. A new isolated `round-13/large-grid-expansion` branch was created from that commit. Production remained unchanged while larger candidates were authored.
+
 ## Recovery points and branch plan
 
 - `checkpoint/round-13-before-production-transition` preserves production `main` at `84089f88ff1edddd4776435984c94c0a220e825f`.

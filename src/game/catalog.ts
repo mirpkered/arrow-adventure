@@ -2,7 +2,7 @@ import adventureCatalog from './adventure-catalog.json';
 import { measureFootprintDensity, measureNeighborSpacing, pointInFootprint } from './density';
 import { isBoardGridIntersection, segmentDistance, toBoardPoint } from './geometry';
 import { analyzeLevel, solveLevel, validateLevel } from './rules';
-import { auditReachableStates } from './stateAudit';
+import { auditBlockerGraph, auditReachableStates, MAX_EXACT_AUDIT_ARROWS } from './stateAudit';
 import type { CuratedLevel } from './types';
 
 export const CATALOG_VERSION = adventureCatalog.catalogVersion;
@@ -18,7 +18,7 @@ export function getNextCuratedLevel(level: CuratedLevel): CuratedLevel | undefin
 
 /** Full authoring gate. It validates exact frozen content, footprint quality, geometry, and all reachable states. */
 export function validateCuratedLevels(entries: readonly CuratedLevel[] = CURATED_LEVELS): void {
-  if (entries.length !== 5) throw new Error('First Flight must contain exactly five curated levels in the Round 10 foundation');
+  if (entries.length === 0) throw new Error('Adventure catalog must contain at least one curated level');
   const ids = new Set<string>();
   const numbers = new Set<number>();
   for (const entry of entries) {
@@ -65,14 +65,22 @@ export function validateCuratedLevels(entries: readonly CuratedLevel[] = CURATED
       || metrics.initiallyRemovable > Math.ceil(entry.puzzle.arrows.length * 0.6)) throw new Error(entry.id + ' has weak escape dependencies');
     if (Math.max(...metrics.pathLengths) - Math.min(...metrics.pathLengths) < 2
       || Math.max(...metrics.turnCounts) - Math.min(...metrics.turnCounts) < 1) throw new Error(entry.id + ' lacks path length and turn variety');
-    if (!solveLevel(entry.puzzle)) throw new Error(entry.id + ' has no complete solution');
-    const audit = auditReachableStates(entry.puzzle);
-    if (audit.deadlocks.length) {
-      const witness = audit.deadlocks[0];
-      throw new Error(`${entry.id} reaches deadlock [${witness.remainingArrowIds.join(', ')}] after [${witness.removalSequence.join(' → ') || 'no removals'}]`);
+    const graphAudit = auditBlockerGraph(entry.puzzle);
+    if (!graphAudit.completeGuarantee) {
+      const witness = graphAudit.deadlockWitness;
+      throw new Error(`${entry.id} blocker graph deadlocks [${witness?.remainingArrowIds.join(', ') ?? ''}] after [${witness?.removalSequence.join(' → ') || 'no removals'}]; cycles [${graphAudit.dependencyCycles[0]?.join(' → ') ?? 'unknown'}]`);
     }
-    if (audit.dependencyCycles.length) throw new Error(`${entry.id} has dependency cycle [${audit.dependencyCycles[0].join(' → ')}]`);
-    if (audit.terminalStates !== 1) throw new Error(`${entry.id} does not reach exactly one completed board state`);
+    if (graphAudit.removalSequence.length !== entry.puzzle.arrows.length) throw new Error(`${entry.id} blocker graph did not certify a full removal order`);
+    if (!solveLevel(entry.puzzle)) throw new Error(entry.id + ' has no complete solution');
+    if (entry.puzzle.arrows.length <= MAX_EXACT_AUDIT_ARROWS) {
+      const audit = auditReachableStates(entry.puzzle);
+      if (audit.deadlocks.length) {
+        const witness = audit.deadlocks[0];
+        throw new Error(`${entry.id} reaches deadlock [${witness.remainingArrowIds.join(', ')}] after [${witness.removalSequence.join(' → ') || 'no removals'}]`);
+      }
+      if (audit.dependencyCycles.length) throw new Error(`${entry.id} has dependency cycle [${audit.dependencyCycles[0].join(' → ')}]`);
+      if (audit.terminalStates !== 1) throw new Error(`${entry.id} does not reach exactly one completed board state`);
+    }
   }
   const ordered = [...entries].sort((left, right) => left.number - right.number);
   ordered.forEach((entry, index) => { if (entry.number !== index + 1) throw new Error('Adventure levels must be numbered contiguously from Level 1'); });

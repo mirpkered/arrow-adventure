@@ -1,6 +1,6 @@
 # Arrow Adventure
 
-Arrow Adventure is a mobile-first, advertisement-free puzzle game from MIRPWORKS. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. Production now uses the physically approved Round 11A foundation: five compact, interwoven true-grid levels with the Level 3 c05 correction.
+Arrow Adventure is a mobile-first, advertisement-free puzzle game from MIRPWORKS. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. The approved Round 11A foundation now continues into larger First Flight boards: Levels 1–5 are preserved, and Level 6 introduces a dense 10×10 true-grid weave.
 
 Production: <https://mirpkered.github.io/arrow-adventure/>
 
@@ -8,7 +8,7 @@ Separate QA Pages deployment is paused while larger boards are developed and tes
 
 ## Play
 
-The Mirpworks startup splash leads to the title menu. Choose **Play** to begin at Level 1, or **Continue** to restore the last stable board state. Progress and settings save locally on this device. Round 11 uses game-save schema v4 and catalog `first-flight-r3-compact-weave`. It migrates Round 10 schema-v3 progress by preserving completed-level credit and current selection, restarting only an in-progress puzzle whose geometry changed, and leaving appearance/audio preferences intact.
+The Mirpworks startup splash leads to the title menu. Choose **Play** to begin at Level 1, or **Continue** to restore the last stable board state. Progress and settings save locally on this device. The game uses save schema v4 and catalog `first-flight-r4-large-grid`. Catalog additions preserve compatible in-progress boards; per-level content versions restart only a board whose geometry changed. Completed-level credit and appearance/audio preferences remain intact.
 
 Tap an arrow to try to clear it. It follows its winding route, then travels in its final heading until its whole body exits. If blocked, the arrow moves to the collision point, turns red, and returns along its path; it stays red until successfully cleared. Each failed attempt costs one of three hearts, including a repeat attempt on a red arrow. Restart resets the level and hearts. There is no undo, timer, advertising, or monetization.
 
@@ -47,10 +47,10 @@ Validated changes are developed on feature branches, then safely fast-forwarded 
 
 ## Architecture
 
-- `src/game/catalog.ts` and `src/game/adventure-catalog.json` — five frozen Round 11A compactness-refined levels with stable IDs, a versioned chapter, explicit true-grid specifications, metadata, fingerprints, geometry checks, and solvability audits. Round 10 definitions are frozen in `src/game/archive/adventure-catalog-first-flight-r2.json`.
+- `src/game/catalog.ts` and `src/game/adventure-catalog.json` — six frozen First Flight levels, including the Round 11A opening five and a 10×10 Level 6. Stable IDs, per-level content versions, explicit true-grid specifications, metadata, geometry checks, and solvability audits are preserved. Round 10 definitions are frozen in `src/game/archive/adventure-catalog-first-flight-r2.json`.
 - `src/game/prototypes/round9c-prototypes.json`, `round9d-prototypes.json`, `round9e-square-15.json`, `round9f-square-7.json`, `round9g-square-7-weave.json`, and `round9h-square-true-7.json` — eight Round 9C/D QA review boards plus separate, frozen Round 9E–9H experiments; A–H and the explicit Round 9H choice are loaded only by QA Prototype Review, never by Adventure Mode.
 - `src/game/archive/catalog-round8.ts` and `adventure-catalog-first-flight-r1.json` — non-playable archives of the former six-level release definitions and ten provisional Round 9 levels.
-- `src/game/geometry.ts`, `src/game/rules.ts`, `src/game/density.ts` — shared board-coordinate transforms, fixed collision envelopes, grid and segment validation, distance-based body movement, solver, and sampled whitespace metrics.
+- `src/game/geometry.ts`, `src/game/rules.ts`, `src/game/density.ts`, `src/game/stateAudit.ts` — shared board-coordinate transforms, fixed collision envelopes, grid and segment validation, distance-based body movement, solver, exact reachable-state audit through 20 arrows, and a static blocker-graph proof for the current removal-only rules.
 - `src/app/boardGrid.ts` — fine-grid paths rendered in the same SVG coordinate frame as the arrows.
 - `src/game/session.ts` — heart and run-state helpers.
 - `src/app/viewport.ts` — fitted board view, pinch zoom, pan, and reset.
@@ -62,11 +62,11 @@ Validated changes are developed on feature branches, then safely fast-forwarded 
 
 Puzzle geometry and collision assumptions are documented in [Game Design](docs/GAME_DESIGN.md). The exact all-state solvability audit and Level 4 reconstruction are in [Solvability Audit](docs/SOLVABILITY_AUDIT.md). The repeatable process for curated content is in [Level Authoring](docs/LEVEL_AUTHORING.md).
 
-The [Round 11 compactness report](docs/ROUND_11_COMPACTNESS.md) documents the before/after measurements, five-level previews, audits, and save migration. The [Round 10 foundation report](docs/ROUND_10_FOUNDATION.md) preserves the original layout metrics. Round 9H remains a historical reference for the physical iPhone-approved movement and grid standard. Round 13 records the production transition and larger-grid work in [the baseline](docs/ROUND_13_BASELINE.md) and [the expansion report](docs/ROUND_13_LARGE_GRID_EXPANSION.md).
+The [Round 11 compactness report](docs/ROUND_11_COMPACTNESS.md) documents the five-level refinement and save migration. The [Round 10 foundation report](docs/ROUND_10_FOUNDATION.md) preserves the original layout metrics. Round 9H remains a historical reference for the physical iPhone-approved movement and grid standard. Round 13 records the production transition and larger-grid work in [the baseline](docs/ROUND_13_BASELINE.md) and [the expansion report](docs/ROUND_13_LARGE_GRID_EXPANSION.md).
 
 ## Current scope and limitations
 
-- The Round 11A foundation retains five stable levels and the approved Round 11 compactness refinements; Level 3 c05 uses the corrected exit orientation. Their dimensions, IDs, routes, and content versions remain unchanged during the production workflow transition.
+- The Round 11A opening five retain their stable IDs, dimensions, routes, and content versions; Level 3 c05 uses the corrected exit orientation. Level 6 is appended as a separate frozen 10×10 puzzle.
 - Round 11 uses schema v4 content-version migration and preserves completed-level credit and unrelated appearance/audio settings.
 - Round 11A's c05 investigation, correction, and motion-frame previews are in [docs/ROUND_11A_C05.md](docs/ROUND_11A_C05.md).
 - Round 11 previews are renderer-generated, not browser captures. The five-level foundation and c05 correction were physically reviewed on iPhone before this production transition.
