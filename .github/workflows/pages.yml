@@ -1,4 +1,4 @@
-name: Build and deploy to GitHub Pages
+name: Validate and deploy production
 
 on:
   push:
@@ -11,87 +11,82 @@ permissions:
   id-token: write
 
 concurrency:
-  group: arrow-adventure-pages
+  group: arrow-adventure-production-pages
   cancel-in-progress: false
 
 jobs:
   build:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     outputs:
       source_sha: ${{ github.sha }}
-      qa_run_url: ${{ steps.qa.outputs.run_url }}
     steps:
-      - name: Checkout
+      - name: Checkout the exact production candidate
         uses: actions/checkout@v4
-      - name: Require this exact revision to be deployed on QA
-        id: qa
-        env:
-          EXPECTED_SHA: ${{ github.sha }}
-        run: |
-          qa_record="$(curl -fsSL https://mirpkered.github.io/arrow-adventure-qa/qa-deployment.json)"
-          qa_sha="$(jq -r '.sourceCommit // empty' <<< "$qa_record")"
-          if [[ "$qa_sha" != "$EXPECTED_SHA" ]]; then
-            echo "Refusing production deployment: QA currently reports '$qa_sha', expected '$EXPECTED_SHA'." >&2
-            exit 1
-          fi
-          qa_run="$(jq -r '.workflowRun // empty' <<< "$qa_record")"
-          if [[ ! "$qa_run" =~ ^https://github\.com/mirpkered/arrow-adventure-qa/actions/runs/[0-9]+$ ]]; then
-            echo "QA deployment record does not contain a valid workflow run URL." >&2
-            exit 1
-          fi
-          echo "run_url=$qa_run" >> "$GITHUB_OUTPUT"
-      - name: Setup Node
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - name: Verify live QA assets and source traceability
-        run: node scripts/verify-qa-deployment.mjs "${{ github.sha }}"
+
       - name: Install dependencies
         run: npm ci
-      - name: Run tests and typecheck
-        run: npm test && npm run typecheck
-      - name: Build
+
+      - name: Run complete tests
+        run: npm test
+
+      - name: Validate TypeScript
+        run: npm run typecheck
+
+      - name: Build the production Pages path
         run: npm run build -- --base=/arrow-adventure/
-      - name: Confirm production excludes QA modules
-        run: |
-          if compgen -G 'dist/assets/qaPanel-*.js' >/dev/null || compgen -G 'dist/assets/prototypeReview-*.js' >/dev/null; then
-            echo "Production build unexpectedly includes a QA-only JavaScript module." >&2
-            exit 1
-          fi
-          if grep -R -E -q 'Prototype Review|prototype-square-true-7|qa-deployment\.json' dist --include='*.js' --include='*.html' --include='*.json'; then
-            echo "Production build unexpectedly includes QA-only prototype content or metadata." >&2
-            exit 1
-          fi
+
+      - name: Verify production artifact and exclude QA tools
+        run: node scripts/verify-production-build.mjs dist
+
       - name: Stamp production source revision
         env:
           SOURCE_SHA: ${{ github.sha }}
-          QA_RUN_URL: ${{ steps.qa.outputs.run_url }}
-          PRODUCTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: node scripts/stamp-production-build.mjs dist "$SOURCE_SHA" "$QA_RUN_URL" "$PRODUCTION_RUN_URL"
+          PRODUCTION_WORKFLOW_RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/stamp-production-build.mjs dist "$SOURCE_SHA" "$PRODUCTION_WORKFLOW_RUN"
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
-      - name: Upload site
+
+      - name: Upload validated production artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
+
   deploy:
+    if: github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Confirm QA still serves this exact source revision
-        env:
-          EXPECTED_SHA: ${{ needs.build.outputs.source_sha }}
-          EXPECTED_QA_RUN: ${{ needs.build.outputs.qa_run_url }}
-        run: |
-          qa_record="$(curl -fsSL https://mirpkered.github.io/arrow-adventure-qa/qa-deployment.json)"
-          if [[ "$(jq -r '.sourceCommit // empty' <<< "$qa_record")" != "$EXPECTED_SHA" || "$(jq -r '.workflowRun // empty' <<< "$qa_record")" != "$EXPECTED_QA_RUN" ]]; then
-            echo "Refusing production deployment: QA changed after the production build." >&2
-            exit 1
-          fi
-      - name: Deploy
+      - name: Deploy the validated artifact
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Checkout the deployed source for verification
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.build.outputs.source_sha }}
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify the live production page, metadata, and assets
+        env:
+          EXPECTED_SHA: ${{ needs.build.outputs.source_sha }}
+          EXPECTED_WORKFLOW_RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/verify-production-deployment.mjs "$EXPECTED_SHA" "$EXPECTED_WORKFLOW_RUN"

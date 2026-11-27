@@ -1,30 +1,30 @@
 # Arrow Adventure Roadmap
 
-## Round 11 — compactness refinement (in QA review)
+## Current foundation — Round 11A
 
-Round 11 refines the same five First Flight IDs, board dimensions, arrow counts, movement rules, and true visible-grid convention. The level definitions use catalog `first-flight-r3-compact-weave`; Levels 1, 2, 4, and 5 are content version 2, while Level 3 is version 3 after the focused c05 heading correction in Round 11A. The compositions are frozen, deterministic path forests arranged across each complete lattice. The original Round 10 catalog is archived at `src/game/archive/adventure-catalog-first-flight-r2.json` for comparison. The active production site remains at the approved Round 10 revision until the developer reviews the updated candidate on iPhone.
+The approved First Flight catalog contains five stable IDs under `first-flight-r3-compact-weave`. It preserves the true visible-grid system, compactness refinements, and corrected Level 3 c05 direction. The physical iPhone playtest approved these levels and core movement. The old Round 10 catalog remains archived for history; Round 12's heart is an isolated experiment and is not Adventure Mode content.
 
-The candidate increases route length and interleaving in every level, preserves the original initial safe-move counts before the targeted Level 3 adjustment, and passes individual geometry plus exact reachable-state audits. Round 11A documents the c05 movement diagnosis, corrected content version, save compatibility, and QA review requirements in [Round 11A c05 correction](ROUND_11A_C05.md). Compactness previews and baseline measurements are in [Round 11 Compactness](ROUND_11_COMPACTNESS.md). This branch is isolated from the temporary production synchronization branch; only manual QA candidate deployments are intended.
+## Round 13 — production-only workflow and larger boards
 
-## Round 10 — five-level foundation (historical)
+Round 13 pauses the separate QA Pages environment and removes the temporary scheduled QA-to-production synchronizer. Feature branches still isolate unfinished work; validated commits fast-forward to `main`, where production Actions independently tests, typechecks, audits, builds, deploys, and verifies the exact source revision.
 
-Round 10 established the five-level First Flight foundation on true visible-grid geometry. Its catalog is versioned `first-flight-r2-true-grid`; its save schema v3 is migrated by Round 11 schema v4. The prior six-level release, ten Round 9 catalog candidates, and Round 9H reference remain preserved outside active play.
+The gameplay work expands First Flight with curated, frozen, dense true-grid boards. Initial targets are a 10×10 Level 6, a 12×12 Level 7 if scalable solvability proof is established, and a 14×14 stretch experiment only after those milestones pass. The existing five puzzles, identities, content versions, save data and migration behavior remain intact as levels are appended.
 
-All five boards pass path validation, stationary/swept collision checks, solver/runtime replay, and complete reachable-state audits. QA and production are separately built from the same QA-validated source SHA. The developer should still play the five levels on iPhone; physical-device review is not automated. See [Round 10 Foundation](ROUND_10_FOUNDATION.md) for level metrics, fingerprints, tests, and preview images.
+The current exact reachable-state audit limit is 20 arrows. Round 13 is evaluating a static blocker-graph certificate for larger boards. Any such certificate must be proved for removal-only static obstacles, compared against exact enumeration on small boards, and clearly distinguished from exhaustive state enumeration. Do not use graph certification for future moving mechanics without a new proof.
 
 ## Release gates
 
-1. Run the full test suite, typecheck, production-base build, and QA-base build.
-2. Verify the five exact visible grids and exhaustive state audits; incomplete search is not a pass.
-3. Review all starting boards and portrait renders for composition, readability, and consistent camera fit.
-4. Deploy the validated candidate only to the independent QA Pages repository and confirm the source SHA and assets.
-5. Have the developer test all five levels on iPhone, including touch selection, blocked-move hearts/reversal, zoom/pan, restart, Continue, and save reset.
-6. Change production `main` only after explicit approval of the QA candidate.
+For every production promotion:
 
-## Future direction
+1. Keep the experiment on its development branch until geometry, solver/runtime agreement, solvability validation, progression and persistence tests pass.
+2. Inspect full-board and 390×844 portraits at 320×568, 390×844, 430×932, and a desktop viewport.
+3. Run the full suite, TypeScript checks, production build and `git diff --check`.
+4. Create a rollback checkpoint at the currently deployed `main` revision.
+5. Fast-forward or safely merge the validated branch into `main`; never force-push.
+6. Confirm the Pages workflow succeeds and the live `deployment.json`, page and assets report the expected revision.
 
-- Continue authoring a small number of curated Adventure levels at a time. Keep all geometry on the declared visible lattice and freeze approved layouts with stable IDs, content versions, and fingerprints.
-- Develop lightweight footprint masks so a future authored silhouette can clip grid rendering without changing the regular logical coordinates. Do not implement image upload or automatic silhouette generation until separately designed.
-- Free Play remains a separate future mode. Generated puzzles must be deterministic and solver-verified, and optional mechanics must be selectable without being required for a solution.
-- Black holes, switches, gates, portals, additional mechanics, and larger level collections are not part of Round 10. Specify movement/collision/solver semantics before implementing any of them.
-- Preserve the approved Round 9H prototype as the current true-grid and physical-gameplay reference; do not copy its paths into future levels without deliberate redesign and review.
+Production is the current playtest environment, not permission to bypass validation. Physical iPhone testing should be distinguished from automated viewport and touch simulation.
+
+## Historical and deferred direction
+
+Round 10 established the five-level true-grid foundation, and Round 11 refined its compactness. Earlier prototype sets, six-level release archives and provisional catalogs remain in version control. Generic image-to-puzzle generation, silhouette authoring, Free Play, black holes, switches, gates, portals, monetization and advertising remain deferred.

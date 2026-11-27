@@ -1,87 +1,54 @@
-# QA and Production Environments
+# Production release and paused QA environment
 
-## Environment layout
+## Current release model
 
-| Environment | Repository / branch | Deployment target | Update policy |
-| --- | --- | --- | --- |
-| Production | `mirpkered/arrow-adventure`, `main` | <https://mirpkered.github.io/arrow-adventure/> | Temporary sync promotes only the latest development-branch SHA after that exact revision succeeds and deploys on QA. |
-| QA | `mirpkered/arrow-adventure-qa`, workflow on its `main` | <https://mirpkered.github.io/arrow-adventure-qa/> | Manual dispatch with a full candidate SHA from `mirpkered/arrow-adventure`. |
-| Development release branch | `round-10/five-level-foundation` in `mirpkered/arrow-adventure` | QA, then production after a successful QA record | The temporary production synchronizer monitors this exact branch only. |
-| Round 11 experiment | `round-11/compactness-refinement` in `mirpkered/arrow-adventure` | Manual QA candidate only | Not read by the automatic production synchronizer; do not merge to `main` or the monitored branch before approval. |
+Arrow Adventure is in prelaunch development. The production site is the current playtest environment:
 
-The QA repository has its own GitHub Pages project and `github-pages` deployment environment. Its workflow uses the QA repository's `GITHUB_TOKEN`, and its Pages action can publish only to that repository. It has no token, secret, workflow dispatch, or repository write permission in the production repository. Updating or rolling back QA therefore cannot trigger or overwrite production.
+- Production repository: [`mirpkered/arrow-adventure`](https://github.com/mirpkered/arrow-adventure)
+- Production branch/site: `main` → <https://mirpkered.github.io/arrow-adventure/>
+- Production base path: `/arrow-adventure/`
+- Separate QA repository: [`mirpkered/arrow-adventure-qa`](https://github.com/mirpkered/arrow-adventure-qa), retained but paused.
 
-```text
-selected source commit ──manual dispatch──> QA repo workflow
-                                           ├─ checkout exact source SHA
-                                           ├─ npm ci, tests, typecheck, QA-base build
-                                           ├─ add QA badge and commit metadata
-                                           └─ deploy to arrow-adventure-qa Pages
+Feature work stays on a named development branch. After the candidate passes the full automated gate, create a release checkpoint, fast-forward or safely merge it into `main`, and let `pages.yml` build and deploy that exact main SHA. The release workflow installs the lockfile, runs the full test suite and TypeScript validation, builds the production path, verifies that developer tools and experimental prototypes are excluded, writes `deployment.json`, deploys GitHub Pages, and checks the live record, app shell, manifest, icons, and branding assets. The public deployment record identifies the source SHA and production workflow run.
 
-developer-approved release ──push to main────> arrow-adventure main ──> production Pages
-```
+The deployment workflow has no dependency on `arrow-adventure-qa`, `qa-deployment.json`, or a QA run URL. Production uses its own local-storage namespace and no QA data is imported.
 
-The QA workflow is [Deploy QA candidate](https://github.com/mirpkered/arrow-adventure-qa/actions/workflows/deploy-qa.yml). Its initial deployment completed in [run 41748236896](https://github.com/mirpkered/arrow-adventure-qa/actions/runs/41748236896) from source commit `2e46726deca69058e7af8726d60902f937e7eb83`.
+## QA retirement state
 
-## Temporary QA-to-production synchronization
+Round 13 intentionally paused the previous QA environment before changing production release behavior:
 
-The source workflow is [Sync QA-approved development to production](https://github.com/mirpkered/arrow-adventure/actions/workflows/sync-qa-production.yml). QA remains an independent Pages site and requires an explicit full-SHA dispatch. After the QA workflow succeeds and its live `qa-deployment.json` reports the latest commit on `round-10/five-level-foundation`, the source repository's 15-minute scheduled check. Round 11 commits are on a different branch and are not considered by this check:
+- `ENABLE_TEMPORARY_PRODUCTION_SYNC` is `false`.
+- The source repository's `Sync QA-approved development to production` workflow is manually disabled and archived at [`docs/archive/sync-qa-production.yml`](archive/sync-qa-production.yml). Its old schedule and monitored Round 10 branch are retained for history only.
+- No queued or active synchronization run remained at retirement.
+- The QA repository's `Deploy QA candidate` workflow is manually disabled; its source and past Actions runs remain in that repository.
+- The QA repository's GitHub Pages configuration was suspended. The QA root now returns 404 and must not be used as the current test environment. A stale `qa-deployment.json` may remain briefly in edge cache; it is historical metadata only.
+- The QA repository itself has not been deleted. Its source, release workflow, settings, and history can support reintroduction.
 
-1. Confirms the live QA deployment record identifies the exact source SHA and a valid QA Actions run URL. The record is included in the Pages artifact only after the QA tests, typecheck, and build pass; the record becoming live also confirms the Pages artifact was published.
-2. Checks the live QA page, JavaScript, CSS, manifest, logo, and app icon responses.
-3. Re-runs the full tests and TypeScript validation against that exact revision.
-4. Makes a separate production build at `/arrow-adventure/`, verifies QA-only modules were tree-shaken, and writes a production `deployment.json` source/run record.
-5. Fast-forwards `main` only if the candidate descends from its current head, then deploys the production artifact.
+## Production release procedure
 
-QA and production are built separately from the same SHA; the QA artifact is never copied into production. No cross-repository credential or additional secret is required. The source workflow uses its repository-scoped `GITHUB_TOKEN` to update `main`, then deploys its own artifact. GitHub suppresses push-triggered workflows for that token, avoiding a deployment loop. The ordinary `pages.yml` workflow also refuses a main-branch deployment unless the exact source SHA and QA run reference are present on the live QA site, and rechecks that record immediately before production deployment.
+1. Fetch the latest `main` and development branch; inspect unrelated changes before integrating.
+2. Push the finished candidate to its development branch and run `npm ci`, `npm test`, `npm run typecheck`, `npm run build -- --base=/arrow-adventure/`, and `git diff --check`.
+3. Run any catalog/geometry audit command introduced for the candidate and inspect generated previews.
+4. Create a named checkpoint at the current production `main` SHA.
+5. Fast-forward `main` to the validated candidate; do not force-push.
+6. Wait for [Validate and deploy production](https://github.com/mirpkered/arrow-adventure/actions/workflows/pages.yml) to finish successfully.
+7. Confirm `https://mirpkered.github.io/arrow-adventure/deployment.json` reports the promoted SHA and current workflow run; verify the page and required assets return HTTP 200.
+8. Revert by preparing a new commit that restores the checkpoint content, then deploy normally. Do not rewrite published history.
 
-Disable the temporary automation before public launch by setting the source repository Actions variable `ENABLE_TEMPORARY_PRODUCTION_SYNC` to `false` or removing it. The sync workflow then stops promoting candidates. Explicit later releases can still use `pages.yml` after deploying the same SHA to QA.
+Only commits on `main` deploy automatically. A failed test, typecheck, build, artifact check, or live verification blocks a successful release. `workflow_dispatch` is limited to `main` and builds that exact SHA.
 
-For routine updates, commit finished gameplay to `round-10/five-level-foundation`, dispatch **Deploy QA candidate** with its exact SHA, and wait for the QA Pages deployment. The synchronizer promotes it on its next 15-minute poll. **Run workflow** on the sync action can check immediately; it safely skips if the current branch head is not yet deployed on QA.
+## Restore QA later
 
-## Deploying a candidate to QA
+When a separate review environment is useful again:
 
-Choose a full 40-character commit SHA that is already pushed to `mirpkered/arrow-adventure`. The feature branch itself is never deployed automatically. Dispatch from the QA repository's default branch:
+1. Re-enable the QA repository's `Deploy QA candidate` workflow in GitHub Actions.
+2. Recreate its Pages configuration with **GitHub Actions** as the build source in the QA repository settings.
+3. Dispatch its workflow with a full source SHA and its intended `/arrow-adventure-qa/` build path.
+4. Re-enable and document only the deliberate review/release policy required at that time. Do not restore the old scheduled production synchronizer; the current production workflow is intentionally standalone.
+5. Confirm production and QA local-storage keys remain distinct because GitHub Pages project paths share the same origin.
 
-```sh
-gh workflow run deploy-qa.yml \
-  --repo mirpkered/arrow-adventure-qa \
-  --ref main \
-  -f candidate_sha=FULL_SOURCE_COMMIT_SHA
-```
+The QA deployment repository and source workflow remain recoverable; there is no need to restore from a backup or alter production `main` merely to bring QA back.
 
-Or open the QA repository's Actions tab, select **Deploy QA candidate**, and provide the SHA. Before deployment the workflow checks out that exact source commit and requires:
+## Historical architecture
 
-1. `npm ci`
-2. `npm test` (including curated catalog structure, stationary geometry, and solver validation)
-3. `npm run typecheck`
-4. `npm run build -- --base=/arrow-adventure-qa/`
-
-The QA workflow sets `VITE_QA_MODE=true` and passes the selected `VITE_CANDIDATE_SHA` at build time. This enables the two-second HUD long-press panel and exposes the candidate SHA in its diagnostics. Production sets neither value, and its workflows fail if `qaPanel` or `prototypeReview` chunks appear.
-
-Any failed check prevents artifact upload and Pages deployment. The workflow has a single QA concurrency group so overlapping candidate deployments do not race.
-
-## Identifying and reverting QA
-
-The QA page shows a small badge with the first 12 characters of the source SHA. The page's `qa-deployment.json` exposes the full source repository, SHA, and workflow run URL; matching meta tags are also present in `index.html`. The Actions run records the exact candidate input and job logs.
-
-To roll QA back, dispatch the same workflow with the previously deployed source SHA. This creates a new deployment of the earlier source snapshot; it does not force-push or rewrite either repository's history.
-
-## Releasing to production
-
-During the temporary sync period, QA deployment of the configured development-branch head is the routine release gate; no second approval is required. Other feature branches are never considered. After synchronization is disabled, explicitly deploy the selected SHA to QA and fast-forward `main` to that same SHA; `pages.yml` will validate and deploy it. QA artifacts are never copied into production. Create a recoverable checkpoint before replacing a deployed game version.
-
-## Paths and browser state
-
-Production builds with `/arrow-adventure/`; QA builds the selected candidate with `/arrow-adventure-qa/`. Vite uses this base for the JavaScript/CSS chunks, title logo, favicon, Apple icon, and manifest. Manifest icon URLs are relative to the manifest URL, so they remain in the matching project path.
-
-Both Pages URLs share the `mirpkered.github.io` origin. The game namespaces local progress and settings as `arrow-adventure.production.*` and `arrow-adventure.qa.*`; the QA build flag controls the namespace. Round 11 progress uses schema v4 and includes the current level content version. It migrates the prior Round 10 schema-v3 save while keeping production and QA data separate; theme/audio preferences remain untouched. This keeps QA saves and preferences isolated despite the shared origin. There is no service worker or offline cache. If one is added later, cache names must also be environment-specific.
-
-## Deployment history and live record
-
-- QA repository Pages source: GitHub Actions, independently configured from production.
-- Initial QA source: `mirpkered/arrow-adventure@2e46726deca69058e7af8726d60902f937e7eb83`.
-- QA workflow run: [41748236896](https://github.com/mirpkered/arrow-adventure-qa/actions/runs/41748236896) (build and deploy succeeded).
-- Before the Round 9H interactive review rollout, the live QA record identified source `6ab53db3770e3ca4f975818ea7dd26f5f29383c2` and [workflow run 42911906151](https://github.com/mirpkered/arrow-adventure-qa/actions/runs/42911906151).
-- The live source SHA and workflow URL are exposed by `https://mirpkered.github.io/arrow-adventure-qa/qa-deployment.json`; that endpoint and the QA repository's Actions history are authoritative for the current deployment. Historical source SHAs remain available for rollback.
-- Production exposes its deployed source SHA and QA/production workflow URLs at `https://mirpkered.github.io/arrow-adventure/deployment.json` after Round 10 synchronization.
+Before Round 13, production required an exact QA deployment record and a scheduled source workflow promoted `round-10/five-level-foundation`. Those paths were retired after Round 11A was approved. Their configuration is preserved in Git history and the archived workflow file for auditability. Historical QA deployments and the Round 12 heart prototype are not current production content.

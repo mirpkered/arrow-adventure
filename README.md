@@ -1,10 +1,10 @@
 # Arrow Adventure
 
-Arrow Adventure is a mobile-first, advertisement-free puzzle game from MIRPWORKS. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. The Round 11 development candidate refines the five approved Adventure levels into denser, more interwoven true-grid compositions. Round 11A also corrects Level 3's c05 head direction after physical playtest feedback; Round 10 remains in production pending review.
+Arrow Adventure is a mobile-first, advertisement-free puzzle game from MIRPWORKS. Clear each board by selecting winding arrows in an order that lets their heads follow their paths and their bodies trail behind. Production now uses the physically approved Round 11A foundation: five compact, interwoven true-grid levels with the Level 3 c05 correction.
 
 Production: <https://mirpkered.github.io/arrow-adventure/>
 
-Independent QA: <https://mirpkered.github.io/arrow-adventure-qa/>
+Separate QA Pages deployment is paused while larger boards are developed and tested through validated production releases. See [environment and release procedures](docs/QA_ENVIRONMENT.md).
 
 ## Play
 
@@ -30,7 +30,7 @@ npm run typecheck
 npm run build
 ```
 
-To build the QA deployment locally:
+For local-only QA tool testing (this does not publish a QA deployment):
 
 ```powershell
 $env:VITE_BASE_PATH='/arrow-adventure-qa/'
@@ -39,15 +39,15 @@ $env:VITE_CANDIDATE_SHA='local-preview'
 npm run build
 ```
 
-The QA panel is available only in development or builds with `VITE_QA_MODE=true`. Hold the level label for two seconds (or use Enter/Space when focused) to open speed, stroke, diagnostics, level navigation, restart, reset, and Prototype Review controls. Prototype Review retains the A–H comparisons and the separate **Round 9H — True 7×7 Square** board. Review runs use the same gameplay systems but never write Adventure Mode progress. QA and production use separate local-storage namespaces because both Pages sites share the same browser origin.
+Developer diagnostics are available only in development or builds with `VITE_QA_MODE=true`; they are excluded from production bundles. Historical prototype definitions and the paused QA deployment are retained for future review, but are not part of Adventure Mode.
 
 ## Deployment
 
-`main` deploys to production with `/arrow-adventure/` using GitHub Actions. The standalone [`arrow-adventure-qa`](https://github.com/mirpkered/arrow-adventure-qa) repository has a manually dispatched workflow that checks out an explicitly selected source SHA, validates it, builds with `/arrow-adventure-qa/`, and publishes only to the QA Pages repository. Changing QA cannot deploy to production. See [QA environment and release procedures](docs/QA_ENVIRONMENT.md).
+Validated changes are developed on feature branches, then safely fast-forwarded or merged into `main`. The production-only GitHub Actions workflow runs tests, TypeScript validation, geometry and solvability checks, builds with `/arrow-adventure/`, excludes developer tools, deploys Pages, and verifies the live source SHA and assets. There is no QA gate or QA-to-production synchronizer. See [environment and release procedures](docs/QA_ENVIRONMENT.md).
 
 ## Architecture
 
-- `src/game/catalog.ts` and `src/game/adventure-catalog.json` — five frozen Round 11 compactness-refined levels with stable IDs, a versioned chapter, explicit true-grid specifications, metadata, fingerprints, geometry checks, and exhaustive state audits. Round 10 definitions are frozen in `src/game/archive/adventure-catalog-first-flight-r2.json`.
+- `src/game/catalog.ts` and `src/game/adventure-catalog.json` — five frozen Round 11A compactness-refined levels with stable IDs, a versioned chapter, explicit true-grid specifications, metadata, fingerprints, geometry checks, and solvability audits. Round 10 definitions are frozen in `src/game/archive/adventure-catalog-first-flight-r2.json`.
 - `src/game/prototypes/round9c-prototypes.json`, `round9d-prototypes.json`, `round9e-square-15.json`, `round9f-square-7.json`, `round9g-square-7-weave.json`, and `round9h-square-true-7.json` — eight Round 9C/D QA review boards plus separate, frozen Round 9E–9H experiments; A–H and the explicit Round 9H choice are loaded only by QA Prototype Review, never by Adventure Mode.
 - `src/game/archive/catalog-round8.ts` and `adventure-catalog-first-flight-r1.json` — non-playable archives of the former six-level release definitions and ten provisional Round 9 levels.
 - `src/game/geometry.ts`, `src/game/rules.ts`, `src/game/density.ts` — shared board-coordinate transforms, fixed collision envelopes, grid and segment validation, distance-based body movement, solver, and sampled whitespace metrics.
@@ -62,13 +62,13 @@ The QA panel is available only in development or builds with `VITE_QA_MODE=true`
 
 Puzzle geometry and collision assumptions are documented in [Game Design](docs/GAME_DESIGN.md). The exact all-state solvability audit and Level 4 reconstruction are in [Solvability Audit](docs/SOLVABILITY_AUDIT.md). The repeatable process for curated content is in [Level Authoring](docs/LEVEL_AUTHORING.md).
 
-The [Round 11 compactness report](docs/ROUND_11_COMPACTNESS.md) documents the before/after measurements, five-level previews, exact audits, and save migration. The [Round 10 foundation report](docs/ROUND_10_FOUNDATION.md) preserves the original layout metrics. Round 9H remains a separate QA prototype and the physical iPhone-approved movement and grid reference.
+The [Round 11 compactness report](docs/ROUND_11_COMPACTNESS.md) documents the before/after measurements, five-level previews, audits, and save migration. The [Round 10 foundation report](docs/ROUND_10_FOUNDATION.md) preserves the original layout metrics. Round 9H remains a historical reference for the physical iPhone-approved movement and grid standard. Round 13 records the production transition and larger-grid work in [the baseline](docs/ROUND_13_BASELINE.md) and [the expansion report](docs/ROUND_13_LARGE_GRID_EXPANSION.md).
 
 ## Current scope and limitations
 
-- Round 11 keeps five levels and 50 arrows; all five use the same board dimensions and true-grid rules as the physically approved Round 10 foundation. The exact audit covers every reachable state in the candidate catalog.
+- The Round 11A foundation retains five stable levels and the approved Round 11 compactness refinements; Level 3 c05 uses the corrected exit orientation. Their dimensions, IDs, routes, and content versions remain unchanged during the production workflow transition.
 - Round 11 uses schema v4 content-version migration and preserves completed-level credit and unrelated appearance/audio settings.
 - Round 11A's c05 investigation, correction, and motion-frame previews are in [docs/ROUND_11A_C05.md](docs/ROUND_11A_C05.md).
-- Round 11 previews are renderer-generated, not browser captures. The candidate still requires physical iPhone review before production promotion.
-- The five catalog levels are separate from QA-only A–H and Round 9H review prototypes. Production synchronization validates the active catalog and tree-shakes QA-only tools.
+- Round 11 previews are renderer-generated, not browser captures. The five-level foundation and c05 correction were physically reviewed on iPhone before this production transition.
+- Historical prototypes remain outside the Adventure catalog. The production build verifies that QA modules, prototype selection, and QA metadata are absent.
 - Free Play, tutorials, black holes, switches, gates, portals, and additional chapters are future work.

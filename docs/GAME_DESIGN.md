@@ -1,6 +1,6 @@
 # Shared-Board Game Design
 
-> **Round 11 status:** The active development catalog contains five compactness-refined First Flight levels under `first-flight-r3-compact-weave`. Level 3 is content version 3 after the targeted c05 orientation correction; all other levels remain version 2. Round 10 layouts remain archived and production remains unchanged. See [Roadmap](ROADMAP.md), [Round 11 Compactness](ROUND_11_COMPACTNESS.md), and [Round 11A c05 correction](ROUND_11A_C05.md).
+> **Round 13 baseline:** Production's active catalog is the approved five-level Round 11A First Flight set under `first-flight-r3-compact-weave`. Level 3 is content version 3 after the targeted c05 orientation correction; other levels remain version 2. Round 10 layouts remain archived. QA Pages and the temporary synchronization workflow are paused; production releases use the independent validation workflow. See [Roadmap](ROADMAP.md), [Round 11 Compactness](ROUND_11_COMPACTNESS.md), and [Round 11A c05 correction](ROUND_11A_C05.md).
 
 ## Active prototype rules
 
