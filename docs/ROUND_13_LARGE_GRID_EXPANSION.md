@@ -55,8 +55,41 @@ The checked-in preview README gives the complete list and states the rendering l
 
 The Level 6 release gate includes `npm ci`, all Vitest tests, `npm run typecheck`, the production build at `/arrow-adventure/`, production artifact exclusion checks, catalog/geometry validation, the exact Level 6 state audit, save/progression tests, and `git diff --check`. Detailed command results, commit SHAs, production run, and viewports are recorded in the Round 13 delivery report after each promotion. New large content still requires physical iPhone playtesting after deployment; automated fitting and touch selection do not claim a physical-device test.
 
+## Level 7 — The Deep Weave (development candidate)
+
+| Property | Result |
+| --- | ---: |
+| Stable ID / content version | `first-flight-007` / 1 |
+| Visible grid | 12×12 cells (13×13 intersections) |
+| Arrows | 30 |
+| Authoring seed | 14825 |
+| Total route length | 139 units |
+| Sorted route-length distribution | 1, 1, 2, 2, eight routes of length 3, 4, 4, 5, 5, 5, five routes of length 6, eight routes of length 7 |
+| Occupied intersections | 169 / 169 |
+| Adjacent-grid path coverage | 98.56% |
+| Nearest distinct-path spacing | minimum / median 1 unit |
+| Interleaved arrow pairs / close segment contacts | 24 / 461 |
+| Blocking links / dependency depth | 66 / 7 |
+| Initially removable | 4 |
+| Large-gap ratio | 0% at the authoring sampler threshold |
+| Solvability certificate | complete static blocker DAG; 30-move witness replayed through `simulateMove`; no cycles |
+
+The 30-route composition occupies the complete 12×12 visible lattice with mixed short, medium and longer orthogonal paths. It was generated offline from seed 14825, geometrically validated, and frozen in the development catalog. It remains a development candidate until the production milestone gate and live deployment complete.
+
+## Benchmark snapshot
+
+Single-process Windows authoring measurements (Node/Vite SSR, no browser session):
+
+| Level | Blocker graph build | Complete graph certificate + replay | Exact audit | Solver witness | 100 full-board move simulations |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 5 — 15 arrows | 0.33 s | 0.16 s | 0.5 ms, 66 states | 0.11 ms | 0.30 s |
+| 6 — 20 arrows | 0.91 s | 0.35 s | 11.5 ms, 2,206 states | 0.27 ms | 0.14 s |
+| 7 — 30 arrows | 1.58 s | 0.72 s | not run (above cap) | 0.11 ms | 0.63 s |
+
+All current catalog levels together took 9.31 seconds for this benchmark. RSS sampled before/after the harness rose from about 94 MB to 154 MB; this is process-level Vite/Node memory, not an isolated browser heap measurement or a peak guarantee. A Level 7 gameplay move simulation averaged about 6.3 ms over the repeated 100-call sample. Cache-cold blocker construction is offline validation; production does not run the full authoring audit on every frame or tap.
+
+The Level 7 proof is a DAG certificate, not exhaustive subset enumeration. The exact auditor still rejects more than 20 arrows. The 14×14 experiment remains deferred until the Level 7 candidate has passed production and physical play review.
+
 ## Next milestone
 
-Level 7 targets a dense 12×12 weave with more than 20 arrows. The first candidate has 30 arrows, 139 route units, 169/169 occupied intersections, 24 interleaved pairs, 66 blocker links, dependency depth 7, and 4 initial safe moves. Its static blocker-DAG certificate and full simulator replay passed during development, but it is not part of this Level 6 release. It must pass its own tests, production build, artifact exclusion check, renderer/browser review, and production deployment gate before being appended.
-
-A 14×14 puzzle is a stretch experiment only after Level 7 stabilizes. A 16×16 board is research; no support guarantee is claimed yet.
+Promote Level 7 only after its complete suite, TypeScript, production build, artifact exclusion checks, geometry/certificate tests, viewport checks, and source traceability all pass. A 14×14 board is a stretch experiment after that milestone stabilizes. A 16×16 board is research; no support guarantee is claimed yet.

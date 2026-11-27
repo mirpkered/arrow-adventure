@@ -1,18 +1,18 @@
 # Arrow Adventure Roadmap
 
-## Current foundation — Round 13, Milestone B
+## Current foundation — Round 13, Milestone C
 
 The production-only release workflow is active. QA Pages and the temporary QA-to-production synchronizer are paused; validated development branches move to `main`, where Actions independently validates and deploys the production build. Recovery and restoration instructions are in [QA environment and release procedures](QA_ENVIRONMENT.md).
 
-First Flight keeps the five physically approved Round 11A levels and adds Level 6, a frozen 10×10 board with 20 arrows. The new puzzle passes the exhaustive reachable-state audit. Catalog additions preserve existing save credit and in-progress boards; only an explicit per-level content-version change invalidates that board.
+First Flight keeps the five physically approved Round 11A levels and adds Level 6 (10×10, 20 arrows) and Level 7 (12×12, 30 arrows). Level 6 passes exhaustive reachable-state enumeration. Level 7 passes the complete static blocker-DAG proof for the current removal-only rules. Catalog additions preserve existing save credit and in-progress boards; only an explicit per-level content-version change invalidates that board.
 
 ## Round 13 — larger boards and proof scalability
 
-Level 7 is the next milestone: a dense 12×12 board with 30 arrows. Its current candidate passes geometry validation and the complete static blocker-graph proof for the current removal-only rules. It remains on the development branch until the proof/regression suite, full production release gate, and phone-scale visual review pass.
+Level 7 is now the second large-board release: a dense 12×12 board with 30 arrows. Its deterministic composition occupies all 169 grid intersections, has 24 interleaved pairs, 66 blocker links and dependency depth 7. The proof/regression suite and production release gate passed. Physical iPhone review remains outstanding.
 
 The exact reachable-state enumerator remains capped at 20 arrows and reports actual subset and transition totals. Above that cap, a static blocker DAG can establish all-state completion without enumerating subsets because a move is legal exactly when no remaining arrow individually blocks it, and successful moves only remove static obstacles. The graph certificate is complete only for these rules. Future moving obstacles, switches, gates, portals, or other state changes need a separate proof or exact method.
 
-A 14×14 board is a stretch experiment after Level 7 is stable. Do not enlarge boards just to hit a target arrow count; visual cohesion, geometry, and proof are release conditions.
+A 14×14 board is the stretch experiment after Level 7 is stable. Do not enlarge boards just to hit a target arrow count; visual cohesion, geometry, and proof are release conditions.
 
 ## Release gates
 

@@ -23,9 +23,9 @@ const makeArrow = (id: string, path: Point[]): Arrow => ({ id, path });
 
 describe('Round 11 curated catalog', () => {
   it('keeps the five stable opening levels and appends ordered large-grid progression', () => {
-    expect(CURATED_LEVELS).toHaveLength(6);
-    expect(CURATED_LEVELS.map(({number}) => number)).toEqual([1, 2, 3, 4, 5, 6]);
-    expect(CURATED_LEVELS.map(({id}) => id)).toEqual(Array.from({length:6}, (_, index) => `first-flight-${String(index + 1).padStart(3, '0')}`));
+    expect(CURATED_LEVELS).toHaveLength(7);
+    expect(CURATED_LEVELS.map(({number}) => number)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(CURATED_LEVELS.map(({id}) => id)).toEqual(Array.from({length:7}, (_, index) => `first-flight-${String(index + 1).padStart(3, '0')}`));
     expect(CURATED_LEVELS.slice(0, 5).map(({title}) => title)).toEqual(['First Steps', 'Close Quarters', 'Winding Paths', 'The Weave', 'First Challenge']);
     expect(CURATED_LEVELS.slice(0, 5).map(({difficulty}) => difficulty)).toEqual(['intro', 'easy', 'easy-medium', 'medium', 'medium-hard']);
     expect(CURATED_LEVELS.every(({composition}) => composition === 'abstract')).toBe(true);

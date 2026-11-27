@@ -1,6 +1,6 @@
 # Shared-Board Game Design
 
-> **Round 13 baseline:** Production's active catalog is `first-flight-r4-large-grid`: the five approved Round 11A First Flight levels plus Level 6, a frozen 10×10 board. Level 3 is content version 3 after the targeted c05 orientation correction; other opening levels remain version 2. Level 6 is content version 1. Round 10 layouts remain archived. QA Pages and the temporary synchronization workflow are paused; production releases use the independent validation workflow. See [Roadmap](ROADMAP.md), [Round 11 Compactness](ROUND_11_COMPACTNESS.md), [Round 11A c05 correction](ROUND_11A_C05.md), and [Round 13 Large-Grid Expansion](ROUND_13_LARGE_GRID_EXPANSION.md).
+> **Round 13 baseline:** Production's active catalog is `first-flight-r4-large-grid`: the five approved Round 11A First Flight levels plus frozen 10×10 Level 6 and 12×12 Level 7. Level 3 is content version 3 after the targeted c05 orientation correction; other opening levels remain version 2; Levels 6 and 7 are content version 1. Round 10 layouts remain archived. QA Pages and the temporary synchronization workflow are paused; production releases use the independent validation workflow. See [Roadmap](ROADMAP.md), [Round 11 Compactness](ROUND_11_COMPACTNESS.md), [Round 11A c05 correction](ROUND_11A_C05.md), and [Round 13 Large-Grid Expansion](ROUND_13_LARGE_GRID_EXPANSION.md).
 
 ## Active prototype rules
 

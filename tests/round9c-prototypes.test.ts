@@ -24,7 +24,7 @@ describe('Round 9C composition prototypes', () => {
     expect(prototypes.every(({purpose,compositionPlan}) => purpose.trim() && compositionPlan.trim())).toBe(true);
     expect(prototypes.every(({previewCaption}) => previewCaption.trim().length > 0 && previewCaption.length <= 100)).toBe(true);
     expect(prototypes.map(({puzzle}) => puzzle.arrows.length)).toEqual([6,7,15]);
-    expect(CURATED_LEVELS).toHaveLength(6);
+    expect(CURATED_LEVELS).toHaveLength(7);
     expect(CURATED_LEVELS.some(({id}) => id.startsWith('round9c-'))).toBe(false);
   });
 

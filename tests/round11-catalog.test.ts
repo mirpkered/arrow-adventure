@@ -19,9 +19,9 @@ describe('Round 11 compactness refinement', () => {
     expect(CURATED_LEVELS.slice(0, 5).map(({ puzzle }) => [puzzle.width, puzzle.height, puzzle.arrows.length])).toEqual([
       [5, 5, 5], [6, 6, 8], [7, 7, 10], [7, 8, 12], [8, 8, 15],
     ]);
-    expect(CURATED_LEVELS).toHaveLength(6);
+    expect(CURATED_LEVELS).toHaveLength(7);
     expect(CURATED_LEVELS.every(({ catalogVersion }) => catalogVersion === 'first-flight-r4-large-grid')).toBe(true);
-    expect(CURATED_LEVELS.map(({ contentVersion }) => contentVersion)).toEqual([2, 2, 3, 2, 2, 1]);
+    expect(CURATED_LEVELS.map(({ contentVersion }) => contentVersion)).toEqual([2, 2, 3, 2, 2, 1, 1]);
     expect(fingerprint(round10)).toBe('ec345f51cdf681be57f044c9bd62c88600715ff0efd65c55c05979a48a6ba8c0');
     for (const entry of CURATED_LEVELS) {
       const { puzzle } = entry;
@@ -100,18 +100,24 @@ describe('Round 11 compactness refinement', () => {
     });
   });
 
-  it('adds the dense 10×10 Level 6 with an exact audit and stable fingerprint', () => {
+  it('adds dense 10×10 and 12×12 puzzles with exact/graph certificates and stable fingerprints', () => {
     const large = CURATED_LEVELS.slice(5);
     expect(large.map(({ id, authoringSeed, contentVersion }) => [id, authoringSeed, contentVersion])).toEqual([
-      ['first-flight-006', 13309, 1],
+      ['first-flight-006', 13309, 1], ['first-flight-007', 14825, 1],
     ]);
-    expect(large.map(({ puzzle }) => [puzzle.width, puzzle.height, puzzle.arrows.length])).toEqual([[10, 10, 20]]);
-    const expectedHash = '45c271cfd0f4ee3e06861df354beae8268563ea74985da621231a5428761447e';
-    const expectedRoutes = [1, 8, 7, 6, 5, 1, 5, 7, 8, 8, 1, 7, 3, 2, 8, 7, 4, 8, 2, 3];
-    large.forEach((entry) => {
+    expect(large.map(({ puzzle }) => [puzzle.width, puzzle.height, puzzle.arrows.length])).toEqual([[10, 10, 20], [12, 12, 30]]);
+    const expectedHashes = [
+      '45c271cfd0f4ee3e06861df354beae8268563ea74985da621231a5428761447e',
+      'a45addaed4ccc5491bf0b1f925d0b63cfca3d6375c6f243a40a537a8d8ed77d4',
+    ];
+    const expectedRoutes = [
+      [1, 8, 7, 6, 5, 1, 5, 7, 8, 8, 1, 7, 3, 2, 8, 7, 4, 8, 2, 3],
+      [1, 7, 4, 3, 3, 3, 3, 7, 5, 7, 3, 2, 3, 7, 6, 7, 2, 6, 6, 1, 4, 5, 7, 3, 7, 6, 6, 5, 7, 3],
+    ];
+    large.forEach((entry, index) => {
       const { puzzle } = entry;
-      expect(fingerprint(puzzle)).toBe(expectedHash);
-      expect(routeLengths(entry)).toEqual(expectedRoutes);
+      expect(fingerprint(puzzle)).toBe(expectedHashes[index]);
+      expect(routeLengths(entry)).toEqual(expectedRoutes[index]);
       expect(new Set(puzzle.arrows.flatMap(({ path }) => path.map(({ x, y }) => `${x},${y}`))).size)
         .toBe((puzzle.width + 1) * (puzzle.height + 1));
       validateLevel(puzzle);
@@ -124,12 +130,14 @@ describe('Round 11 compactness refinement', () => {
       const isolated = Object.entries(metrics.interleavedPairsByArrow)
         .filter(([id, degree]) => degree === 0 && metrics.blockersByArrow[id] === 0).map(([id]) => id);
       expect(isolated, `${entry.id} isolated arrows`).toEqual([]);
-      expect(metrics.blockingDependencies).toBe(31);
-      expect(metrics.dependencyDepth).toBe(5);
-      expect(metrics.initiallyRemovable).toBe(5);
-      const exact = auditReachableStates(puzzle);
-      expect(exact).toMatchObject({ reachableStates: 2206, legalTransitions: 9163, terminalStates: 1, deadlocks: [], dependencyCycles: [] });
-      expect(exact.initialLegalMoves).toHaveLength(5);
+      expect(metrics.blockingDependencies).toBe(index === 0 ? 31 : 66);
+      expect(metrics.dependencyDepth).toBe(index === 0 ? 5 : 7);
+      expect(metrics.initiallyRemovable).toBe(index === 0 ? 5 : 4);
+      if (index === 0) {
+        const exact = auditReachableStates(puzzle);
+        expect(exact).toMatchObject({ reachableStates: 2206, legalTransitions: 9163, terminalStates: 1, deadlocks: [], dependencyCycles: [] });
+        expect(exact.initialLegalMoves).toHaveLength(5);
+      } else expect(graph.initialLegalMoves).toHaveLength(4);
     });
   });
 });
