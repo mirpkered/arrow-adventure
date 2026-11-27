@@ -22,6 +22,19 @@ export function arrowCompositionBounds(arrows: Arrow[], pathOffset = 0.5): Board
   };
 }
 
+/** Adds a prototype's authored silhouette to the fit bounds without changing the arrow coordinate system. */
+export function compositionBounds(arrows: Arrow[], footprint: Point[][] = [], pathOffset = 0.5): BoardBounds | undefined {
+  const arrowsBounds = arrowCompositionBounds(arrows, pathOffset);
+  const footprintPoints = footprint.flat().map((point) => toBoardPoint(point, pathOffset));
+  if (!footprintPoints.length) return arrowsBounds;
+  return {
+    minX: Math.min(arrowsBounds?.minX ?? Infinity, ...footprintPoints.map(({ x }) => x)),
+    minY: Math.min(arrowsBounds?.minY ?? Infinity, ...footprintPoints.map(({ y }) => y)),
+    maxX: Math.max(arrowsBounds?.maxX ?? -Infinity, ...footprintPoints.map(({ x }) => x)),
+    maxY: Math.max(arrowsBounds?.maxY ?? -Infinity, ...footprintPoints.map(({ y }) => y)),
+  };
+}
+
 /** Fits the actual arrow composition to the available viewport, then supports bounded zoom and pan. */
 export class BoardViewport {
   private base: BoardViewBox;

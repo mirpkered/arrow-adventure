@@ -24,7 +24,7 @@ All five boards pass path validation, stationary/swept collision checks, solver/
 ## Future direction
 
 - Continue authoring a small number of curated Adventure levels at a time. Keep all geometry on the declared visible lattice and freeze approved layouts with stable IDs, content versions, and fingerprints.
-- Develop lightweight footprint masks so a future authored silhouette can clip grid rendering without changing the regular logical coordinates. Do not implement image upload or automatic silhouette generation until separately designed.
+- Round 12 proves one QA-only authored heart footprint: SVG clipping changes the visible lattice and fit bounds without changing regular logical coordinates. Review that prototype before considering additional silhouettes. Image upload and automatic silhouette generation remain future work.
 - Free Play remains a separate future mode. Generated puzzles must be deterministic and solver-verified, and optional mechanics must be selectable without being required for a solution.
 - Black holes, switches, gates, portals, additional mechanics, and larger level collections are not part of Round 10. Specify movement/collision/solver semantics before implementing any of them.
 - Preserve the approved Round 9H prototype as the current true-grid and physical-gameplay reference; do not copy its paths into future levels without deliberate redesign and review.

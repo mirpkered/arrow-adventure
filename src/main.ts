@@ -7,8 +7,8 @@ import { GameAudio } from './app/audio';
 import { movementDuration, NORMAL_MOVE_SPEED, RETURN_MOVE_SPEED } from './app/motion';
 import { loadGameSave, loadSettings, prefersDarkTheme, retireIncompatibleProgress, saveGame, saveSettings, storageKeysFor, type Appearance, type GameSave, type PlayerSettings, type StorageLike } from './app/persistence';
 import { showLaunchSplash } from './app/launchSplash';
-import { arrowCompositionBounds, BoardViewport } from './app/viewport';
-import { boardGridMarkup } from './app/boardGrid';
+import { arrowCompositionBounds, BoardViewport, compositionBounds } from './app/viewport';
+import { boardGridMarkup, silhouetteGridMarkup } from './app/boardGrid';
 import type { Arrow, Level, Point } from './game/types';
 import { legalMoves } from './game/stateAudit';
 import type { DiagnosticFlags, QABoardSnapshot } from './qa/qaPanel';
@@ -283,8 +283,11 @@ function arrowMarkup(arrow: Arrow): string {
 
 function boardMarkup(): string {
   const box = viewport.viewBox;
+  const gridMarkup = activePrototype?.clipGridToFootprint && activePrototype.footprint
+    ? silhouetteGridMarkup(level.width, level.height, activePrototype.footprint, diagnostics.geometry, level.grid)
+    : boardGridMarkup(level.width, level.height, diagnostics.geometry, level.grid);
   return `<div class="board-wrap"><svg class="board" width="100%" height="100%" viewBox="${box.x} ${box.y} ${box.width} ${box.height}" role="group" aria-label="Puzzle board, ${arrows.length} arrows remaining" aria-roledescription="zoomable puzzle board">
-    ${boardGridMarkup(level.width, level.height, diagnostics.geometry, level.grid)}${arrows.map(arrowMarkup).join('')}
+    ${gridMarkup}${arrows.map(arrowMarkup).join('')}
   </svg></div>`;
 }
 
@@ -294,7 +297,10 @@ function fitBoardToComposition(preserveZoom = false): void {
   if (!boardWrap || !board) return;
   const rect = boardWrap.getBoundingClientRect();
   if (rect.width < 1 || rect.height < 1) return;
-  viewport.fitToContent(arrowCompositionBounds(level.arrows, activePathOffset()), rect.width, rect.height, 0.12, preserveZoom);
+  const bounds = activePrototype?.clipGridToFootprint && activePrototype.footprint
+    ? compositionBounds(level.arrows, activePrototype.footprint, activePathOffset())
+    : arrowCompositionBounds(level.arrows, activePathOffset());
+  viewport.fitToContent(bounds, rect.width, rect.height, activePrototype?.clipGridToFootprint ? 0.055 : 0.12, preserveZoom);
   const box = viewport.viewBox;
   board.setAttribute('viewBox', `${box.x} ${box.y} ${box.width} ${box.height}`);
 }

@@ -13,7 +13,7 @@ const prototypeModuleSource = readFileSync(fileURLToPath(new URL('../src/qa/prot
 const styleSource = readFileSync(fileURLToPath(new URL('../src/style.css', import.meta.url)), 'utf8');
 
 describe('isolated prototype review mode', () => {
-  it('preserves prototypes A–H and appends the named Round 9H true-grid board outside Adventure Mode', () => {
+  it('preserves prototypes A–H and appends the Round 9H and Round 12 true-grid boards outside Adventure Mode', () => {
     expect(PROTOTYPE_REVIEWS.slice(0, 3).map(({ id, name }) => [id, name])).toEqual([
       ['round9c-compact-weave', 'Compact Abstract Weave'],
       ['round9c-heart', 'Heart in the Weave'],
@@ -37,17 +37,24 @@ describe('isolated prototype review mode', () => {
     expect(CURATED_LEVELS).toHaveLength(5);
     expect(CURATED_LEVELS.some(({ id }) => id.startsWith('round9c-') || id.startsWith('round9d-') || id === 'prototype-square-true-7')).toBe(false);
     const selection = renderPrototypeReviewSelection();
-    expect((selection.match(/data-prototype-id=/g) ?? [])).toHaveLength(9);
+    expect(PROTOTYPE_REVIEWS[9]).toMatchObject({
+      id: 'prototype-round12-heart', name: 'Heart Prototype', displayLabel: 'Round 12 — Heart Prototype',
+      puzzle: { width: 10, height: 11, arrows: expect.arrayContaining([expect.any(Object)]) },
+      clipGridToFootprint: true,
+    });
+    expect(PROTOTYPE_REVIEWS[9].puzzle.arrows).toHaveLength(14);
+    expect((selection.match(/data-prototype-id=/g) ?? [])).toHaveLength(10);
     for (const { id, name } of PROTOTYPE_REVIEWS) {
       expect(selection).toContain(id);
       expect(selection).toContain(name);
     }
     expect(selection).toContain('Round 9H — True 7×7 Square');
+    expect(selection).toContain('Round 12 — Heart Prototype');
     expect(renderPrototypeReviewCompletion('A', 6)).toContain('REPLAY PROTOTYPE A');
     expect(renderPrototypeReviewCompletion('A', 6)).toContain('CHOOSE ANOTHER PROTOTYPE');
   });
 
-  it('uses the real gameplay definitions and validates all nine playable prototypes', () => {
+  it('uses the real gameplay definitions and validates all ten playable prototypes', () => {
     for (const { puzzle } of PROTOTYPE_REVIEWS) {
       expect(() => validateLevel(puzzle)).not.toThrow();
       expect(solveLevel(puzzle)).not.toBeNull();
@@ -74,6 +81,10 @@ describe('isolated prototype review mode', () => {
     const round9hRun = createPrototypeReviewRun(round9h.id)!;
     expect(round9hRun.run.hearts).toBe(3);
     expect(round9hRun.run.arrows).toHaveLength(15);
+    const round12 = PROTOTYPE_REVIEWS[9];
+    const round12Run = createPrototypeReviewRun(round12.id)!;
+    expect(round12Run.run.hearts).toBe(3);
+    expect(round12Run.run.arrows).toHaveLength(14);
   });
 
   it('keeps prototype runs out of Adventure Mode progress saves', () => {

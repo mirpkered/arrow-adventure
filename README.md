@@ -48,7 +48,7 @@ The QA panel is available only in development or builds with `VITE_QA_MODE=true`
 ## Architecture
 
 - `src/game/catalog.ts` and `src/game/adventure-catalog.json` — five frozen Round 11 compactness-refined levels with stable IDs, a versioned chapter, explicit true-grid specifications, metadata, fingerprints, geometry checks, and exhaustive state audits. Round 10 definitions are frozen in `src/game/archive/adventure-catalog-first-flight-r2.json`.
-- `src/game/prototypes/round9c-prototypes.json`, `round9d-prototypes.json`, `round9e-square-15.json`, `round9f-square-7.json`, `round9g-square-7-weave.json`, and `round9h-square-true-7.json` — eight Round 9C/D QA review boards plus separate, frozen Round 9E–9H experiments; A–H and the explicit Round 9H choice are loaded only by QA Prototype Review, never by Adventure Mode.
+- `src/game/prototypes/round9c-prototypes.json`, `round9d-prototypes.json`, the frozen Round 9E–9H definitions, and `round12-heart.json` — QA-only review boards and experiments. A–H, the explicit Round 9H choice, and the Round 12 heart are loaded only by QA Prototype Review, never by Adventure Mode.
 - `src/game/archive/catalog-round8.ts` and `adventure-catalog-first-flight-r1.json` — non-playable archives of the former six-level release definitions and ten provisional Round 9 levels.
 - `src/game/geometry.ts`, `src/game/rules.ts`, `src/game/density.ts` — shared board-coordinate transforms, fixed collision envelopes, grid and segment validation, distance-based body movement, solver, and sampled whitespace metrics.
 - `src/app/boardGrid.ts` — fine-grid paths rendered in the same SVG coordinate frame as the arrows.
@@ -62,7 +62,7 @@ The QA panel is available only in development or builds with `VITE_QA_MODE=true`
 
 Puzzle geometry and collision assumptions are documented in [Game Design](docs/GAME_DESIGN.md). The exact all-state solvability audit and Level 4 reconstruction are in [Solvability Audit](docs/SOLVABILITY_AUDIT.md). The repeatable process for curated content is in [Level Authoring](docs/LEVEL_AUTHORING.md).
 
-The [Round 11 compactness report](docs/ROUND_11_COMPACTNESS.md) documents the before/after measurements, five-level previews, exact audits, and save migration. The [Round 10 foundation report](docs/ROUND_10_FOUNDATION.md) preserves the original layout metrics. Round 9H remains a separate QA prototype and the physical iPhone-approved movement and grid reference.
+The [Round 11 compactness report](docs/ROUND_11_COMPACTNESS.md) documents the before/after measurements, five-level previews, exact audits, and save migration. The [Round 10 foundation report](docs/ROUND_10_FOUNDATION.md) preserves the original layout metrics. Round 9H remains a separate QA prototype and the physical iPhone-approved movement and grid reference. [Round 12](docs/ROUND_12_HEART.md) documents the first full-area silhouette prototype and its QA-only clipped-grid rendering.
 
 ## Current scope and limitations
 
@@ -70,5 +70,5 @@ The [Round 11 compactness report](docs/ROUND_11_COMPACTNESS.md) documents the be
 - Round 11 uses schema v4 content-version migration and preserves completed-level credit and unrelated appearance/audio settings.
 - Round 11A's c05 investigation, correction, and motion-frame previews are in [docs/ROUND_11A_C05.md](docs/ROUND_11A_C05.md).
 - Round 11 previews are renderer-generated, not browser captures. The candidate still requires physical iPhone review before production promotion.
-- The five catalog levels are separate from QA-only A–H and Round 9H review prototypes. Production synchronization validates the active catalog and tree-shakes QA-only tools.
+- The five catalog levels are separate from QA-only A–H, Round 9H, and Round 12 review prototypes. Production synchronization validates the active catalog and tree-shakes QA-only tools.
 - Free Play, tutorials, black holes, switches, gates, portals, and additional chapters are future work.

@@ -1,8 +1,9 @@
 import round9cDefinitions from '../game/prototypes/round9c-prototypes.json';
 import round9dDefinitions from '../game/prototypes/round9d-prototypes.json';
 import round9hDefinition from '../game/prototypes/round9h-square-true-7.json';
+import round12HeartDefinition from '../game/prototypes/round12-heart.json';
 import { createRun } from '../game/session';
-import type { Level } from '../game/types';
+import type { Level, Point } from '../game/types';
 
 export type PrototypeReviewDefinition = {
   id: string;
@@ -13,6 +14,8 @@ export type PrototypeReviewDefinition = {
   compositionPlan?: string;
   previewCaption?: string;
   displayLabel?: string;
+  footprint?: Point[][];
+  clipGridToFootprint?: boolean;
   puzzle: Level;
 };
 
@@ -37,7 +40,14 @@ const round9hReview: PrototypeReviewDefinition = {
   puzzle: round9hDefinition.puzzle as Level,
 };
 
-export const PROTOTYPE_REVIEWS = [...round9cDefinitions, ...round9dDefinitions, round9hReview] as PrototypeReviewDefinition[];
+const round12HeartReview: PrototypeReviewDefinition = {
+  ...round12HeartDefinition,
+  footprint: round12HeartDefinition.footprint as Point[][],
+  clipGridToFootprint: true,
+  puzzle: round12HeartDefinition.puzzle as Level,
+};
+
+export const PROTOTYPE_REVIEWS = [...round9cDefinitions, ...round9dDefinitions, round9hReview, round12HeartReview] as PrototypeReviewDefinition[];
 
 export const PROTOTYPE_REVIEW_CHOICES: PrototypeReviewChoice[] = PROTOTYPE_REVIEWS.map(({ id, name, difficulty, compositionStyle, displayLabel, puzzle }) => ({
   id,

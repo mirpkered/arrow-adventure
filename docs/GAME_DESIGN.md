@@ -56,7 +56,7 @@ The title screen provides Play, Continue, Settings and Credits. The in-game paus
 
 Production uses `arrow-adventure.production.*` keys. QA uses `arrow-adventure.qa.*` keys because GitHub Pages project URLs share the `github.io` origin; path separation alone would not isolate `localStorage`. Appearance and audio settings have the same environment separation. Light is the default only when no valid preference is saved; explicit Light, Dark, and Automatic preferences remain respected. Automatic follows the system appearance, and theme changes rerender the current screen without restarting the board. Optional synthesized music is off by default; original sound effects can be toggled separately. Audio settings do not pause or interrupt other apps' music.
 
-Three hearts, restart, and numbered progression remain the only gameplay rules. Adventure Mode loads five frozen true-grid levels. There is no Free Play, runtime Adventure generator, black holes, switches, gates, portals, undo, timer or monetization. Future silhouette support should keep a regular logical grid and clip its rendering to an authored footprint; it is not implemented.
+Three hearts, restart, and numbered progression remain the only gameplay rules. Adventure Mode loads five frozen true-grid levels. There is no Free Play, runtime Adventure generator, black holes, switches, gates, portals, undo, timer or monetization. Round 12 adds one QA-only silhouette proof: an authored heart polygon clips the displayed grid and contributes to fit bounds while the regular rectangular gameplay coordinate system remains unchanged. General silhouette authoring, image import, and shape-specific gameplay boundaries are not implemented.
 
 ## Launch splash
 
