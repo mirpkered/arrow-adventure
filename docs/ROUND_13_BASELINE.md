@@ -48,3 +48,9 @@ Before editing the production workflow, no queued or in-progress sync runs were 
 ## Solver assumptions to verify
 
 Current gameplay has only static arrows and successful moves remove one whole arrow. For a selected arrow, every other remaining arrow is stationary. The movement simulator checks the moving arrow's complete swept body against each obstacle independently. Round 13 will verify that this pairwise obstruction model is complete and monotonic before using a dependency-graph certificate above the exhaustive subset cap. That certificate will apply only to current removal-only rules; future moving objects, gates, switches, or portals require a separate proof.
+
+## Round 13 completion record
+
+The Round 13 source branch and `main` were advanced to `e89fb976453ee19ec7f0abd025cb97c8b504560a`. That revision is the Level 8 gameplay release and deployed successfully through [production workflow run 45948865219](https://github.com/mirpkered/arrow-adventure/actions/runs/45948865219). The workflow's live check and a second independent verifier both confirmed the deployed source SHA, HTTP 200, and nine required assets. At that revision the active First Flight catalog contains eight levels. Checkpoints before each release are listed in [the Round 13 report](ROUND_13_LARGE_GRID_EXPANSION.md).
+
+The 14×14 Level 8 exact state audit is intentionally not claimed: the exhaustive subset enumerator still rejects catalogs above 20 arrows. The static blocker-DAG certificate is complete under the documented current removal-only rules and its 40-step witness was replayed through the gameplay simulator. Levels 6–8 still need physical iPhone review. The QA site remains paused and the synchronization variable remains false.

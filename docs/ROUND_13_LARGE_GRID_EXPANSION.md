@@ -2,7 +2,7 @@
 
 ## Scope and release status
 
-Round 13 keeps the approved Round 11A opening five, retires QA as the current test host, and makes `main` the only production deployment source. Levels 6 and 7 have been released to production. Level 8 — Grand Weave is the 14×14 stretch level; it remains a development candidate until its production gate and live verification complete.
+Round 13 keeps the approved Round 11A opening five, retires QA as the current test host, and makes `main` the only production deployment source. Levels 6, 7, and 8 have been released to production. Level 8 — Grand Weave is the 14×14 stretch level. The production release at source `e89fb976453ee19ec7f0abd025cb97c8b504560a` completed successfully in [workflow run 45948865219](https://github.com/mirpkered/arrow-adventure/actions/runs/45948865219); independent live verification confirmed the same source SHA, HTTP 200, and nine required assets.
 
 The QA Pages site and scheduled QA-to-production synchronizer are paused. The QA repository and history are retained. `ENABLE_TEMPORARY_PRODUCTION_SYNC` is `false`, and its workflow is disabled. Feature work stays on `round-13/large-grid-expansion`; direct production release occurs only after validation and normal fast-forward promotion to `main`. See [baseline and recovery record](ROUND_13_BASELINE.md) and [release procedure](QA_ENVIRONMENT.md).
 
@@ -101,7 +101,9 @@ All eight catalog levels took 14.56 seconds for the benchmark validation pass. P
 - Checkpoint before Level 7 release: `checkpoint/round-13-before-level-7-production`.
 - Milestone C Level 7 deployment: `688232a0e0c51f1dea05cea89a12ed270560a475`, [run 45945656708](https://github.com/mirpkered/arrow-adventure/actions/runs/45945656708).
 - Checkpoint before Level 8: `checkpoint/round-13-before-level-8-experiment`.
-- Level 8 release SHA and Pages run will be recorded after its production gate completes.
+- Milestone D Level 8 deployment: `e89fb976453ee19ec7f0abd025cb97c8b504560a`, [run 45948865219](https://github.com/mirpkered/arrow-adventure/actions/runs/45948865219). The run passed tests, typecheck, production build and artifact checks, then deployed and verified the live app. Independent verification returned source SHA `e89fb976453ee19ec7f0abd025cb97c8b504560a`, page HTTP 200, and nine assets.
+
+The production Actions run emitted a non-blocking GitHub warning that the current `checkout@v4`, `configure-pages@v5`, `setup-node@v4`, and `upload-artifact@v4` actions target Node.js 20 and runners are forcing Node.js 24. The run completed successfully; action-version maintenance should be scheduled before GitHub removes compatibility.
 
 The production workflow checks the exact source revision, installs with `npm ci`, runs the full tests, typecheck and `/arrow-adventure/` build, verifies QA-only code is absent, stamps source metadata, deploys Pages, then checks the live page and assets. No QA deployment record or workflow is required. The separate QA repository and run history are retained for possible restoration.
 
